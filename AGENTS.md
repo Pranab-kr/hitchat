@@ -6,7 +6,47 @@ This version has breaking changes — APIs, conventions, and file structure may 
 
 # hitchat — agent conventions
 
-Anonymous, self-destructing lab chat for college labs. Read these before working.
+Anonymous, self-destructing lab chat for college labs.
+
+## Start here — every session, no exceptions
+
+You may be a fresh agent with no memory of prior sessions. Before writing any code,
+in this order:
+
+1. **Read `progress.md`.** It states the current branch, the current step, and the
+   exact next action. It is the handoff document.
+2. **Read `plan.md`** — the step you are on, plus the one after it.
+3. **Run `git status` and `git branch --show-current`.** Reconcile against what
+   `progress.md` claims. If they disagree, trust git for *what exists* and
+   `progress.md` for *what was intended*, then say so before continuing.
+4. **Read the spec section** for the feature you're building. Only that section.
+5. Only then start work.
+
+If `progress.md` and the repo disagree in a way you can't reconcile, stop and ask.
+Do not guess and do not restart a step that may already be half-done.
+
+## The loop — one step at a time
+
+Exactly one step is in flight at any moment. Never start step N+1 before step N is
+merged.
+
+```
+1. git checkout main && git pull
+2. git checkout -b feat/<step-slug>
+3. Set progress.md → "In progress", commit that first
+4. Build the step
+5. Verify it actually works (run it, not just compile it)
+6. Update progress.md: mark done, record deviations + next action
+7. Commit, merge to main, delete the branch
+8. Repeat
+```
+
+**Step 3 is the one people skip and it's the one that matters.** Writing "in
+progress" *before* building is what lets a session that dies mid-step be recovered —
+otherwise a fresh agent sees a branch with commits and no idea what they were for.
+
+If you are interrupted or the context is about to run out, update `progress.md` first.
+An accurate half-finished status beats a stale complete-looking one.
 
 ## Documents
 
@@ -15,25 +55,31 @@ Anonymous, self-destructing lab chat for college labs. Read these before working
 | `docs/superpowers/specs/2026-08-03-anon-lab-chat-design.md` | The spec. Source of truth for behavior. |
 | `design.md` | Visual system. Source of truth for every color, font, and spacing value. |
 | `plan.md` | Ordered build steps. |
-| `progress.md` | Running status. **Update it as part of the work, not after.** |
+| `progress.md` | Running status and session handoff. **Update it as part of the work, not after.** |
 
 If the spec and the code disagree, the spec wins — or the spec gets updated
 deliberately. Never silently diverge.
 
 ## Workflow
 
-1. **One branch per feature.** `feat/<slug>`, branched from `main`.
-2. Build the feature. Update `progress.md` in the same branch.
-3. Verify it actually works — not just that it compiles.
-4. Merge to `main`, delete the branch.
-5. Never commit directly to `main` except for docs.
+See "The loop" above. One branch per step, `feat/<step-slug>`, branched from `main`.
+Never commit directly to `main` except for docs.
 
-## Updating progress.md
+## Writing progress.md so the next agent can resume
 
-Mark a step done **only** when it is verified working, not when the code is written.
-For each completed step record: what shipped, anything that deviated from the plan and
-why, and anything the next step needs to know. If you got blocked, say so in the
-Blocked section rather than marking the step done.
+`progress.md` is written for **an agent who knows nothing about this conversation.**
+Assume no shared context. That means:
+
+- **Never write "continue where I left off"** or "finish the remaining bits". Name the
+  file, the function, and the next concrete action.
+- Mark a step done **only when verified working**, not when the code is written.
+- The **Next action** line is mandatory and must be executable as-is by someone who
+  just opened the repo. "Add the rate-limit check to `postMessage` in
+  `app/actions/messages.ts`" — not "continue rate limiting".
+- Record **deviations from `plan.md` and why**. A silent deviation is how the next
+  agent undoes your work.
+- If blocked, put it in Blocked with what you tried. Don't mark the step done.
+- Record decisions the next agent would otherwise re-litigate.
 
 ## Hard rules
 
