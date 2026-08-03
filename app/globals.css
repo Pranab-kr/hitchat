@@ -1,26 +1,110 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --paper: #FAF5F1;
+  --ink: #241E1A;
+  --pen: #2C5F8F;
+  --rule: #C8503F;
+  --marigold: #E5A03A;
+  --graphite: #6E645C;
+
+  --surface: #FCF9F6;
+  --hairline: #241E1A1A;
+  --wash: #241E1A0A;
+  --code-bg: #F5EFEA;
+}
+
+.dark {
+  --paper: #1A1613;
+  --ink: #EDE6DE;
+  --pen: #7FB0DC;
+  --rule: #D9705F;
+  --marigold: #F0B657;
+  --graphite: #9A8F86;
+
+  --desk: #1A1613;
+  --chalk: #EDE6DE;
+
+  --surface: #221D19;
+  --hairline: #EDE6DE1F;
+  --wash: #EDE6DE0F;
+  --code-bg: #26201C;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-paper: var(--paper);
+  --color-ink: var(--ink);
+  --color-pen: var(--pen);
+  --color-rule: var(--rule);
+  --color-marigold: var(--marigold);
+  --color-graphite: var(--graphite);
+  --color-surface: var(--surface);
+  --color-hairline: var(--hairline);
+  --color-wash: var(--wash);
+  --color-code-bg: var(--code-bg);
+
+  --font-display: var(--font-bricolage), ui-sans-serif, system-ui, sans-serif;
+  --font-body: var(--font-figtree), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-plex-mono), ui-monospace, monospace;
+
+  --radius-input: 6px;
+  --radius-card: 8px;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+@layer base {
+  body {
+    background-color: var(--paper);
+    color: var(--ink);
+    font-family: var(--font-body);
+    font-size: 15px;
+    line-height: 24px;
+  }
+
+  *:focus-visible {
+    outline: 2px solid var(--pen);
+    outline-offset: 2px;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+/* Shiki dual-theme: emit variables only, drive with the .dark class.
+   defaultColor:'light-dark()' is media-query-driven and would ignore our class. */
+.shiki,
+.shiki span {
+  color: var(--shiki-light);
+  background-color: var(--shiki-light-bg);
+}
+
+.dark .shiki,
+.dark .shiki span {
+  color: var(--shiki-dark);
+  background-color: var(--shiki-dark-bg);
+  font-style: var(--shiki-dark-font-style);
+}
+
+/* Line numbers in the code card gutter (Shiki has no built-in transformer). */
+.shiki code {
+  counter-reset: line;
+}
+
+.shiki .line::before {
+  counter-increment: line;
+  content: counter(line);
+  display: inline-block;
+  width: 2rem;
+  margin-right: 1rem;
+  text-align: right;
+  color: var(--graphite);
+  user-select: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }
