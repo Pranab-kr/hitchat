@@ -45,6 +45,7 @@ delegate moderation to co-admins.
 |---|---|---|
 | Framework | Next.js 16.2.12, App Router | Already scaffolded; Server Actions give a server trust boundary without a separate API |
 | Database | Supabase Postgres (free tier) | Free, hosted, Realtime and pg_cron included |
+| Supabase client | `@supabase/supabase-js` only | **Not `@supabase/ssr`** — its sole job is syncing Supabase Auth cookies, and we use no Supabase Auth. `@supabase/auth-helpers-nextjs` is deprecated. |
 | Live updates | Supabase Realtime | `postgres_changes` + Presence + Broadcast, no polling |
 | Scheduled purge | Supabase `pg_cron` | Runs inside the DB; no external cron or always-on host |
 | Styling | Tailwind v4 + shadcn primitives | Primitives only, restyled by our own token layer |
@@ -68,12 +69,31 @@ which is why live updates cost us no server infrastructure.
 
 **Clients never receive `author_token_hash`.** It is withheld with a **column-level
 grant** — `grant select (id, group_id, kind, body, ...) on messages to anon` — which
-excludes the hash while leaving the base table subscribable by Realtime. A view would
-not work here: Realtime `postgres_changes` fires on base tables, so a
-view-only grant would break live updates. The hash is a stable pseudonymous identifier
-and there is no reason for every browser in the room to hold one for every
-participant. Reaction ownership ("did I react?") is resolved client-side by the
-Server Action echoing back the viewer's own reactions, never by exposing hashes.
+excludes the hash while leaving the base table subscribable by Realtime. Verified
+against Supabase's WALRUS source: `realtime.apply_rls` calls `has_column_privilege`
+per column and omits columns the subscribing role cannot select, so the hash does not
+leak through Realtime either. Two constraints follow: the **primary key must stay
+granted** (WALRUS returns 401 with no payload otherwise), and `select *` is rejected
+for column-restricted roles, so **every client query must name its columns
+explicitly**.
+
+Reaction ownership ("did I react?") is resolved by the Server Action echoing back the
+viewer's own reactions, never by exposing hashes.
+
+### Deletion is soft
+
+Supabase Realtime **cannot filter DELETE events and does not apply RLS to them** — a
+`DELETE` broadcasts to every subscriber in every room, carrying only primary keys. A
+bulk purge would therefore spam every connected client with thousands of unusable
+events.
+
+So deletion is a soft delete: `messages.deleted_at` is set by an `UPDATE`, which *is*
+filterable and RLS-respecting. Clients react to the update by replacing the row with
+"message deleted".
+
+Expiry needs no event at all — clients already know each message's `expires_at` and
+hide it locally when it passes. The `pg_cron` job then hard-deletes expired rows, by
+which point no client is displaying them. **No client ever subscribes to DELETE.**
 
 ### Next.js 16 constraints
 
@@ -148,10 +168,15 @@ Room identity is the triple department → batch → group. `groups` *is* the ro
 | `author_color` | text | derived hue, denormalized |
 | `admin_id` | uuid nullable fk → admins | non-null ⇒ SUDO badge |
 | `is_pinned` | bool default false | |
+| `deleted_at` | timestamptz nullable | soft delete; row stays until purged |
 | `created_at` | timestamptz default now() | |
 | `expires_at` | timestamptz | `created_at + interval '24 hours'` |
 
 Indexes: `(group_id, created_at desc)`, `(expires_at)`, `(group_id, lab_tag)`.
+
+Deleted messages keep their row (so the UPDATE broadcasts) but the Server Action
+blanks `body`, `code_lang`, `code_title` and `lab_tag` on delete — the content is gone
+from the database immediately, not merely hidden.
 
 ### `reactions`
 | column | type | notes |
@@ -231,11 +256,22 @@ Every message carries `expires_at = created_at + 24 hours`. A `pg_cron` job runs
 every 10 minutes:
 
 ```sql
-delete from messages where expires_at < now();
-delete from rate_events where created_at < now() - interval '5 minutes';
-delete from admin_sessions where expires_at < now();
-delete from bans where until < now();
+select cron.schedule('purge-expired', '*/10 * * * *', $$
+  delete from messages where expires_at < now();
+  delete from rate_events where created_at < now() - interval '5 minutes';
+  delete from admin_sessions where expires_at < now();
+  delete from bans where until < now();
+$$);
 ```
+
+Clients hide messages past `expires_at` locally, so the up-to-10-minute lag between
+expiry and the row's physical deletion is never visible. This is why the purge needs
+no realtime event.
+
+**If `pg_cron` turns out to be unavailable on the free tier** (unverified at design
+time), the fallback is a Vercel Cron hitting a Route Handler guarded by a secret
+header, running the same SQL. The queries are identical either way, so this is a
+deployment detail rather than a design change.
 
 **Pinned messages expire too, with no exception.** The rule is "everything vanishes in
 24 hours" with no asterisk, which is what makes it trustworthy and simple to explain.
@@ -281,10 +317,20 @@ The room header shows chips built from `lab_tag` values currently present in the
 `All · Lab 3 · Lab 4`. Selecting one filters the stream to code posts with that tag.
 Purely client-side over loaded messages.
 
+### Live updates
+Clients subscribe to two `postgres_changes` events on `messages`, both filtered to the
+current room: **INSERT** (new message) and **UPDATE** (soft delete, pin/unpin,
+reaction count change). Never DELETE, for the reason given above.
+
+Supabase Realtime auto-rejoins channels but events during a disconnect are lost, so on
+every `SUBSCRIBED` status the client refetches the recent window and reconciles by id.
+That closes the gap on both first connect and reconnect with one code path.
+
 ### Presence and typing
 Supabase Presence gives a live "N here" count in the header. Broadcast drives
 "someone is typing…" above the composer, throttled to one event per 3 seconds per
-client, never naming who.
+client, never naming who. Typing uses Broadcast rather than Presence `track()`
+because Supabase's docs warn that high-frequency `track()` floods the channel.
 
 ### Pinned messages
 Admin-pinned messages collapse into a header strip; clicking expands. Pinned messages
