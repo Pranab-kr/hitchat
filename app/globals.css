@@ -16,6 +16,10 @@
   --code-bg: #F5EFEA;
 }
 
+/* design.md names the dark background/text tokens `desk` and `chalk`. They are not
+   separate variables here: `desk` IS the dark value of `--paper` and `chalk` IS the
+   dark value of `--ink`, so `bg-paper` / `text-ink` swap automatically with the class
+   and no component ever needs a `dark:` variant just to stay readable. */
 .dark {
   --paper: #1A1613;
   --ink: #EDE6DE;
@@ -23,9 +27,6 @@
   --rule: #D9705F;
   --marigold: #F0B657;
   --graphite: #9A8F86;
-
-  --desk: #1A1613;
-  --chalk: #EDE6DE;
 
   --surface: #221D19;
   --hairline: #EDE6DE1F;
@@ -61,11 +62,14 @@
     font-size: 15px;
     line-height: 24px;
   }
+}
 
-  *:focus-visible {
-    outline: 2px solid var(--pen);
-    outline-offset: 2px;
-  }
+/* Deliberately OUTSIDE @layer base: unlayered rules beat every layered utility, so a
+   stray `focus:outline-none` cannot delete the keyboard focus ring. design.md makes
+   visible focus non-negotiable. */
+*:focus-visible {
+  outline: 2px solid var(--pen);
+  outline-offset: 2px;
 }
 
 /* Shiki dual-theme: emit variables only, drive with the .dark class.

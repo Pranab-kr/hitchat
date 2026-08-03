@@ -15,12 +15,16 @@ describe('design tokens', () => {
   })
 
   it('defines the six dark-theme tokens with exact design.md values', () => {
-    expect(css).toContain('--desk: #1A1613')
-    expect(css).toContain('--chalk: #EDE6DE')
-    expect(css).toContain('--pen: #7FB0DC')
-    expect(css).toContain('--rule: #D9705F')
-    expect(css).toContain('--marigold: #F0B657')
-    expect(css).toContain('--graphite: #9A8F86')
+    // design.md's `desk`/`chalk` are not separate variables: they are the dark values
+    // of `paper`/`ink`, overridden inside `.dark` so `bg-paper`/`text-ink` swap.
+    const dark = css.match(/\.dark\s*\{([^}]*)\}/)?.[1]
+    expect(dark).toBeDefined()
+    expect(dark).toContain('--paper: #1A1613')
+    expect(dark).toContain('--ink: #EDE6DE')
+    expect(dark).toContain('--pen: #7FB0DC')
+    expect(dark).toContain('--rule: #D9705F')
+    expect(dark).toContain('--marigold: #F0B657')
+    expect(dark).toContain('--graphite: #9A8F86')
   })
 
   it('uses class-based dark mode, not the media query', () => {
