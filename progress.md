@@ -12,16 +12,20 @@ section for the step you're on. Full protocol in `AGENTS.md`.
 
 | | |
 |---|---|
-| **Phase** | Implementing. Task 1 of 12. |
-| **Current step** | Task 1 — project setup: dependencies, design tokens, fonts, theming |
-| **Branch** | `feat/setup-tokens-theme` (from `32f140a`) |
-| **Next action** | Task 1 is in flight via a subagent. If resuming cold: read `docs/superpowers/plans/2026-08-04-hitchat-implementation.md` Task 1, check `git log` on this branch for what landed, and continue from the first unchecked step. |
-| **Blocked?** | Waiting on `SUPABASE_SERVICE_ROLE_KEY` in `.env.local` — needed from Task 2 onward, not for Task 1. |
+| **Phase** | Implementing. Task 1 of 12 done. |
+| **Current step** | — none in flight — |
+| **Branch** | `main` (clean, Task 1 merged) |
+| **Next action** | Task 2 (database schema + RLS) is **blocked** until `SUPABASE_SERVICE_ROLE_KEY` is set in `.env.local` — it is still the literal placeholder `PASTE_SERVICE_ROLE_KEY_HERE`. Get the key from the Supabase dashboard → Project Settings → API Keys → `service_role`, paste it in, then run Task 2 from `docs/superpowers/plans/2026-08-04-hitchat-implementation.md`. |
+| **Blocked?** | **Yes** — service-role key missing. Nothing past Task 1 can run without it. |
 | **Last updated** | 2026-08-04 |
 
-**Environment:** `.env.local` exists with the Supabase URL, publishable key, a
-generated `IDENTITY_PEPPER`, and a generated `OWNER_SECRET`. The service-role key is
-still a placeholder and must be pasted from the Supabase dashboard before Task 2.
+**Environment:** `.env.local` has the Supabase URL, publishable key, a generated
+`IDENTITY_PEPPER`, and a generated `OWNER_SECRET`. Only the service-role key is
+missing. `.env.local` is gitignored and verified not tracked.
+
+**Supabase project:** `hitchat` / ref `vbbinzmpnszdayrdfsle` (ap-south-1, Postgres
+17.6). Use the supabase MCP tools: `apply_migration` for migrations, `execute_sql`
+for queries. `pg_cron` 1.6.4 is confirmed available on the free tier.
 
 ---
 
@@ -47,6 +51,33 @@ unrecoverable by a fresh agent.
 ## Done
 
 Newest first. Each entry: what shipped, what deviated, what the next agent needs.
+
+### 2026-08-04 — Task 1: design tokens, fonts, theming ✅
+**Shipped:** Tailwind v4 CSS-first token layer (`app/globals.css`), the three Google
+fonts via `next/font`, `next-themes` provider, hydration-safe theme toggle, Vitest
+setup. Merged to `main` as `249e041`. Tests 4/4, eslint clean, build succeeds.
+
+**Deviations from the plan, all deliberate:**
+- **`useSyncExternalStore` instead of `useEffect(() => setMounted(true), [])`.** The
+  plan's version is an ESLint *error* under `react-hooks/set-state-in-effect` in
+  eslint-config-next 16.2.12. Extracted to `lib/use-mounted.ts` — **use that hook** for
+  any client component that must render a different value after hydration. Do not
+  reintroduce the useEffect form.
+- **`app/page.tsx` was modified** though not in the plan's file list: the Next.js
+  scaffold hardcoded `bg-zinc-50 dark:bg-black` and referenced deleted tokens, which
+  painted over the new background. Stripped to a placeholder; Task 12 replaces it.
+- **`.gitignore` gained `!.env.local.example`** — `.env*` was excluding the template.
+- **No separate `--desk`/`--chalk` variables.** design.md's dark tokens are the dark
+  *values* of `--paper`/`--ink`, overridden in `.dark`. A comment in `globals.css`
+  records this so the naming intent is not lost.
+
+**Not verified:** the browser check (paper `#FAF5F1` → `#1A1613`, no flash of wrong
+theme on reload). FOUC is a timing property and cannot be proven statically. Worth a
+manual `bun run dev` at some point.
+
+**Open Minor item for the final review:** `app/page.tsx` uses arbitrary type values
+(`text-[32px] tracking-[-0.02em]`) because no display type-scale token exists yet. If
+one is added later, that is the call site to update.
 
 ### 2026-08-04 — Implementation plan written
 **Shipped:** `docs/superpowers/plans/2026-08-04-hitchat-implementation.md` — 12 tasks,
