@@ -12,17 +12,16 @@ section for the step you're on. Full protocol in `AGENTS.md`.
 
 | | |
 |---|---|
-| **Phase** | Plan written. Implementation not started. |
-| **Current step** | — none in flight — |
-| **Branch** | `main` (clean) |
-| **Next action** | Start Task 1 from `docs/superpowers/plans/2026-08-04-hitchat-implementation.md`: `git checkout -b feat/setup-tokens-theme`, mark this file "In progress" and commit that first, then work Task 1 step by step. |
-| **Blocked?** | No |
+| **Phase** | Implementing. Task 1 of 12. |
+| **Current step** | Task 1 — project setup: dependencies, design tokens, fonts, theming |
+| **Branch** | `feat/setup-tokens-theme` (from `32f140a`) |
+| **Next action** | Task 1 is in flight via a subagent. If resuming cold: read `docs/superpowers/plans/2026-08-04-hitchat-implementation.md` Task 1, check `git log` on this branch for what landed, and continue from the first unchecked step. |
+| **Blocked?** | Waiting on `SUPABASE_SERVICE_ROLE_KEY` in `.env.local` — needed from Task 2 onward, not for Task 1. |
 | **Last updated** | 2026-08-04 |
 
-**Before Task 1 you need a Supabase project.** Create one, then copy
-`.env.local.example` to `.env.local` and fill in the URL, publishable key, service
-role key, plus a random `IDENTITY_PEPPER` (32+ chars) and an `OWNER_SECRET`.
-Task 1 creates the example file; the values are yours to supply.
+**Environment:** `.env.local` exists with the Supabase URL, publishable key, a
+generated `IDENTITY_PEPPER`, and a generated `OWNER_SECRET`. The service-role key is
+still a placeholder and must be pasted from the Supabase dashboard before Task 2.
 
 ---
 
@@ -66,9 +65,18 @@ Supabase's WALRUS source), so `author_token_hash` will not leak — but the prim
 must stay granted or Realtime returns 401 with no payload, and `select *` is rejected
 for column-restricted roles, so every client query names its columns.
 
-**Unverified, needs checking during Task 2:** whether `pg_cron` is available on the
-Supabase free tier. Fallback is a Vercel Cron hitting a Route Handler with the same
-SQL. Do not block on it.
+**Unverified, needs checking during Task 2:** ~~whether `pg_cron` is available on the
+Supabase free tier~~ — **resolved 2026-08-04: `pg_cron` 1.6.4 IS available** on the
+free tier of project `hitchat` (`vbbinzmpnszdayrdfsle`, ap-south-1, Postgres 17.6).
+No Vercel Cron fallback needed.
+
+**Supabase project:** `hitchat` / ref `vbbinzmpnszdayrdfsle`. Use the supabase MCP
+tools for migrations (`apply_migration`) and queries (`execute_sql`).
+
+**Rejected:** the Supabase quickstart's `@supabase/ssr` + `utils/supabase/middleware.ts`
+setup. That scaffolding exists solely to refresh Supabase Auth session cookies, and
+this app uses no Supabase Auth — identity is our own anonymous token, admin is our own
+signed cookie. `middleware.ts` also does not exist in Next 16 (it is `proxy.ts`).
 
 ### 2026-08-03 — Design spec approved
 **Shipped:** `docs/superpowers/specs/2026-08-03-anon-lab-chat-design.md`, `design.md`,

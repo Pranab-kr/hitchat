@@ -1442,44 +1442,62 @@ export async function deleteOwnMessage(input: {
 
 - [ ] **Step 3: Write the integration test**
 
-Create `tests/messages-action.test.ts`. These hit the real database, so they need a seeded room; the test creates and tears down its own.
+First create the shared room fixture at `tests/helpers/seed-room.ts` — Tasks 9 and 11 import the same helper, so it is written once here:
 
 ```ts
-import { describe, it, expect, beforeAll, afterAll } from 'vitest'
 import { createClient } from '@supabase/supabase-js'
 
-const db = createClient(
+export const testDb = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!,
 )
 
-let groupId: string
-let deptId: string
+export type SeededRoom = { groupId: string; deptId: string }
 
-beforeAll(async () => {
-  const { data: dept } = await db
+export async function seedRoom(): Promise<SeededRoom> {
+  const { data: dept } = await testDb
     .from('departments')
-    .insert({ name: 'Test Dept', slug: `test-${Date.now()}` })
+    .insert({ name: 'Test Dept', slug: `test-${Date.now()}-${Math.random().toString(36).slice(2, 7)}` })
     .select('id')
     .single()
-  deptId = dept!.id
 
-  const { data: batch } = await db
+  const { data: batch } = await testDb
     .from('batches')
-    .insert({ department_id: deptId, number: 1 })
+    .insert({ department_id: dept!.id, number: 1 })
     .select('id')
     .single()
 
-  const { data: group } = await db
+  const { data: group } = await testDb
     .from('groups')
     .insert({ batch_id: batch!.id, label: 'A' })
     .select('id')
     .single()
-  groupId = group!.id
+
+  return { groupId: group!.id, deptId: dept!.id }
+}
+
+// Cascades to batches, groups, messages and reactions.
+export async function teardownRoom(room: SeededRoom): Promise<void> {
+  await testDb.from('departments').delete().eq('id', room.deptId)
+}
+```
+
+Then create `tests/messages-action.test.ts`. These hit the real database and use the fixture above.
+
+```ts
+import { describe, it, expect, beforeAll, afterAll } from 'vitest'
+import { testDb as db, seedRoom, teardownRoom, type SeededRoom } from './helpers/seed-room'
+
+let room: SeededRoom
+let groupId: string
+
+beforeAll(async () => {
+  room = await seedRoom()
+  groupId = room.groupId
 })
 
 afterAll(async () => {
-  await db.from('departments').delete().eq('id', deptId)
+  await teardownRoom(room)
 })
 
 describe('sendText', () => {
@@ -1634,6 +1652,8 @@ is blanked so content leaves the database immediately."
 - Create: `components/chat/code-card.tsx`
 - Create: `components/chat/copy-button.tsx`
 - Test: `tests/highlight.test.ts`
+
+**Deliberate decision (confirmed with the project owner):** `CodeCard` is built here as a server component to prove the Shiki theme and card markup in isolation, and Task 8 replaces it with an inline client-side card once Realtime delivery requires one. The short-lived file is intentional, not an oversight — do not "fix" it by making Task 6 client-side.
 
 **Interfaces:**
 - Consumes: `ALLOWED_LANGS` (Task 4), `cn` (Task 1)
@@ -2820,7 +2840,24 @@ export async function getReactions(input: {
 
 - [ ] **Step 3: Write the test**
 
-Create `tests/reactions-action.test.ts`. Reuse the room-seeding `beforeAll`/`afterAll` from `tests/messages-action.test.ts` verbatim — the same department/batch/group setup and teardown.
+Create `tests/reactions-action.test.ts`, using the shared fixture from Task 5:
+
+```ts
+import { describe, it, expect, beforeAll, afterAll } from 'vitest'
+import { seedRoom, teardownRoom, type SeededRoom } from './helpers/seed-room'
+
+let room: SeededRoom
+let groupId: string
+
+beforeAll(async () => {
+  room = await seedRoom()
+  groupId = room.groupId
+})
+
+afterAll(async () => {
+  await teardownRoom(room)
+})
+```
 
 ```ts
 import { describe, it, expect } from 'vitest'
@@ -3533,7 +3570,7 @@ export async function banAuthor(messageId: string): Promise<ActionResult<null>> 
 
 - [ ] **Step 2: Write the test**
 
-Create `tests/moderation.test.ts`. Reuse the room-seeding `beforeAll`/`afterAll` from `tests/messages-action.test.ts`.
+Create `tests/moderation.test.ts`, using the shared fixture from Task 5 (`import { seedRoom, teardownRoom } from './helpers/seed-room'`, same `beforeAll`/`afterAll` shape as the reactions test).
 
 ```ts
 import { describe, it, expect, vi } from 'vitest'
