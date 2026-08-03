@@ -12,12 +12,17 @@ section for the step you're on. Full protocol in `AGENTS.md`.
 
 | | |
 |---|---|
-| **Phase** | Design complete. Planning not yet written. |
+| **Phase** | Plan written. Implementation not started. |
 | **Current step** | — none in flight — |
 | **Branch** | `main` (clean) |
-| **Next action** | Write `plan.md` from the approved spec, then start step 1 on branch `feat/<step-1-slug>`. |
+| **Next action** | Start Task 1 from `docs/superpowers/plans/2026-08-04-hitchat-implementation.md`: `git checkout -b feat/setup-tokens-theme`, mark this file "In progress" and commit that first, then work Task 1 step by step. |
 | **Blocked?** | No |
-| **Last updated** | 2026-08-03 |
+| **Last updated** | 2026-08-04 |
+
+**Before Task 1 you need a Supabase project.** Create one, then copy
+`.env.local.example` to `.env.local` and fill in the URL, publishable key, service
+role key, plus a random `IDENTITY_PEPPER` (32+ chars) and an `OWNER_SECRET`.
+Task 1 creates the example file; the values are yours to supply.
 
 ---
 
@@ -43,6 +48,27 @@ unrecoverable by a fresh agent.
 ## Done
 
 Newest first. Each entry: what shipped, what deviated, what the next agent needs.
+
+### 2026-08-04 — Implementation plan written
+**Shipped:** `docs/superpowers/plans/2026-08-04-hitchat-implementation.md` — 12 tasks,
+each with exact file paths, failing test first, complete code, and a verification step.
+
+**Two design changes came out of verifying library APIs against live docs:**
+- **Deletion is now soft.** Supabase Realtime cannot filter DELETE events and does not
+  apply RLS to them, so the bulk expiry purge would have broadcast thousands of bare
+  primary keys to every client in every room. Deletion sets `deleted_at` via UPDATE
+  (filterable, RLS-respecting) and blanks the body. **Never subscribe to DELETE.**
+- **`@supabase/ssr` is not used.** Its only job is syncing Supabase Auth cookies and
+  this app has no Supabase Auth. Plain `@supabase/supabase-js`.
+
+**Also confirmed:** column-level grants *do* apply to Realtime payloads (verified in
+Supabase's WALRUS source), so `author_token_hash` will not leak — but the primary key
+must stay granted or Realtime returns 401 with no payload, and `select *` is rejected
+for column-restricted roles, so every client query names its columns.
+
+**Unverified, needs checking during Task 2:** whether `pg_cron` is available on the
+Supabase free tier. Fallback is a Vercel Cron hitting a Route Handler with the same
+SQL. Do not block on it.
 
 ### 2026-08-03 — Design spec approved
 **Shipped:** `docs/superpowers/specs/2026-08-03-anon-lab-chat-design.md`, `design.md`,
