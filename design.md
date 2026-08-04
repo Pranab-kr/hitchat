@@ -35,7 +35,7 @@ need a shade, derive it from an existing token with opacity.
 | `pen` | `#2C5F8F` | primary buttons, links, focus ring, own-message accent |
 | `rule` | `#C8503F` | code-card margin rule, destructive actions |
 | `marigold` | `#E5A03A` | SUDO badge, pinned strip — nothing else |
-| `graphite` | `#6E645C` | timestamps, handles, meta, faded text |
+| `graphite` | `#6E645C` | timestamps, meta, faded text |
 
 ### Dark
 
@@ -48,7 +48,52 @@ need a shade, derive it from an existing token with opacity.
 | `marigold` | `#F0B657` | as above |
 | `graphite` | `#9A8F86` | as above |
 
+### Author colors
+
+Handles are **derived** from a hashed token, never chosen, so this palette is a
+lookup table indexed by a hash slice — not a set of options anyone picks from.
+
+**One job: telling speakers apart in a busy stream.** Nothing else uses these. They
+are not a general-purpose accent set, and reaching for one to decorate a button or a
+border defeats the point — the moment these appear outside a handle, a colored name
+stops meaning "a specific person".
+
+| # | Name | Light | Dark |
+|---|---|---|---|
+| 1 | rust | `#873C1D` | `#E49F81` |
+| 2 | olive | `#6B6424` | `#C9BF5E` |
+| 3 | fern | `#42602E` | `#8CB96E` |
+| 4 | jade | `#257E44` | `#59CF82` |
+| 5 | teal | `#2E5B60` | `#6EB2B9` |
+| 6 | cobalt | `#2064B6` | `#498CDF` |
+| 7 | violet | `#6B30A6` | `#A371D6` |
+| 8 | magenta | `#8E295C` | `#D16199` |
+
+**Why these exact values.** Three properties were verified numerically, not by eye,
+and any replacement must be re-verified the same way:
+
+- **Every swatch clears WCAG AA (4.5:1)** against its own theme's background. The
+  tightest is jade on `paper` at 4.68:1.
+- **Every swatch sits at least 20 ΔE from `pen`, `rule`, `marigold`, and `graphite`**
+  in *both* themes. This is the constraint that matters most: a handle tinted near
+  `pen` reads as a link, near `rule` as a destructive control, and near `marigold` as
+  **an admin**. `marigold` is excluded outright — no handle may ever be mistaken for a
+  SUDO badge.
+- **The closest two author colors are 19.4 ΔE apart**, so two people in one room stay
+  distinguishable.
+
+**The set skews cool** — one warm slot against three cool ones. That is a direct
+consequence of `rule` owning red-orange and `marigold` owning amber; the warm band is
+genuinely occupied. Widening it means changing what those tokens own, which is a
+deliberate decision to make on its own, not a side effect of adding an author.
+
+**Handle names carry no color word.** The name and the color come from different
+slices of the same hash, so an adjective like "Amber" would eventually render in
+violet and contradict itself. Adjectives describe texture or quality instead.
+
 ### Derived surfaces
+
+
 
 | Purpose | Light | Dark |
 |---|---|---|
@@ -61,6 +106,7 @@ need a shade, derive it from an existing token with opacity.
 
 - **`marigold` is reserved.** It appears only on the SUDO badge and the pinned strip.
   The moment it decorates something ordinary, admin presence stops being scannable.
+  It is excluded from the author palette for the same reason.
 - **`pen` carries all interactivity.** Every focusable thing gets a `pen` focus ring,
   2px, 2px offset. No exceptions.
 - **`rule` means margin or danger.** The code-card rule and destructive buttons. Never

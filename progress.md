@@ -12,10 +12,10 @@ section for the step you're on. Full protocol in `AGENTS.md`.
 
 | | |
 |---|---|
-| **Phase** | Implementing. Tasks 1–2 of 12 done. Task 3 in flight. |
-| **Current step** | **Task 3 — anonymous identity** |
+| **Phase** | Implementing. Tasks 1–2 of 12 done. Task 3 built, awaiting owner confirmation before merge. |
+| **Current step** | **Task 3 — anonymous identity** (built, not merged) |
 | **Branch** | `feat/anon-identity` |
-| **Next action** | Build Task 3 from `docs/superpowers/plans/2026-08-04-hitchat-implementation.md` (line 800): `tests/identity.test.ts`, `lib/identity.ts`, `lib/supabase/admin.ts`, `lib/supabase/browser.ts`, `lib/result.ts`, and `bun add server-only`. **First** resolve the author-color question below — the palette must land in `design.md` before `lib/identity.ts` references any hex. |
+| **Next action** | Owner confirms the Task 3 diff. On approval: merge to `main`, delete the branch, then start Task 4 (validation and rate limiting, plan line 1025) on `feat/<task-4-slug>`. |
 | **Blocked?** | No. |
 | **Last updated** | 2026-08-04 |
 
@@ -54,7 +54,50 @@ unrecoverable by a fresh agent.
 
 Newest first. Each entry: what shipped, what deviated, what the next agent needs.
 
+### 2026-08-04 — Task 3: anonymous identity ✅ (built, not merged)
+**Shipped:** `lib/identity.ts`, `lib/supabase/admin.ts`, `lib/supabase/browser.ts`,
+`lib/result.ts`, `tests/identity.test.ts`, an **Author colors** section in `design.md`,
+`--author-1..8` in `app/globals.css`, and the `server-only` dependency. Tests 26/26,
+eslint clean, `tsc --noEmit` clean, `bun run build` succeeds.
+
+**Verified, not just written:**
+- The `server-only` guard genuinely fires: a throwaway `'use client'` page importing
+  `lib/identity.ts` fails the build with "This API is only available in Server
+  Components". The probe route was deleted after the check. The service-role key
+  cannot reach the browser by accident.
+- All 8 author colors clear WCAG AA on their own background (worst: jade 4.68:1),
+  sit >=20 deltaE from `pen`/`rule`/`marigold`/`graphite` in **both** themes, and are
+  >=19.4 deltaE apart from each other. Checked numerically, not by eye.
+
+**Deviations from the plan, all deliberate:**
+- **The plan's 8 author colors were replaced.** Five of them (`#3F7F6B`, `#7A5C9E`,
+  `#B0623A`, `#4A7BA7`, `#8F5A5A`) exist nowhere in `design.md`, and `AGENTS.md`
+  forbids inventing colors. The other three were `pen`, `rule`, and `marigold` — all
+  reserved, and a **marigold handle would read as a SUDO admin**. Owner approved a
+  purpose-built palette instead; it is now `design.md` § Author colors, which is the
+  source of truth. `AUTHOR_COLORS` in `lib/identity.ts` mirrors the light column.
+- **`design.md` line 38 changed:** `graphite` no longer lists "handles" as its job.
+- **The plan's `ADJECTIVES` list was replaced.** It was color words (`Teal`, `Amber`,
+  `Cobalt`, `Rust`…), but name and color derive from *different* hash slices, so
+  "Amber Otter" would render violet. Now texture/quality words. A test enforces this.
+- **`vitest.config.ts` aliases `server-only` to its own `empty.js`.** That package's
+  main entry is a bare `throw`; Next resolves the empty `react-server` condition when
+  bundling for the server, but vitest sets no such condition, so every server module
+  would throw on import. The alias reproduces server resolution **in tests only** —
+  the real build guard is untouched, as the probe above confirms.
+- **Four tests added beyond the plan's eight:** pepper-changes-hash, throws-without-
+  pepper, palette-membership over 500 users, no-color-word-adjectives, and full-palette
+  spread. The palette ones are what stop a future edit from silently reintroducing a
+  marigold handle.
+
+**Next agent needs to know:** author colors come from `design.md` § Author colors and
+nowhere else. Adding or changing one requires redoing the contrast **and** the deltaE
+separation check against the reserved tokens in both themes — a swatch that merely
+"looks fine" can still read as a link or an admin badge.
+
 ### 2026-08-04 — Task 2: database schema + RLS ✅
+
+
 **Shipped:** `supabase/migrations/0001_schema.sql`, `0002_grants_rls.sql`,
 `0003_realtime_cron.sql`, `lib/columns.ts`, `tests/rls.test.ts`. All three migrations
 are **applied to the live project** `vbbinzmpnszdayrdfsle` via the supabase MCP
@@ -193,25 +236,10 @@ column-level grant. Test that before trusting anything else.
 
 ## In progress
 
-- **Step:** Task 3 — anonymous identity, from
-  `docs/superpowers/plans/2026-08-04-hitchat-implementation.md` (line 800)
+- **Step:** Task 3 — anonymous identity. Code complete and verified; **not merged.**
 - **Branch:** `feat/anon-identity`
-- **Done so far:** nothing but this marker.
-- **Immediately next:** draft the author-color palette into `design.md` (see below),
-  get it approved, then write `tests/identity.test.ts`.
-
-**Blocking decision resolved by the owner (2026-08-04): author colors get their own
-palette in `design.md`.** The plan's Task 3 hardcodes eight author colors, but only
-three of them (`#2C5F8F` `pen`, `#C8503F` `rule`, `#E5A03A` `marigold`) exist in
-`design.md` — **the other five are invented**, which `AGENTS.md` forbids outright. The
-three that do exist are already reserved for other jobs, and `marigold` in particular is
-SUDO-only, so a marigold handle would read as an admin. Meanwhile `design.md` line 38
-assigns handles to `graphite`.
-
-The owner chose: add a proper **Author colors** section to `design.md` as its own token
-group with a stated job, contrast-checked against both `paper` and `desk`, marigold
-excluded. **The palette must be approved before `lib/identity.ts` uses any hex.** Do not
-paste the plan's eight colors in as-is — that is the thing being corrected.
+- **Immediately next:** owner reviews the diff. On approval, merge to `main`, delete
+  the branch, and start Task 4 (validation and rate limiting, plan line 1025).
 
 **The RLS test is the most important test in the whole suite.** If any assertion in
 `tests/rls.test.ts` fails, fix the migration — do not weaken the test.
@@ -231,6 +259,24 @@ group. See the Deviations section.
 
 Anything built differently from `plan.md`, and why. Silence about a known deviation is
 how the next agent undoes your work.
+
+### 2026-08-04 — Author colors are a `design.md` token group, not the plan's hexes
+
+Task 3 in the plan hardcodes eight author colors. Five are invented (`AGENTS.md`:
+"No new colors"), and the other three are `pen`, `rule`, and `marigold` — each already
+reserved for another job. A marigold handle in particular would read as a SUDO admin,
+defeating the one thing `marigold` exists to signal.
+
+Owner approved replacing them with a purpose-built palette, now `design.md` § Author
+colors. `lib/identity.ts` mirrors the light column as `AUTHOR_COLORS`; the dark column
+is `--author-1..8` in `globals.css`.
+
+Constraints any future change must re-satisfy, all machine-checked:
+- WCAG AA (>=4.5:1) against its own theme background.
+- >=20 deltaE from `pen`, `rule`, `marigold`, `graphite` — in **both** themes.
+- >=18 deltaE from every other author color.
+
+`design.md` line 38 also changed: `graphite` no longer claims "handles".
 
 ### 2026-08-04 — Room hierarchy gained a **year** level (commit `08774ee`)
 

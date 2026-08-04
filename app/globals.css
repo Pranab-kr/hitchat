@@ -14,6 +14,16 @@
   --hairline: #241E1A1A;
   --wash: #241E1A0A;
   --code-bg: #F5EFEA;
+
+  /* Author handles only. Indexed by hash in lib/identity.ts. */
+  --author-1: #873C1D;
+  --author-2: #6B6424;
+  --author-3: #42602E;
+  --author-4: #257E44;
+  --author-5: #2E5B60;
+  --author-6: #2064B6;
+  --author-7: #6B30A6;
+  --author-8: #8E295C;
 }
 
 /* design.md names the dark background/text tokens `desk` and `chalk`. They are not
@@ -32,6 +42,15 @@
   --hairline: #EDE6DE1F;
   --wash: #EDE6DE0F;
   --code-bg: #26201C;
+
+  --author-1: #E49F81;
+  --author-2: #C9BF5E;
+  --author-3: #8CB96E;
+  --author-4: #59CF82;
+  --author-5: #6EB2B9;
+  --author-6: #498CDF;
+  --author-7: #A371D6;
+  --author-8: #D16199;
 }
 
 @theme inline {
@@ -45,6 +64,14 @@
   --color-hairline: var(--hairline);
   --color-wash: var(--wash);
   --color-code-bg: var(--code-bg);
+  --color-author-1: var(--author-1);
+  --color-author-2: var(--author-2);
+  --color-author-3: var(--author-3);
+  --color-author-4: var(--author-4);
+  --color-author-5: var(--author-5);
+  --color-author-6: var(--author-6);
+  --color-author-7: var(--author-7);
+  --color-author-8: var(--author-8);
 
   --font-display: var(--font-bricolage), ui-sans-serif, system-ui, sans-serif;
   --font-body: var(--font-figtree), ui-sans-serif, system-ui, sans-serif;
