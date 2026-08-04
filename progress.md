@@ -12,10 +12,10 @@ section for the step you're on. Full protocol in `AGENTS.md`.
 
 | | |
 |---|---|
-| **Phase** | Implementing. Tasks 1–5 of 12 done. |
-| **Current step** | **Task 6 — Shiki code rendering** — in progress |
-| **Branch** | `feat/shiki-code-card` |
-| **Next action** | Build Task 6 from `docs/superpowers/plans/2026-08-04-hitchat-implementation.md` (line 1664): create `lib/shiki-theme.ts`, `lib/highlight.ts`, `components/chat/copy-button.tsx`, `components/chat/code-card.tsx`, `tests/highlight.test.ts`. Then Task 7 (line 1917). Do **not** re-apply migrations 0001–0004 — they are already live on project `vbbinzmpnszdayrdfsle`. |
+| **Phase** | Implementing. Tasks 1–6 of 12 done. |
+| **Current step** | **Task 7 — room page, message list, live updates** — not yet started |
+| **Branch** | `feat/shiki-code-card` (about to merge to `main`) |
+| **Next action** | Start Task 7 from `docs/superpowers/plans/2026-08-04-hitchat-implementation.md` (line 1917): `git checkout -b feat/room-live-updates`, set this file to "In progress" and commit that first, then build. Do **not** re-apply migrations 0001–0004 — they are already live on project `vbbinzmpnszdayrdfsle`. |
 | **Blocked?** | No. |
 | **Last updated** | 2026-08-04 |
 
@@ -53,6 +53,53 @@ unrecoverable by a fresh agent.
 ## Done
 
 Newest first. Each entry: what shipped, what deviated, what the next agent needs.
+
+### 2026-08-04 — Task 6: Shiki code rendering ✅
+**Shipped:** `lib/shiki-theme.ts`, `lib/highlight.ts`, `components/chat/copy-button.tsx`,
+`components/chat/code-card.tsx`, `tests/highlight.test.ts`. Tests 57/57, eslint clean,
+`tsc --noEmit` clean, `bun run build` succeeds. No migration in this task.
+
+**The Oniguruma wasm import builds fine under Turbopack.** The plan's contingency
+(`serverExternalPackages: ['shiki']` in `next.config.ts`) was **not** needed and was not
+added. Verified with `CodeCard` actually imported by a route — an unimported server
+component never gets bundled, so building without a call site proves nothing.
+
+**Verified in a real browser, not just by build success.** A temporary `app/probe/page.tsx`
+rendered three cards (short C, 22-line C, hostile plaintext) plus a `.dark`-scoped copy,
+screenshotted headless Firefox, and was deleted afterwards. The rule runs full height,
+line numbers land in the gutter, the long card collapses, and the dark card recolors
+syntax from the same HTML — proving the `.dark` class drives it rather than a media query.
+
+**Verified by mutation:** replacing the `safeLang` fallback in `lib/highlight.ts` with a
+bare `const safeLang = lang` makes the unknown-language test fail with a real
+`ShikiError`. The guard is genuinely covered, not incidentally passing.
+
+**Deviations from the plan, all three found by looking at the rendered page:**
+- **The plan's XSS assertion was wrong about the entity.** It expected `&lt;script&gt;`;
+  Shiki 4 emits the hex form `&#x3C;script>`. The test as written **failed against
+  correct, safe output**. It now asserts the property — no raw `<` survives in the text
+  content, and no `<script`/`<img` anywhere — plus one spelling check, and the input
+  covers `&` and an `onerror` attribute as well.
+- **`<details>` is now rendered only when the body is long.** The plan always emits
+  `<details>` and makes `<summary>` conditional, but a `<details>` with no `<summary>`
+  child gets the browser's **default "▼ Details" marker** — visible on every short card
+  in the screenshot. Short cards render the body directly.
+  `[&::-webkit-details-marker]:hidden` covers Safari on the long card.
+- **The copy button's `⧉` (U+29C9) is an inline SVG, not the character.** design.md
+  prescribes `⧉ copy`, and it rendered as **tofu**. Measured: U+29C9 is in **0 of the 30
+  bundled font files** and **no monospace family** on this system (`fc-list` finds 5
+  fonts total). The SVG is the same two-overlapping-squares mark with no font dependency.
+  `✓` (285 fonts), `⌄` and `⌃` (210+) are fine and were left as characters.
+- **`CopyButton` wraps `navigator.clipboard.writeText` in try/catch.** It rejects in an
+  insecure context or on a denied permission, and the plan's version would flip the label
+  to "✓ copied" after an unhandled rejection — claiming a copy that never happened.
+- Used the `rounded-card` token instead of the plan's arbitrary `rounded-[8px]`; they are
+  the same 8px, but the token already exists in `globals.css`.
+
+**Next agent needs to know:** `CodeCard` is a **server** component and Task 8 replaces it
+with an inline client-side card — that is deliberate, per the plan, not an oversight. Also:
+before adding any new glyph to the UI, check `fc-list :charset=<hex>` first. Three of the
+characters in design.md's mockups are essentially unavailable in monospace on Linux.
 
 ### 2026-08-04 — Task 5: message Server Actions ✅
 **Shipped:** `lib/guards.ts`, `app/actions/messages.ts`, `tests/helpers/seed-room.ts`,
@@ -314,16 +361,11 @@ column-level grant. Test that before trusting anything else.
 
 ## In progress
 
-**Task 6 — Shiki code rendering, on `feat/shiki-code-card`.** Nothing built yet at the
-time of this commit. Files to create, in order: `lib/shiki-theme.ts` (TextMate themes
-from `design.md` tokens only), `lib/highlight.ts` (module-level singleton
-`createHighlighterCore`), `tests/highlight.test.ts`, `components/chat/copy-button.tsx`,
-`components/chat/code-card.tsx`. Then `bun run build` and a browser check.
+*Nothing. Task 6 is merged; Task 7 has not been started.*
 
-**`CodeCard` in Task 6 is deliberately short-lived.** It is a *server* component so the
-Shiki theme and card markup can be proven in isolation. Task 8 replaces it with an
-inline client-side card once Realtime delivery requires one. Do not "fix" Task 6 by
-making it client-side.
+**Check `fc-list :charset=<hex>` before shipping any new glyph.** design.md's mockups use
+several characters that are missing from every bundled font and from monospace on Linux —
+U+29C9 `⧉` was one, and it shipped as tofu until a screenshot caught it.
 
 **Guard order is load-bearing: ban → lock → validate → rate limit.** The rate check
 *records* an event, so a message rejected for length must not consume the user's quota.
