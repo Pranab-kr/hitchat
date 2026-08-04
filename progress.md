@@ -12,16 +12,18 @@ section for the step you're on. Full protocol in `AGENTS.md`.
 
 | | |
 |---|---|
-| **Phase** | Implementing. Task 1 of 12 done. |
-| **Current step** | — none in flight — |
-| **Branch** | `main` (clean, Task 1 merged) |
-| **Next action** | Task 2 (database schema + RLS) is **blocked** until `SUPABASE_SERVICE_ROLE_KEY` is set in `.env.local` — it is still the literal placeholder `PASTE_SERVICE_ROLE_KEY_HERE`. Get the key from the Supabase dashboard → Project Settings → API Keys → `service_role`, paste it in, then run Task 2 from `docs/superpowers/plans/2026-08-04-hitchat-implementation.md`. |
-| **Blocked?** | **Yes** — service-role key missing. Nothing past Task 1 can run without it. |
+| **Phase** | Implementing. Task 1 of 12 done, Task 2 in flight. |
+| **Current step** | **Task 2 — database schema + RLS** |
+| **Branch** | `feat/db-schema-rls` |
+| **Next action** | Run Task 2 from `docs/superpowers/plans/2026-08-04-hitchat-implementation.md` start to finish: write `supabase/migrations/0001_schema.sql`, `0002_grants_rls.sql`, `0003_realtime_cron.sql`, apply each via the supabase MCP `apply_migration` tool against project `vbbinzmpnszdayrdfsle`, create `lib/columns.ts`, then write and run `tests/rls.test.ts`. |
+| **Blocked?** | No. |
 | **Last updated** | 2026-08-04 |
 
-**Environment:** `.env.local` has the Supabase URL, publishable key, a generated
-`IDENTITY_PEPPER`, and a generated `OWNER_SECRET`. Only the service-role key is
-missing. `.env.local` is gitignored and verified not tracked.
+**Environment:** `.env.local` is complete — Supabase URL, publishable key,
+`SUPABASE_SERVICE_ROLE_KEY`, a generated `IDENTITY_PEPPER`, and a generated
+`OWNER_SECRET`. It is gitignored and verified not tracked. The secret key was pasted
+into a chat transcript on 2026-08-04 and **should be rotated** in the Supabase
+dashboard before this goes anywhere public.
 
 **Supabase project:** `hitchat` / ref `vbbinzmpnszdayrdfsle` (ap-south-1, Postgres
 17.6). Use the supabase MCP tools: `apply_migration` for migrations, `execute_sql`
@@ -134,13 +136,19 @@ column-level grant. Test that before trusting anything else.
 
 ## In progress
 
-*Nothing in flight.*
+- **Step:** Task 2 — database schema + RLS, from
+  `docs/superpowers/plans/2026-08-04-hitchat-implementation.md`
+- **Branch:** `feat/db-schema-rls`
+- **Done so far:** nothing but this marker. No migrations written, none applied.
+- **Immediately next:** write `supabase/migrations/0001_schema.sql` exactly as Task 2
+  Step 1 specifies (ten tables, `years` included).
 
-When you start a step, replace this with:
-- **Step:** name, from `plan.md`
-- **Branch:** `feat/...`
-- **Done so far:** files touched, what works
-- **Immediately next:** the exact next edit
+**The RLS test is the most important test in the whole suite.** If any assertion in
+`tests/rls.test.ts` fails, fix the migration — do not weaken the test and do not move
+on to Task 3.
+
+**Schema note that supersedes older text in this file:** the room hierarchy is now
+four levels — department → **year** → batch → group. See the Deviations section.
 
 ---
 
@@ -155,7 +163,23 @@ When you start a step, replace this with:
 Anything built differently from `plan.md`, and why. Silence about a known deviation is
 how the next agent undoes your work.
 
-*None yet.*
+### 2026-08-04 — Room hierarchy gained a **year** level (commit `08774ee`)
+
+The spec and plan originally scoped rooms as department → batch → group. They now read
+department → **year** → batch → group. Requested by the project owner; caught before
+Task 2 wrote any SQL, so there is no migration to rewrite.
+
+- `years` is its **own table**, not a column on `batches`: the owner can then create an
+  empty year up front, and every level of the tree keeps the same CRUD shape.
+- `years.number` is `check (number between 1 and 5)` — 5 covers integrated courses.
+- `batches.year_id` replaces `batches.department_id`; the unique key is
+  `(year_id, number)`.
+- Room URLs are now `/c/[dept]/[year]/[batch]/[group]`, e.g. `/c/cse/3/2/a`.
+- `createYear({ departmentId, number })` is new in `app/actions/structure.ts`;
+  `createBatch` takes `yearId`, not `departmentId`.
+
+Both `docs/superpowers/specs/2026-08-03-anon-lab-chat-design.md` and the plan were
+updated together. **Any file still assuming three levels is stale — trust the spec.**
 
 ---
 
