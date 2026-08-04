@@ -13,9 +13,9 @@ section for the step you're on. Full protocol in `AGENTS.md`.
 | | |
 |---|---|
 | **Phase** | Implementing. Tasks 1–7 of 12 done. |
-| **Current step** | **Task 8 — composer, anonymous token, code rendering in the stream** — not yet started |
-| **Branch** | `main` |
-| **Next action** | Start Task 8 from `docs/superpowers/plans/2026-08-04-hitchat-implementation.md` (line 2317): `git checkout -b feat/composer`, set this file to "In progress" and commit that first, then build. Do **not** re-apply migrations 0001–0004 — they are already live on project `vbbinzmpnszdayrdfsle`. |
+| **Current step** | **Task 8 — composer, anonymous token, code rendering in the stream** — IN PROGRESS on `feat/composer` |
+| **Branch** | `feat/composer` |
+| **Next action** | Continue Task 8 from `docs/superpowers/plans/2026-08-04-hitchat-implementation.md` (line 2317). Files to create: `lib/use-anon-token.ts`, `app/actions/highlight.ts`, `components/chat/composer.tsx`, `components/chat/code-composer.tsx`, `tests/use-anon-token.test.ts`; modify `components/chat/message-row.tsx`, `message-list.tsx`, `code-card.tsx`, and the room page. Do **not** re-apply migrations 0001–0004 — they are already live on project `vbbinzmpnszdayrdfsle`. |
 | **Blocked?** | No. |
 | **Last updated** | 2026-08-04 |
 
@@ -440,7 +440,13 @@ column-level grant. Test that before trusting anything else.
 
 ## In progress
 
-*Nothing. Task 7 is merged; Task 8 has not been started.*
+**Task 8 — composer, anonymous token, code rendering in the stream** on `feat/composer`.
+Started 2026-08-04. Nothing built yet at the time of writing; if you find this line and
+the branch has code on it, read the diff before assuming anything is missing.
+
+Nine problems were identified in the planned code for Tasks 8 and 9 before starting.
+They are recorded under **Deviations from plan** → *Task 8/9 planned code corrections*.
+Do not "restore" the plan's version of any of them without re-reading that section.
 
 **Never render a stored `author_color` inline.** It is the light-theme hex; all eight fail
 WCAG AA on the dark background. Use `authorColorVar()` from `lib/author-color.ts`.
@@ -484,6 +490,38 @@ group. See the Deviations section.
 
 Anything built differently from `plan.md`, and why. Silence about a known deviation is
 how the next agent undoes your work.
+
+### 2026-08-04 — Task 8/9 planned code corrections (recorded before building)
+
+Nine problems in the plan's code for Tasks 8 and 9, each one a case of the plan
+contradicting its own verification step. Recorded here first so a session that dies
+mid-task does not lose the analysis.
+
+**Task 8**
+1. `useAnonToken` mints in `useEffect` + `setToken`. That is an eslint **error** under
+   `react-hooks/set-state-in-effect` — the same rule Tasks 1 and 7 hit. Use the
+   `useSyncExternalStore` form, alongside `lib/use-mounted.ts`.
+2. Step 8 deletes `code-card.tsx` and inlines a card that drops the `>15 lines`
+   collapse Task 6 built and verified, and reverts `rounded-card` to `rounded-[8px]`.
+   Keep `CodeCard` and make it a presentational client component instead.
+3. Highlighting only in an effect means the server-rendered first 100 messages show
+   empty code boxes until JS runs — Task 7 bug #2 all over again. Pre-render on the
+   server and let the effect cover only Realtime arrivals.
+4. `renderCode` is an unauthenticated Server Action taking unbounded input. Needs the
+   same length and language guards as `postCode`.
+5. `maxLength={1000}` on the composer input makes step 10's own check #4 (paste 1,001
+   chars, see the over-length message) impossible to trigger.
+
+**Task 9**
+6. Reactions never update live. `Reactions` seeds state from props and nothing calls
+   `getReactions`; the `reaction_bump` UPDATE carries no counts. Step 7's "second
+   window sees the count change" cannot pass as written.
+7. The reply preview uses `style={{ color: replyTo.author_color }}` — the stored light
+   hex. All eight fail WCAG AA on the dark background. Must use `authorColorVar()`.
+8. `onJumpTo` is referenced but never defined, and no UI creates a reply, so the
+   reply half of step 7 is untestable.
+9. The tests reuse the literal token `'reactor'` across several posts. Per Task 5 that
+   exhausts its own rate quota on a second run inside the window.
 
 ### 2026-08-04 — Author colors are a `design.md` token group, not the plan's hexes
 
