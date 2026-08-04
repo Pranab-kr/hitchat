@@ -12,17 +12,10 @@ const ANIMALS = [
   'Tapir', 'Ibis', 'Shrew', 'Civet', 'Kite', 'Vole', 'Hare', 'Newt',
 ] as const
 
-// design.md § Author colors. Changing one means redoing its contrast and separation checks.
-export const AUTHOR_COLORS = [
-  '#873C1D', // rust
-  '#6B6424', // olive
-  '#42602E', // fern
-  '#257E44', // jade
-  '#2E5B60', // teal
-  '#2064B6', // cobalt
-  '#6B30A6', // violet
-  '#8E295C', // magenta
-] as const
+// design.md § Author colors. Defined in lib/author-color.ts so client components can
+// resolve a stored hex to its theme-aware variable without importing this server module.
+export { AUTHOR_COLORS } from './author-color'
+import { AUTHOR_COLORS } from './author-color'
 
 export function hashToken(token: string): string {
   const pepper = process.env.IDENTITY_PEPPER

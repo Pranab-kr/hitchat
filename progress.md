@@ -12,10 +12,10 @@ section for the step you're on. Full protocol in `AGENTS.md`.
 
 | | |
 |---|---|
-| **Phase** | Implementing. Tasks 1–6 of 12 done. |
-| **Current step** | **Task 7 — room page, message list, live updates** — in progress |
-| **Branch** | `feat/room-live-updates` |
-| **Next action** | Build Task 7 from `docs/superpowers/plans/2026-08-04-hitchat-implementation.md` (line 1917): create `lib/types.ts`, `tests/age.test.ts`, `lib/age.ts`, `lib/use-realtime-messages.ts`, `components/chat/message-row.tsx`, `components/chat/message-list.tsx`, `app/c/[dept]/[year]/[batch]/[group]/page.tsx`. Then seed a room and verify live updates in two browser windows. Do **not** re-apply migrations 0001–0004 — they are already live on project `vbbinzmpnszdayrdfsle`. |
+| **Phase** | Implementing. Tasks 1–7 of 12 done. |
+| **Current step** | **Task 8 — composer, anonymous token, code rendering in the stream** — not yet started |
+| **Branch** | `main` |
+| **Next action** | Start Task 8 from `docs/superpowers/plans/2026-08-04-hitchat-implementation.md` (line 2317): `git checkout -b feat/composer`, set this file to "In progress" and commit that first, then build. Do **not** re-apply migrations 0001–0004 — they are already live on project `vbbinzmpnszdayrdfsle`. |
 | **Blocked?** | No. |
 | **Last updated** | 2026-08-04 |
 
@@ -53,6 +53,85 @@ unrecoverable by a fresh agent.
 ## Done
 
 Newest first. Each entry: what shipped, what deviated, what the next agent needs.
+
+### 2026-08-04 — Task 7: room page, message list, live updates ✅
+**Shipped:** `lib/types.ts`, `lib/age.ts`, `lib/author-color.ts`, `lib/use-now.ts`,
+`lib/use-realtime-messages.ts`, `components/chat/message-row.tsx`,
+`components/chat/message-list.tsx`, `app/c/[dept]/[year]/[batch]/[group]/page.tsx`,
+`tests/age.test.ts`, `tests/realtime.test.ts`. Tests 66/66, eslint clean,
+`tsc --noEmit` clean, `bun run build` succeeds. No migration in this task.
+
+**The plan's Step 10 acceptance test passes, measured.** Two independent browser contexts
+on `/c/cse/3/2/a`; a service-role INSERT appeared in **both windows in 214ms with no
+refresh**, and a soft delete (`deleted_at` + blanked body) flipped both to "message
+deleted" in **212ms**. Seeded room and all probe rows deleted afterwards — departments,
+years, batches, groups, messages, rate_events and bans are all back to 0.
+
+**Three real bugs in the planned code, all found by looking at the running page:**
+
+1. **Author handles failed WCAG AA on every color in dark mode.** `messages.author_color`
+   stores the **light** hex, and the plan inlines it as `style={{ color: ... }}` in both
+   themes. Measured against the dark background `#1A1613`: **2.22–3.55:1 for all eight**,
+   floor is 4.5. Task 3 had already created `--author-1..8` with a dark column for exactly
+   this reason and the plan did not use it. New `lib/author-color.ts` owns the palette and
+   maps a stored hex to `var(--author-N)`; `lib/identity.ts` re-exports from it so there is
+   still one definition. Verified in-browser: handles now resolve to the dark column
+   (e.g. `#59CF82`, 5.03–9.50:1).
+2. **Every message was invisible without JavaScript, and until hydration with it.**
+   `motion.div initial={{opacity:0}}` server-renders `style="opacity:0"`, so SSR'd content
+   never becomes visible unless JS runs. Measured with JS disabled: **all four message rows
+   computed `opacity: 0`** while the one non-animated row (the deleted-message branch, which
+   returns before `motion.div`) rendered fine — that asymmetry is what gave it away.
+   `initial` is now gated on `useMounted()` (the Task 1 hook), so the enter animation only
+   applies to messages that arrive after hydration. Re-measured with JS off: all rows
+   `opacity: 1`, and SSR emits zero `opacity:0` wrappers.
+3. **A non-numeric year or batch in the URL was a 500, not a 404.** `Number('abc')` is
+   `NaN` and `.eq('number', NaN)` makes PostgREST return 400. The page now `notFound()`s on
+   a non-integer segment before querying. Verified: `/c/cse/abc/2/a` → 404,
+   `/c/nope/3/2/a` → 404, `/c/cse/3/2/a` → 200.
+
+**Other deviations:**
+- **`Date.now()` in the `MessageList` render body is an eslint *error*** under
+  `react-hooks/purity` in eslint-config-next 16.2.12 — the same class of problem Task 1 hit.
+  Extracted to `lib/use-now.ts`, which also fixes a real behavior gap: a render-time
+  snapshot only re-evaluates expiry when something else re-renders, so an expiring message
+  would linger until the next unrelated update. It now ticks every 30s.
+- **`as Message[]` does not compile.** `MESSAGE_COLUMNS` is a runtime string, so PostgREST
+  infers `GenericStringError[]` and TS rejects the direct cast; it needs
+  `as unknown as Message[]`. Applies to both the page and the hook.
+- **`tests/realtime.test.ts` is new — the plan had no test for the socket at all**, only a
+  manual two-window check. Three live tests with the **publishable** key: INSERT is
+  delivered and its payload contains **exactly `MESSAGE_COLUMNS` and no
+  `author_token_hash`** (column grants apply over the socket, which the plan asserted from
+  reading Supabase's source but never verified); a soft delete arrives as **UPDATE with zero
+  DELETE events**; and a message in another group is **not** delivered.
+- **The cross-group test warms the socket first and asserts it received something.**
+  Without that, a dead subscription would pass a "nothing arrived" assertion for entirely
+  the wrong reason.
+- `refetch()` in the hook is guarded by a `cancelled` flag: on a `groupId` change an
+  in-flight response would otherwise overwrite the new room's messages.
+- `MessageRow` renders the timestamp in a `<time dateTime>` element and adds
+  `whitespace-pre-wrap break-words`; without the latter a pasted 1000-char unbroken string
+  overflows the column.
+- The empty-state early return was folded into the main return so the "Reconnecting…"
+  banner still shows in an empty room. In the plan's version it could not.
+
+**Next agent needs to know:**
+- **A cold Supabase Realtime tenant drops the first INSERT.** The tenant creates its
+  replication slot *after* the client sees `SUBSCRIBED` — confirmed in the project's
+  realtime logs, where slot creation is timestamped mid-test-run. The first run of
+  `tests/realtime.test.ts` failed for this reason and every warm run passed, so the test
+  now sends an explicit warm-up message before asserting. The **app** tolerates this because
+  the hook refetches on every `SUBSCRIBED`; don't remove that refetch.
+- **Code messages still render as plain text.** That is where Task 7 is supposed to stop.
+  Task 8 fetches highlighted HTML through a Server Action and replaces `CodeCard` with an
+  inline client card.
+- **Never render a stored `author_color` inline.** Always go through
+  `authorColorVar()` from `lib/author-color.ts`, or dark mode silently fails contrast.
+- Playwright was installed temporarily to check the post-hydration DOM and **removed
+  again**; `package.json` is unchanged. `bunx playwright install firefox` if you need it —
+  the system Firefox's one-shot `--screenshot` fires before hydration and will show you a
+  blank page.
 
 ### 2026-08-04 — Task 6: Shiki code rendering ✅
 **Shipped:** `lib/shiki-theme.ts`, `lib/highlight.ts`, `components/chat/copy-button.tsx`,
@@ -361,20 +440,18 @@ column-level grant. Test that before trusting anything else.
 
 ## In progress
 
-**Task 7 — room page, message list, live updates, on `feat/room-live-updates`.** Nothing
-built yet at the time of this commit. Files to create, in order: `lib/types.ts`,
-`tests/age.test.ts` (write first, must fail), `lib/age.ts`,
-`lib/use-realtime-messages.ts`, `components/chat/message-row.tsx`,
-`components/chat/message-list.tsx`, `app/c/[dept]/[year]/[batch]/[group]/page.tsx`.
+*Nothing. Task 7 is merged; Task 8 has not been started.*
 
-**Code messages stay plain text at the end of this task.** `MessageRow` is a client
-component and cannot server-highlight. Task 8 fetches highlighted HTML through a Server
-Action and replaces `CodeCard` with an inline client card. Do not wire `CodeCard` into
-`MessageRow` here.
+**Never render a stored `author_color` inline.** It is the light-theme hex; all eight fail
+WCAG AA on the dark background. Use `authorColorVar()` from `lib/author-color.ts`.
 
-**Never subscribe to DELETE.** Realtime cannot filter DELETE and does not apply RLS to it,
-so the bulk expiry purge would broadcast bare primary keys to every client in every room.
-INSERT and UPDATE only; expiry is hidden client-side.
+**Anything animating in on mount must gate `initial` on `useMounted()`.** A bare
+`motion.div initial={{opacity:0}}` server-renders `opacity:0` and stays invisible if JS
+never runs.
+
+**Check `fc-list :charset=<hex>` before shipping any new glyph.** design.md's mockups use
+several characters that are missing from every bundled font and from monospace on Linux —
+U+29C9 `⧉` was one, and it shipped as tofu until a screenshot caught it.
 
 **Check `fc-list :charset=<hex>` before shipping any new glyph.** design.md's mockups use
 several characters that are missing from every bundled font and from monospace on Linux —
@@ -425,6 +502,21 @@ Constraints any future change must re-satisfy, all machine-checked:
 - >=18 deltaE from every other author color.
 
 `design.md` line 38 also changed: `graphite` no longer claims "handles".
+
+### 2026-08-04 — Author colors live in `lib/author-color.ts`, resolved to CSS variables
+
+Task 3 put `AUTHOR_COLORS` in `lib/identity.ts`, which is `server-only`. Task 7 needs the
+palette in a **client** component to map a stored hex back to its theme-aware variable, so
+the array moved to `lib/author-color.ts` and `lib/identity.ts` re-exports it. There is still
+exactly one definition, and `design.md` § Author colors is still the source of truth.
+
+`authorColorVar(stored)` returns `var(--author-N)`, not a hex. `messages.author_color`
+stores the **light** column; rendering it inline gives 2.22–3.55:1 on the dark background
+for all eight colors, against a 4.5 floor. The `--author-N` variables carry both columns and
+swap with the `.dark` class.
+
+An unrecognized hex falls back to `var(--ink)` rather than throwing — a row written before a
+palette change should still be readable.
 
 ### 2026-08-04 — Room hierarchy gained a **year** level (commit `08774ee`)
 
