@@ -3,8 +3,9 @@ import { loadEnv } from 'vite'
 import react from '@vitejs/plugin-react'
 import path from 'node:path'
 
-// Only NEXT_PUBLIC_ is loaded: server secrets must stay out of the test env.
-const publicEnv = loadEnv('test', process.cwd(), 'NEXT_PUBLIC_')
+// Task 5 onward, integration tests run Server Actions for real and need the
+// service-role key and pepper, so all of .env.local is loaded deliberately.
+const testEnv = loadEnv('test', process.cwd(), '')
 
 export default defineConfig({
   plugins: [react()],
@@ -12,7 +13,7 @@ export default defineConfig({
     environment: 'jsdom',
     setupFiles: ['./tests/setup.ts'],
     globals: true,
-    env: publicEnv,
+    env: testEnv,
   },
   resolve: {
     alias: {

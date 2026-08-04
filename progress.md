@@ -12,10 +12,10 @@ section for the step you're on. Full protocol in `AGENTS.md`.
 
 | | |
 |---|---|
-| **Phase** | Implementing. Tasks 1–4 of 12 done. Task 5 in flight. |
-| **Current step** | **Task 5 — message Server Actions** |
-| **Branch** | `feat/message-actions` |
-| **Next action** | Build Task 5 from `docs/superpowers/plans/2026-08-04-hitchat-implementation.md` (line 1226): `lib/guards.ts`, `app/actions/messages.ts`, `tests/helpers/seed-room.ts`, `tests/messages-action.test.ts`. **This is the task that must widen `vitest.config.ts`** to expose `SUPABASE_SERVICE_ROLE_KEY` and `IDENTITY_PEPPER` to tests — Task 2 deliberately withheld them and flagged that the widening be done consciously. |
+| **Phase** | Implementing. Tasks 1–5 of 12 done. |
+| **Current step** | **Task 6 — Shiki code rendering** — not yet started |
+| **Branch** | `main` |
+| **Next action** | Start Task 6 from `docs/superpowers/plans/2026-08-04-hitchat-implementation.md` (line 1664): `git checkout -b feat/<task-6-slug>`, set this file to "In progress" and commit that first, then build. Do **not** re-apply migrations 0001–0004 — they are already live on project `vbbinzmpnszdayrdfsle`. |
 | **Blocked?** | No. |
 | **Last updated** | 2026-08-04 |
 
@@ -54,7 +54,49 @@ unrecoverable by a fresh agent.
 
 Newest first. Each entry: what shipped, what deviated, what the next agent needs.
 
+### 2026-08-04 — Task 5: message Server Actions ✅
+**Shipped:** `lib/guards.ts`, `app/actions/messages.ts`, `tests/helpers/seed-room.ts`,
+`tests/messages-action.test.ts`. Tests 53/53, eslint clean, `tsc --noEmit` clean,
+`bun run build` succeeds. No migration in this task.
+
+**Verified by mutation, not just by passing:**
+- Replacing the ownership check in `deleteOwnMessage` with `if (false)` makes
+  "refuses to delete another person's message" fail. The guard is really covered.
+- Moving `assertRateOk` *above* `validateText` makes the quota test fail. **The guard
+  ordering is genuinely enforced by the suite**, which was the point of writing it.
+- Live DB after teardown: 0 departments, 0 groups, 0 messages, 0 bans. The cascade
+  from `departments` works. Orphaned `rate_events` cleared manually.
+
+**`vitest.config.ts` now loads ALL of `.env.local`, not just `NEXT_PUBLIC_`.** Task 2
+deliberately withheld `SUPABASE_SERVICE_ROLE_KEY` and `IDENTITY_PEPPER` and asked that
+any widening be conscious — this is that moment, because Task 5's tests execute real
+Server Actions. Consequence to keep in mind: **the test suite now runs with full
+service-role privileges against the live database.** A careless test can delete real
+data. `tests/helpers/seed-room.ts` exists so tests operate on a disposable room.
+
+**Deviations from the plan:**
+- **The plan's quota assertion was a false positive.** It counted `rate_events` rows
+  for the literal hash `'never-recorded'` — a hash that never posts — so it returned 0
+  whether or not the quota was consumed. It now counts the *actual* user's rows, which
+  is what makes the mutation test above fail correctly.
+- **Test tokens are suffixed with a per-run id** (`tok()` helper). Rate-limit state
+  lives in the database and outlives the process, so fixed strings like `'code-token'`
+  exhausted their own 3-per-60s quota when the suite ran twice inside a window. This
+  was a **real intermittent failure** — two runs in a row failed on unrelated-looking
+  assertions (`stores the language and title`, `is idempotent…`) before diagnosis.
+  Six consecutive full runs pass now. Any future test that posts must use `tok()`.
+- **Seven tests added beyond the plan's six:** peppered-hash-not-raw-token, nonexistent
+  room, banned user, the 6th-message-in-10s limit, code language/title storage,
+  rejected language, refused-delete-leaves-message-intact, and delete idempotency.
+
+**Next agent needs to know:** the earlier "flaky RLS test" noted after Task 4 was
+almost certainly this same shared-rate-limit-state problem, not the network. If a
+DB-touching test fails intermittently, suspect leftover `rate_events` before anything
+else.
+
 ### 2026-08-04 — Task 4: validation and rate limiting ✅
+
+
 **Shipped:** `lib/validate.ts`, `supabase/migrations/0004_rate_limit.sql`,
 `tests/validate.test.ts`. The migration is **applied to the live project**
 `vbbinzmpnszdayrdfsle` under that name. Tests 40/40, eslint clean, `tsc --noEmit`
@@ -159,7 +201,8 @@ ten. Tests 12/12 (8 new RLS + 4 from Task 1), eslint clean, `tsc --noEmit` clean
   wrong reason. Only the `NEXT_PUBLIC_` prefix is loaded **on purpose** —
   `SUPABASE_SERVICE_ROLE_KEY`, `IDENTITY_PEPPER`, and `OWNER_SECRET` are deliberately
   withheld from the test environment. A later task that needs a service-role test client
-  must widen this consciously, not by accident.
+  must widen this consciously, not by accident. **(Superseded in Task 5: the widening
+  happened there, deliberately. All of `.env.local` now loads into tests.)**
 - **`tests/rls.test.ts` carries `// @vitest-environment node`.** It is a live network
   test; the project default is jsdom and there is no DOM involved.
 
@@ -271,17 +314,16 @@ column-level grant. Test that before trusting anything else.
 
 ## In progress
 
-- **Step:** Task 5 — message Server Actions, from
-  `docs/superpowers/plans/2026-08-04-hitchat-implementation.md` (line 1226)
-- **Branch:** `feat/message-actions`
-- **Done so far:** nothing but this marker.
-- **Immediately next:** write `lib/guards.ts`, then `app/actions/messages.ts`, then the
-  `tests/helpers/seed-room.ts` fixture (Tasks 9 and 11 reuse it), then
-  `tests/messages-action.test.ts`.
+*Nothing. Task 5 is merged; Task 6 has not been started.*
 
 **Guard order is load-bearing: ban → lock → validate → rate limit.** The rate check
 *records* an event, so a message rejected for length must not consume the user's quota.
-Do not reorder these.
+A test enforces this; do not reorder them.
+
+**Tests run with the service-role key against the live database.** Any new test that
+posts must suffix its token with the per-run id (`tok()` in
+`tests/messages-action.test.ts`), or it will exhaust its own rate-limit quota on the
+second run inside a window.
 
 **The RLS test is the most important test in the whole suite.** If any assertion in
 `tests/rls.test.ts` fails, fix the migration — do not weaken the test.
