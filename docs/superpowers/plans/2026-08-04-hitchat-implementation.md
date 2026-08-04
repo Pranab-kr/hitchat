@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Build an anonymous, 24-hour-ephemeral chat where college lab students share syntax-highlighted lab code in rooms scoped to department → batch → group, moderated by an owner and delegated co-admins.
+**Goal:** Build an anonymous, 24-hour-ephemeral chat where college lab students share syntax-highlighted lab code in rooms scoped to department → year → batch → group, moderated by an owner and delegated co-admins.
 
 **Architecture:** Every write goes through a Next.js Server Action holding the Supabase service-role key, where rate limiting, ban checks, validation and admin authorization are enforced. The browser holds only the publishable key, whose grants permit `SELECT` on named columns and nothing else. Reads are live via Supabase Realtime (INSERT + UPDATE only — never DELETE). A `pg_cron` job hard-deletes expired rows every 10 minutes.
 
@@ -64,11 +64,11 @@ app/
   layout.tsx                    root layout, fonts, ThemeProvider
   globals.css                   Tailwind v4 @theme tokens, Shiki dual-theme CSS
   page.tsx                      room picker
-  c/[dept]/[batch]/[group]/
+  c/[dept]/[year]/[batch]/[group]/
     page.tsx                    room (server): loads 100 messages, renders shell
   sudo/
     page.tsx                    admin login
-    structure/page.tsx          owner: departments/batches/groups
+    structure/page.tsx          owner: departments/years/batches/groups
     admins/page.tsx             owner: co-admin management
 lib/
   supabase/
@@ -85,7 +85,7 @@ app/actions/
   messages.ts                   send, postCode, deleteOwn
   reactions.ts                  toggle
   admin.ts                      login, logout, moderation
-  structure.ts                  owner: CRUD departments/batches/groups
+  structure.ts                  owner: CRUD departments/years/batches/groups
   admins.ts                     owner: create/revoke co-admins
 lib/auth/
   session.ts                    admin session create/verify/destroy
@@ -498,7 +498,7 @@ cannot be nested in a selector."
 
 **Interfaces:**
 - Consumes: nothing from earlier tasks
-- Produces: tables `departments`, `batches`, `groups`, `messages`, `reactions`, `admins`, `admin_sessions`, `bans`, `rate_events`; column list constants `MESSAGE_COLUMNS: string`, `ROOM_COLUMNS: string` from `lib/columns.ts`
+- Produces: tables `departments`, `years`, `batches`, `groups`, `messages`, `reactions`, `admins`, `admin_sessions`, `bans`, `rate_events`; column list constants `MESSAGE_COLUMNS: string`, `ROOM_COLUMNS: string` from `lib/columns.ts`
 
 **Note:** Apply these via the `supabase` MCP `apply_migration` tool, one call per file, using the file's name as the migration name.
 
@@ -515,13 +515,22 @@ create table departments (
   created_at timestamptz not null default now()
 );
 
-create table batches (
+-- Academic year within a department: 1st, 2nd, 3rd, 4th (5 allowed for 5-year courses).
+create table years (
   id uuid primary key default gen_random_uuid(),
   department_id uuid not null references departments(id) on delete cascade,
+  number int not null check (number between 1 and 5),
+  created_at timestamptz not null default now(),
+  unique (department_id, number)
+);
+
+create table batches (
+  id uuid primary key default gen_random_uuid(),
+  year_id uuid not null references years(id) on delete cascade,
   number int not null,
   label text,
   created_at timestamptz not null default now(),
-  unique (department_id, number)
+  unique (year_id, number)
 );
 
 create table groups (
@@ -615,6 +624,7 @@ The table-level grant is revoked first — table grants survive revoking column-
 
 ```sql
 alter table departments enable row level security;
+alter table years enable row level security;
 alter table batches enable row level security;
 alter table groups enable row level security;
 alter table messages enable row level security;
@@ -624,10 +634,10 @@ alter table admin_sessions enable row level security;
 alter table bans enable row level security;
 alter table rate_events enable row level security;
 
-revoke all on departments, batches, groups, messages, reactions,
+revoke all on departments, years, batches, groups, messages, reactions,
   admins, admin_sessions, bans, rate_events from anon, authenticated;
 
-grant select on departments, batches, groups to anon, authenticated;
+grant select on departments, years, batches, groups to anon, authenticated;
 
 -- author_token_hash is deliberately excluded. id must stay granted.
 grant select (
@@ -638,6 +648,7 @@ grant select (
 grant select (message_id, emoji, created_at) on reactions to anon, authenticated;
 
 create policy "read departments" on departments for select to anon, authenticated using (true);
+create policy "read years" on years for select to anon, authenticated using (true);
 create policy "read batches" on batches for select to anon, authenticated using (true);
 create policy "read groups" on groups for select to anon, authenticated using (true);
 create policy "read live messages" on messages for select to anon, authenticated using (expires_at > now());
@@ -668,7 +679,7 @@ $$);
 
 Use the supabase MCP `apply_migration` tool once per file, in order, with names `0001_schema`, `0002_grants_rls`, `0003_realtime_cron`.
 
-Then verify with `list_tables` that all nine tables exist.
+Then verify with `list_tables` that all ten tables exist.
 
 **If `pg_cron` is unavailable on the free tier**, the extension creation will error. In that case: apply `0003` without the cron block, record the deviation in `progress.md`, and note that the Vercel Cron fallback (spec, "Ephemerality") is needed before launch. Do not block this task on it.
 
@@ -1461,9 +1472,15 @@ export async function seedRoom(): Promise<SeededRoom> {
     .select('id')
     .single()
 
+  const { data: year } = await testDb
+    .from('years')
+    .insert({ department_id: dept!.id, number: 1 })
+    .select('id')
+    .single()
+
   const { data: batch } = await testDb
     .from('batches')
-    .insert({ department_id: dept!.id, number: 1 })
+    .insert({ year_id: year!.id, number: 1 })
     .select('id')
     .single()
 
@@ -1476,7 +1493,7 @@ export async function seedRoom(): Promise<SeededRoom> {
   return { groupId: group!.id, deptId: dept!.id }
 }
 
-// Cascades to batches, groups, messages and reactions.
+// Cascades to years, batches, groups, messages and reactions.
 export async function teardownRoom(room: SeededRoom): Promise<void> {
   await testDb.from('departments').delete().eq('id', room.deptId)
 }
@@ -1900,7 +1917,7 @@ request would leak badly."
 ## Task 7: Room page, message list, and live updates
 
 **Files:**
-- Create: `app/c/[dept]/[batch]/[group]/page.tsx`
+- Create: `app/c/[dept]/[year]/[batch]/[group]/page.tsx`
 - Create: `components/chat/message-list.tsx`
 - Create: `components/chat/message-row.tsx`
 - Create: `lib/age.ts`
@@ -2224,17 +2241,20 @@ export const dynamic = 'force-dynamic'
 export default async function RoomPage({
   params,
 }: {
-  params: Promise<{ dept: string; batch: string; group: string }>
+  params: Promise<{ dept: string; year: string; batch: string; group: string }>
 }) {
-  const { dept, batch, group } = await params
+  const { dept, year, batch, group } = await params
   const db = getServiceClient()
 
   const { data: room } = await db
     .from('groups')
-    .select('id, label, is_locked, batches!inner(number, departments!inner(slug, name))')
+    .select(
+      'id, label, is_locked, batches!inner(number, years!inner(number, departments!inner(slug, name)))',
+    )
     .eq('label', group.toUpperCase())
     .eq('batches.number', Number(batch))
-    .eq('batches.departments.slug', dept)
+    .eq('batches.years.number', Number(year))
+    .eq('batches.years.departments.slug', dept)
     .maybeSingle()
 
   if (!room) notFound()
@@ -2270,12 +2290,13 @@ Seed a room via the supabase MCP `execute_sql` tool:
 ```sql
 insert into departments (name, slug) values ('Computer Science', 'cse')
   returning id;
--- use the returned id below
-insert into batches (department_id, number) values ('<dept-id>', 2) returning id;
+-- use each returned id in the next statement
+insert into years (department_id, number) values ('<dept-id>', 3) returning id;
+insert into batches (year_id, number) values ('<year-id>', 2) returning id;
 insert into groups (batch_id, label) values ('<batch-id>', 'A');
 ```
 
-Run `bun dev` and open `http://localhost:3000/c/cse/2/a` in **two browser windows**. Insert a message with `execute_sql` and confirm it appears in both windows within a second without a refresh. Then set `deleted_at` on that row and confirm both windows show "message deleted".
+Run `bun dev` and open `http://localhost:3000/c/cse/3/2/a` in **two browser windows**. Insert a message with `execute_sql` and confirm it appears in both windows within a second without a refresh. Then set `deleted_at` on that row and confirm both windows show "message deleted".
 
 - [ ] **Step 11: Commit**
 
@@ -2301,7 +2322,7 @@ connect and reconnect with one path."
 - Create: `components/chat/code-composer.tsx`
 - Modify: `components/chat/message-row.tsx` (render highlighted code)
 - Modify: `components/chat/message-list.tsx` (pass rendered code through)
-- Modify: `app/c/[dept]/[batch]/[group]/page.tsx` (pre-render code HTML)
+- Modify: `app/c/[dept]/[year]/[batch]/[group]/page.tsx` (pre-render code HTML)
 - Create: `app/actions/highlight.ts`
 - Test: `tests/use-anon-token.test.ts`
 
@@ -2658,7 +2679,7 @@ And replace the body `<div>` with:
 
 - [ ] **Step 9: Wire the composer into the room page**
 
-In `app/c/[dept]/[batch]/[group]/page.tsx`, import `Composer` and add it below `<MessageList>`:
+In `app/c/[dept]/[year]/[batch]/[group]/page.tsx`, import `Composer` and add it below `<MessageList>`:
 
 ```tsx
 <Composer groupId={room.id} locked={room.is_locked} />
@@ -3775,7 +3796,7 @@ hash, so the server derives it from the message."
 
 **Interfaces:**
 - Consumes: `requireOwner` (Task 10), `getServiceClient` (Task 3)
-- Produces: `createDepartment`, `createBatch`, `createGroup`, `deleteDepartment`, `createCoAdmin`, `revokeAdmin`
+- Produces: `createDepartment`, `createYear`, `createBatch`, `createGroup`, `deleteDepartment`, `createCoAdmin`, `revokeAdmin`
 
 - [ ] **Step 1: Write `app/actions/structure.ts`**
 
@@ -3812,8 +3833,32 @@ export async function createDepartment(input: {
   return ok({ id: data.id })
 }
 
-export async function createBatch(input: {
+export async function createYear(input: {
   departmentId: string
+  number: number
+}): Promise<ActionResult<{ id: string }>> {
+  const auth = await requireOwner()
+  if (!auth.ok) return auth
+
+  // 5 is allowed for five-year integrated courses; the DB check constraint matches.
+  if (!Number.isInteger(input.number) || input.number < 1 || input.number > 5) {
+    return err('invalid', 'Year must be between 1 and 5.')
+  }
+
+  const db = getServiceClient()
+  const { data, error } = await db
+    .from('years')
+    .insert({ department_id: input.departmentId, number: input.number })
+    .select('id')
+    .single()
+
+  if (error?.code === '23505') return err('invalid', 'That year already exists.')
+  if (error || !data) return err('server', "Couldn't create that. Try again.")
+  return ok({ id: data.id })
+}
+
+export async function createBatch(input: {
+  yearId: string
   number: number
 }): Promise<ActionResult<{ id: string }>> {
   const auth = await requireOwner()
@@ -3826,7 +3871,7 @@ export async function createBatch(input: {
   const db = getServiceClient()
   const { data, error } = await db
     .from('batches')
-    .insert({ department_id: input.departmentId, number: input.number })
+    .insert({ year_id: input.yearId, number: input.number })
     .select('id')
     .single()
 
@@ -3875,7 +3920,7 @@ export async function deleteDepartment(input: {
 
   if (!dept) return err('invalid', 'That department is already gone.')
 
-  // Typed confirmation — this cascades to every batch, group and message.
+  // Typed confirmation — this cascades to every year, batch, group and message.
   if (dept.name !== input.confirmName) {
     return err('invalid', `Type "${dept.name}" exactly to delete it.`)
   }
@@ -3968,7 +4013,8 @@ describe('owner-only actions reject a co-admin session', () => {
 
     const calls = [
       () => structure.createDepartment({ name: 'X', slug: 'xx' }),
-      () => structure.createBatch({ departmentId: 'x', number: 1 }),
+      () => structure.createYear({ departmentId: 'x', number: 1 }),
+      () => structure.createBatch({ yearId: 'x', number: 1 }),
       () => structure.createGroup({ batchId: 'x', label: 'A' }),
       () => structure.deleteDepartment({ id: 'x', confirmName: 'X' }),
     ]
@@ -4086,11 +4132,14 @@ import { ThemeToggle } from '@/components/theme-toggle'
 
 export const dynamic = 'force-dynamic'
 
+const ORDINALS = ['', '1st', '2nd', '3rd', '4th', '5th']
+const ordinal = (n: number) => ORDINALS[n] ?? `${n}th`
+
 export default async function HomePage() {
   const db = getServiceClient()
   const { data: departments } = await db
     .from('departments')
-    .select('id, name, slug, batches(number, groups(label))')
+    .select('id, name, slug, years(number, batches(number, groups(label)))')
     .order('sort_order')
 
   return (
@@ -4119,20 +4168,31 @@ export default async function HomePage() {
                 {dept.name}
               </h2>
 
-              <div className="flex flex-wrap gap-2">
-                {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                {(dept.batches as any[]).flatMap((batch) =>
-                  (batch.groups as any[]).map((group) => (
-                    <Link
-                      key={`${batch.number}-${group.label}`}
-                      href={`/c/${dept.slug}/${batch.number}/${group.label.toLowerCase()}`}
-                      className="rounded-[6px] border border-hairline px-3 py-2 font-mono text-[13px] text-ink hover:border-pen hover:text-pen"
-                    >
-                      Batch {batch.number} · {group.label}
-                    </Link>
-                  )),
-                )}
-              </div>
+              {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+              {[...((dept.years as any[]) ?? [])]
+                .sort((a, b) => a.number - b.number)
+                .map((year) => (
+                  <div key={year.number} className="mb-4 last:mb-0">
+                    <h3 className="mb-2 font-mono text-[12px] uppercase tracking-[0.08em] text-graphite">
+                      {ordinal(year.number)} year
+                    </h3>
+
+                    <div className="flex flex-wrap gap-2">
+                      {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                      {(year.batches as any[]).flatMap((batch) =>
+                        (batch.groups as any[]).map((group) => (
+                          <Link
+                            key={`${batch.number}-${group.label}`}
+                            href={`/c/${dept.slug}/${year.number}/${batch.number}/${group.label.toLowerCase()}`}
+                            className="rounded-input border border-hairline px-3 py-2 font-mono text-[13px] text-ink hover:border-pen hover:text-pen"
+                          >
+                            Batch {batch.number} · {group.label}
+                          </Link>
+                        )),
+                      )}
+                    </div>
+                  </div>
+                ))}
             </section>
           ))}
         </div>
@@ -4154,7 +4214,7 @@ Follow the styling already established: `border-hairline` borders, `bg-surface` 
 
 Run `bun dev` and confirm:
 1. Signed out, `/sudo/structure` redirects to `/sudo`.
-2. Signed in as owner, create a department, batch and group; the room appears on `/`.
+2. Signed in as owner, create a department, year, batch and group; the room appears on `/`.
 3. Create a co-admin; the secret shows once. Reload — it is gone.
 4. Sign in with that co-admin secret; `/sudo/structure` redirects away.
 5. As owner, revoke the co-admin; their session dies immediately.
