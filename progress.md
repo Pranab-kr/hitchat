@@ -12,10 +12,10 @@ section for the step you're on. Full protocol in `AGENTS.md`.
 
 | | |
 |---|---|
-| **Phase** | Implementing. Task 1 of 12 done, Task 2 in flight. |
-| **Current step** | **Task 2 — database schema + RLS** |
-| **Branch** | `feat/db-schema-rls` |
-| **Next action** | Run Task 2 from `docs/superpowers/plans/2026-08-04-hitchat-implementation.md` start to finish: write `supabase/migrations/0001_schema.sql`, `0002_grants_rls.sql`, `0003_realtime_cron.sql`, apply each via the supabase MCP `apply_migration` tool against project `vbbinzmpnszdayrdfsle`, create `lib/columns.ts`, then write and run `tests/rls.test.ts`. |
+| **Phase** | Implementing. Tasks 1–2 of 12 done. Task 2 reviewed and merged. |
+| **Current step** | **Task 3** — not yet started |
+| **Branch** | `main` |
+| **Next action** | Start Task 3 from `docs/superpowers/plans/2026-08-04-hitchat-implementation.md`: `git checkout -b feat/<task-3-slug>`, set this file to "In progress" and commit that first, then build. Do **not** re-apply the three migrations — they are already live on project `vbbinzmpnszdayrdfsle`. |
 | **Blocked?** | No. |
 | **Last updated** | 2026-08-04 |
 
@@ -53,6 +53,63 @@ unrecoverable by a fresh agent.
 ## Done
 
 Newest first. Each entry: what shipped, what deviated, what the next agent needs.
+
+### 2026-08-04 — Task 2: database schema + RLS ✅
+**Shipped:** `supabase/migrations/0001_schema.sql`, `0002_grants_rls.sql`,
+`0003_realtime_cron.sql`, `lib/columns.ts`, `tests/rls.test.ts`. All three migrations
+are **applied to the live project** `vbbinzmpnszdayrdfsle` via the supabase MCP
+`apply_migration` tool, under those exact names. Ten tables exist, RLS enabled on all
+ten. Tests 12/12 (8 new RLS + 4 from Task 1), eslint clean, `tsc --noEmit` clean.
+
+**Verified, not just written:**
+- `information_schema.column_privileges` shows `anon` has SELECT on 15 `messages`
+  columns and **not** `author_token_hash`; on `reactions` only `message_id, emoji,
+  created_at`. `admins`, `admin_sessions`, `bans`, `rate_events` have **no** grants.
+- A `set local role anon` probe in the DB confirmed: reading `author_token_hash`,
+  inserting a message, and reading `admins`/`bans` all raise `insufficient_privilege`,
+  while `select id, body, created_at from messages` succeeds.
+- Inserted one live + one expired message and confirmed `anon` sees exactly one — the
+  `expires_at > now()` policy works. Probe rows deleted.
+- `pg_cron` applied cleanly. `cron.job` has `purge-expired`, `*/10 * * * *`, active.
+  **No Vercel Cron fallback needed.**
+- `pg_publication_tables` shows `supabase_realtime` publishes `messages` only.
+
+**Deviations from the plan, both mechanical:**
+- **`vitest.config.ts` gained `env: loadEnv('test', process.cwd(), 'NEXT_PUBLIC_')`**
+  (a Task 1 file). Vitest does not read `.env.local` into `process.env` on its own, so
+  the RLS test had no Supabase URL or key and every assertion would have passed for the
+  wrong reason. Only the `NEXT_PUBLIC_` prefix is loaded **on purpose** —
+  `SUPABASE_SERVICE_ROLE_KEY`, `IDENTITY_PEPPER`, and `OWNER_SECRET` are deliberately
+  withheld from the test environment. A later task that needs a service-role test client
+  must widen this consciously, not by accident.
+- **`tests/rls.test.ts` carries `// @vitest-environment node`.** It is a live network
+  test; the project default is jsdom and there is no DOM involved.
+
+**Security advisor (`get_advisors`, type `security`):** four findings, all `INFO`,
+all `rls_enabled_no_policy` on `admins`, `admin_sessions`, `bans`, `rate_events`.
+**That is the intended design** — RLS on with zero policies is the deny-everything
+state for those tables; only the service role touches them. Do not "fix" this by
+adding policies.
+
+**Next agent needs to know:** never add `author_token_hash` to `lib/columns.ts`, and
+never `select *` from `messages` or `reactions` with the publishable key — a
+column-restricted role is rejected outright. Use `MESSAGE_COLUMNS` / `ROOM_COLUMNS`.
+
+**Caught at review, fixed before merge:** the write-denial tests in `tests/rls.test.ts`
+scoped their update and delete with `.neq(id, <zero-uuid>)`, which matches **every row
+in the table**. The tests passed only because the grant is missing. If a future
+migration ever regressed that grant, running the suite would have blanked or deleted
+the entire live `messages` table before the assertion failed. Both now use `.eq()`
+against a non-existent id: the permission error still fires, and the failure mode is
+harmless. **Any future write-denial test must be scoped this way** — never assert
+"this write is refused" with a filter that would match real rows if it isn't.
+
+**Also corrected at review:** this file previously claimed Task 2 was committed on
+`feat/db-schema-rls`. It was not — all five files were still uncommitted in the working
+tree while the migrations were already live on the remote database. The DB was ahead of
+git. Verified against the live project before merging: column grants, RLS/policy counts,
+the `purge-expired` cron job, and the realtime publication all match what the migration
+files say.
 
 ### 2026-08-04 — Task 1: design tokens, fonts, theming ✅
 **Shipped:** Tailwind v4 CSS-first token layer (`app/globals.css`), the three Google
@@ -136,19 +193,13 @@ column-level grant. Test that before trusting anything else.
 
 ## In progress
 
-- **Step:** Task 2 — database schema + RLS, from
-  `docs/superpowers/plans/2026-08-04-hitchat-implementation.md`
-- **Branch:** `feat/db-schema-rls`
-- **Done so far:** nothing but this marker. No migrations written, none applied.
-- **Immediately next:** write `supabase/migrations/0001_schema.sql` exactly as Task 2
-  Step 1 specifies (ten tables, `years` included).
+*Nothing. Task 2 is merged; Task 3 has not been started.*
 
 **The RLS test is the most important test in the whole suite.** If any assertion in
-`tests/rls.test.ts` fails, fix the migration — do not weaken the test and do not move
-on to Task 3.
+`tests/rls.test.ts` fails, fix the migration — do not weaken the test.
 
-**Schema note that supersedes older text in this file:** the room hierarchy is now
-four levels — department → **year** → batch → group. See the Deviations section.
+**Schema note:** the room hierarchy is four levels — department → **year** → batch →
+group. See the Deviations section.
 
 ---
 
