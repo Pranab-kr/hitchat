@@ -12,10 +12,10 @@ section for the step you're on. Full protocol in `AGENTS.md`.
 
 | | |
 |---|---|
-| **Phase** | Implementing. Tasks 1–2 of 12 done. Task 3 built, awaiting owner confirmation before merge. |
-| **Current step** | **Task 3 — anonymous identity** (built, not merged) |
-| **Branch** | `feat/anon-identity` |
-| **Next action** | Owner confirms the Task 3 diff. On approval: merge to `main`, delete the branch, then start Task 4 (validation and rate limiting, plan line 1025) on `feat/<task-4-slug>`. |
+| **Phase** | Implementing. Tasks 1–3 of 12 done. Task 4 in flight. |
+| **Current step** | **Task 4 — validation and rate limiting** |
+| **Branch** | `feat/validation-rate-limit` |
+| **Next action** | Build Task 4 from `docs/superpowers/plans/2026-08-04-hitchat-implementation.md` (line 1025): `tests/validate.test.ts`, `lib/validate.ts`, then `supabase/migrations/0004_rate_limit.sql` applied via the supabase MCP `apply_migration` tool against project `vbbinzmpnszdayrdfsle`. Verify the limit fires with the `generate_series(1, 7)` probe and clean up the probe rows. |
 | **Blocked?** | No. |
 | **Last updated** | 2026-08-04 |
 
@@ -54,7 +54,7 @@ unrecoverable by a fresh agent.
 
 Newest first. Each entry: what shipped, what deviated, what the next agent needs.
 
-### 2026-08-04 — Task 3: anonymous identity ✅ (built, not merged)
+### 2026-08-04 — Task 3: anonymous identity ✅
 **Shipped:** `lib/identity.ts`, `lib/supabase/admin.ts`, `lib/supabase/browser.ts`,
 `lib/result.ts`, `tests/identity.test.ts`, an **Author colors** section in `design.md`,
 `--author-1..8` in `app/globals.css`, and the `server-only` dependency. Tests 26/26,
@@ -236,10 +236,12 @@ column-level grant. Test that before trusting anything else.
 
 ## In progress
 
-- **Step:** Task 3 — anonymous identity. Code complete and verified; **not merged.**
-- **Branch:** `feat/anon-identity`
-- **Immediately next:** owner reviews the diff. On approval, merge to `main`, delete
-  the branch, and start Task 4 (validation and rate limiting, plan line 1025).
+- **Step:** Task 4 — validation and rate limiting, from
+  `docs/superpowers/plans/2026-08-04-hitchat-implementation.md` (line 1025)
+- **Branch:** `feat/validation-rate-limit`
+- **Done so far:** nothing but this marker.
+- **Immediately next:** write `tests/validate.test.ts`, then `lib/validate.ts`, then
+  `supabase/migrations/0004_rate_limit.sql`.
 
 **The RLS test is the most important test in the whole suite.** If any assertion in
 `tests/rls.test.ts` fails, fix the migration — do not weaken the test.
