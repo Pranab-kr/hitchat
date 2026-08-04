@@ -12,10 +12,10 @@ section for the step you're on. Full protocol in `AGENTS.md`.
 
 | | |
 |---|---|
-| **Phase** | Implementing. Tasks 1–3 of 12 done. Task 4 in flight. |
-| **Current step** | **Task 4 — validation and rate limiting** |
-| **Branch** | `feat/validation-rate-limit` |
-| **Next action** | Build Task 4 from `docs/superpowers/plans/2026-08-04-hitchat-implementation.md` (line 1025): `tests/validate.test.ts`, `lib/validate.ts`, then `supabase/migrations/0004_rate_limit.sql` applied via the supabase MCP `apply_migration` tool against project `vbbinzmpnszdayrdfsle`. Verify the limit fires with the `generate_series(1, 7)` probe and clean up the probe rows. |
+| **Phase** | Implementing. Tasks 1–4 of 12 done. |
+| **Current step** | **Task 5 — message Server Actions** — not yet started |
+| **Branch** | `main` |
+| **Next action** | Start Task 5 from `docs/superpowers/plans/2026-08-04-hitchat-implementation.md` (line 1226): `git checkout -b feat/<task-5-slug>`, set this file to "In progress" and commit that first, then build. Do **not** re-apply migrations 0001–0004 — they are already live on project `vbbinzmpnszdayrdfsle`. |
 | **Blocked?** | No. |
 | **Last updated** | 2026-08-04 |
 
@@ -54,7 +54,42 @@ unrecoverable by a fresh agent.
 
 Newest first. Each entry: what shipped, what deviated, what the next agent needs.
 
+### 2026-08-04 — Task 4: validation and rate limiting ✅
+**Shipped:** `lib/validate.ts`, `supabase/migrations/0004_rate_limit.sql`,
+`tests/validate.test.ts`. The migration is **applied to the live project**
+`vbbinzmpnszdayrdfsle` under that name. Tests 40/40, eslint clean, `tsc --noEmit`
+clean, `bun run build` succeeds.
+
+**Verified, not just written:**
+- `check_rate_limit('test-hash-abc','text')` × 7 → 5 `true` then 2 `false`. The `code`
+  action → 3 `true` then `false`. An unknown action returns `false` (deny by default).
+- `has_function_privilege` reports **false** for `anon`, `authenticated`, and `public`.
+  The function is service-role only.
+- **The advisory lock is load-bearing, and this was proven rather than assumed.** A
+  temporary lock-free copy of the function allowed **8 of 12** concurrent calls against
+  a limit of 5; the real function allows exactly 5. The copy was dropped afterwards.
+- All probe rows deleted; `rate_events` is empty.
+
+**Deviations from the plan, both security fixes:**
+- **Added `perform pg_advisory_xact_lock(...)`.** The plan's version reads the count
+  and inserts as two separate statements, so parallel Server Actions can both read
+  `count = 4` and both insert. Measured above: 8 through a limit of 5. Serverless makes
+  this the normal case, not an edge case.
+- **Added `revoke all ... from public`.** Postgres grants `EXECUTE` on new functions to
+  `PUBLIC` by default, and the plan only revokes from `anon`/`authenticated` — which
+  leaves the inherited `PUBLIC` grant intact and the function callable with the
+  publishable key. Revoking `PUBLIC` first is what actually closes it.
+- **Three tests added beyond the plan's twelve:** every allowed language accepted, the
+  exact boundary lengths (20000/80/24) accepted, and an empty language rejected rather
+  than passed through to the DB check constraint.
+
+**Next agent needs to know:** `check_rate_limit` both checks *and* records, so calling
+it twice for one user action consumes two slots. Call it exactly once per attempt, from
+the Server Action, before doing the work.
+
 ### 2026-08-04 — Task 3: anonymous identity ✅
+
+
 **Shipped:** `lib/identity.ts`, `lib/supabase/admin.ts`, `lib/supabase/browser.ts`,
 `lib/result.ts`, `tests/identity.test.ts`, an **Author colors** section in `design.md`,
 `--author-1..8` in `app/globals.css`, and the `server-only` dependency. Tests 26/26,
@@ -236,12 +271,7 @@ column-level grant. Test that before trusting anything else.
 
 ## In progress
 
-- **Step:** Task 4 — validation and rate limiting, from
-  `docs/superpowers/plans/2026-08-04-hitchat-implementation.md` (line 1025)
-- **Branch:** `feat/validation-rate-limit`
-- **Done so far:** nothing but this marker.
-- **Immediately next:** write `tests/validate.test.ts`, then `lib/validate.ts`, then
-  `supabase/migrations/0004_rate_limit.sql`.
+*Nothing. Task 4 is merged; Task 5 has not been started.*
 
 **The RLS test is the most important test in the whole suite.** If any assertion in
 `tests/rls.test.ts` fails, fix the migration — do not weaken the test.
