@@ -13,9 +13,9 @@ section for the step you're on. Full protocol in `AGENTS.md`.
 | | |
 |---|---|
 | **Phase** | Implementing. Tasks 1–5 of 12 done. |
-| **Current step** | **Task 6 — Shiki code rendering** — not yet started |
-| **Branch** | `main` |
-| **Next action** | Start Task 6 from `docs/superpowers/plans/2026-08-04-hitchat-implementation.md` (line 1664): `git checkout -b feat/<task-6-slug>`, set this file to "In progress" and commit that first, then build. Do **not** re-apply migrations 0001–0004 — they are already live on project `vbbinzmpnszdayrdfsle`. |
+| **Current step** | **Task 6 — Shiki code rendering** — in progress |
+| **Branch** | `feat/shiki-code-card` |
+| **Next action** | Build Task 6 from `docs/superpowers/plans/2026-08-04-hitchat-implementation.md` (line 1664): create `lib/shiki-theme.ts`, `lib/highlight.ts`, `components/chat/copy-button.tsx`, `components/chat/code-card.tsx`, `tests/highlight.test.ts`. Then Task 7 (line 1917). Do **not** re-apply migrations 0001–0004 — they are already live on project `vbbinzmpnszdayrdfsle`. |
 | **Blocked?** | No. |
 | **Last updated** | 2026-08-04 |
 
@@ -314,7 +314,16 @@ column-level grant. Test that before trusting anything else.
 
 ## In progress
 
-*Nothing. Task 5 is merged; Task 6 has not been started.*
+**Task 6 — Shiki code rendering, on `feat/shiki-code-card`.** Nothing built yet at the
+time of this commit. Files to create, in order: `lib/shiki-theme.ts` (TextMate themes
+from `design.md` tokens only), `lib/highlight.ts` (module-level singleton
+`createHighlighterCore`), `tests/highlight.test.ts`, `components/chat/copy-button.tsx`,
+`components/chat/code-card.tsx`. Then `bun run build` and a browser check.
+
+**`CodeCard` in Task 6 is deliberately short-lived.** It is a *server* component so the
+Shiki theme and card markup can be proven in isolation. Task 8 replaces it with an
+inline client-side card once Realtime delivery requires one. Do not "fix" Task 6 by
+making it client-side.
 
 **Guard order is load-bearing: ban → lock → validate → rate limit.** The rate check
 *records* an event, so a message rejected for length must not consume the user's quota.
