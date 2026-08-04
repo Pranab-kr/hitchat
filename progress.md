@@ -12,10 +12,10 @@ section for the step you're on. Full protocol in `AGENTS.md`.
 
 | | |
 |---|---|
-| **Phase** | Implementing. Tasks 1–2 of 12 done. Task 2 reviewed and merged. |
-| **Current step** | **Task 3** — not yet started |
-| **Branch** | `main` |
-| **Next action** | Start Task 3 from `docs/superpowers/plans/2026-08-04-hitchat-implementation.md`: `git checkout -b feat/<task-3-slug>`, set this file to "In progress" and commit that first, then build. Do **not** re-apply the three migrations — they are already live on project `vbbinzmpnszdayrdfsle`. |
+| **Phase** | Implementing. Tasks 1–2 of 12 done. Task 3 in flight. |
+| **Current step** | **Task 3 — anonymous identity** |
+| **Branch** | `feat/anon-identity` |
+| **Next action** | Build Task 3 from `docs/superpowers/plans/2026-08-04-hitchat-implementation.md` (line 800): `tests/identity.test.ts`, `lib/identity.ts`, `lib/supabase/admin.ts`, `lib/supabase/browser.ts`, `lib/result.ts`, and `bun add server-only`. **First** resolve the author-color question below — the palette must land in `design.md` before `lib/identity.ts` references any hex. |
 | **Blocked?** | No. |
 | **Last updated** | 2026-08-04 |
 
@@ -193,7 +193,25 @@ column-level grant. Test that before trusting anything else.
 
 ## In progress
 
-*Nothing. Task 2 is merged; Task 3 has not been started.*
+- **Step:** Task 3 — anonymous identity, from
+  `docs/superpowers/plans/2026-08-04-hitchat-implementation.md` (line 800)
+- **Branch:** `feat/anon-identity`
+- **Done so far:** nothing but this marker.
+- **Immediately next:** draft the author-color palette into `design.md` (see below),
+  get it approved, then write `tests/identity.test.ts`.
+
+**Blocking decision resolved by the owner (2026-08-04): author colors get their own
+palette in `design.md`.** The plan's Task 3 hardcodes eight author colors, but only
+three of them (`#2C5F8F` `pen`, `#C8503F` `rule`, `#E5A03A` `marigold`) exist in
+`design.md` — **the other five are invented**, which `AGENTS.md` forbids outright. The
+three that do exist are already reserved for other jobs, and `marigold` in particular is
+SUDO-only, so a marigold handle would read as an admin. Meanwhile `design.md` line 38
+assigns handles to `graphite`.
+
+The owner chose: add a proper **Author colors** section to `design.md` as its own token
+group with a stated job, contrast-checked against both `paper` and `desk`, marigold
+excluded. **The palette must be approved before `lib/identity.ts` uses any hex.** Do not
+paste the plan's eight colors in as-is — that is the thing being corrected.
 
 **The RLS test is the most important test in the whole suite.** If any assertion in
 `tests/rls.test.ts` fails, fix the migration — do not weaken the test.
