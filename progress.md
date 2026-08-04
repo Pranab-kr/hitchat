@@ -13,9 +13,9 @@ section for the step you're on. Full protocol in `AGENTS.md`.
 | | |
 |---|---|
 | **Phase** | Implementing. Tasks 1–6 of 12 done. |
-| **Current step** | **Task 7 — room page, message list, live updates** — not yet started |
-| **Branch** | `feat/shiki-code-card` (about to merge to `main`) |
-| **Next action** | Start Task 7 from `docs/superpowers/plans/2026-08-04-hitchat-implementation.md` (line 1917): `git checkout -b feat/room-live-updates`, set this file to "In progress" and commit that first, then build. Do **not** re-apply migrations 0001–0004 — they are already live on project `vbbinzmpnszdayrdfsle`. |
+| **Current step** | **Task 7 — room page, message list, live updates** — in progress |
+| **Branch** | `feat/room-live-updates` |
+| **Next action** | Build Task 7 from `docs/superpowers/plans/2026-08-04-hitchat-implementation.md` (line 1917): create `lib/types.ts`, `tests/age.test.ts`, `lib/age.ts`, `lib/use-realtime-messages.ts`, `components/chat/message-row.tsx`, `components/chat/message-list.tsx`, `app/c/[dept]/[year]/[batch]/[group]/page.tsx`. Then seed a room and verify live updates in two browser windows. Do **not** re-apply migrations 0001–0004 — they are already live on project `vbbinzmpnszdayrdfsle`. |
 | **Blocked?** | No. |
 | **Last updated** | 2026-08-04 |
 
@@ -361,7 +361,20 @@ column-level grant. Test that before trusting anything else.
 
 ## In progress
 
-*Nothing. Task 6 is merged; Task 7 has not been started.*
+**Task 7 — room page, message list, live updates, on `feat/room-live-updates`.** Nothing
+built yet at the time of this commit. Files to create, in order: `lib/types.ts`,
+`tests/age.test.ts` (write first, must fail), `lib/age.ts`,
+`lib/use-realtime-messages.ts`, `components/chat/message-row.tsx`,
+`components/chat/message-list.tsx`, `app/c/[dept]/[year]/[batch]/[group]/page.tsx`.
+
+**Code messages stay plain text at the end of this task.** `MessageRow` is a client
+component and cannot server-highlight. Task 8 fetches highlighted HTML through a Server
+Action and replaces `CodeCard` with an inline client card. Do not wire `CodeCard` into
+`MessageRow` here.
+
+**Never subscribe to DELETE.** Realtime cannot filter DELETE and does not apply RLS to it,
+so the bulk expiry purge would broadcast bare primary keys to every client in every room.
+INSERT and UPDATE only; expiry is hidden client-side.
 
 **Check `fc-list :charset=<hex>` before shipping any new glyph.** design.md's mockups use
 several characters that are missing from every bundled font and from monospace on Linux —
