@@ -12,10 +12,10 @@ section for the step you're on. Full protocol in `AGENTS.md`.
 
 | | |
 |---|---|
-| **Phase** | Implementing. Tasks 1–8 of 12 done. |
-| **Current step** | **Task 9 — reactions and reply-to** — not yet started |
-| **Branch** | `main` |
-| **Next action** | Start Task 9 from `docs/superpowers/plans/2026-08-04-hitchat-implementation.md` (line 2713): `git checkout -b feat/reactions`, set this file to "In progress" and commit that first, then build. **Read the four Task 9 corrections in Deviations → *Task 8/9 planned code corrections* before writing any of it** — the plan's reaction code cannot pass its own step 7. Do **not** re-apply migrations 0001–0004 — they are already live on project `vbbinzmpnszdayrdfsle`. |
+| **Phase** | Implementing. Tasks 1–8 of 12 done. **Task 9 is paused for an owner-requested scope change.** |
+| **Current step** | **Message lifetime: 24 hours → 8 hours** — in progress on `feat/8h-expiry` |
+| **Branch** | `feat/8h-expiry` |
+| **Next action** | Finish the 8-hour change (see *In progress* below for the full checklist of six edit sites). When it is merged, start Task 9 from `docs/superpowers/plans/2026-08-04-hitchat-implementation.md` (line 2713): `git checkout -b feat/reactions`, set this file to "In progress" and commit that first, then build. **Read the four Task 9 corrections in Deviations → *Task 8/9 planned code corrections* before writing any of it** — the plan's reaction code cannot pass its own step 7. Do **not** re-apply migrations 0001–0004 — they are already live on project `vbbinzmpnszdayrdfsle`. |
 | **Blocked?** | No. |
 | **Last updated** | 2026-08-04 |
 
@@ -505,7 +505,36 @@ column-level grant. Test that before trusting anything else.
 
 ## In progress
 
-*Nothing. Task 8 is merged; Task 9 has not been started.*
+### Message lifetime: 24 hours → 8 hours (`feat/8h-expiry`)
+
+**Requested by the project owner on 2026-08-04.** Messages now self-destruct after
+**8 hours**, not 24. Task 9 does not start until this is merged.
+
+**Owner decisions locked (do not re-litigate):**
+- The fade-with-age curve is **rescaled proportionally**, not left at absolute hours.
+  Same four bands, same 0.55 floor: 0–2h full, 2–4h 85%, 4–6h 70%, 6–8h 55%. Leaving
+  the old 6/12/18 thresholds would mean every message expires at full opacity and the
+  fade becomes invisible.
+- **Admin bans stay at 24 hours.** Ban duration is a moderation decision and is
+  deliberately independent of message lifetime. Do not "make it consistent."
+
+**The six edit sites — all of them, or the docs and the running code disagree:**
+1. `supabase/migrations/0005_eight_hour_expiry.sql` — new migration, alters the
+   `messages.expires_at` default. 0001 is already live and is **not** edited.
+2. `lib/age.ts` — thresholds 6/12/18 → 2/4/6.
+3. `tests/age.test.ts` — thresholds, the floor case, and the monotonic sample hours.
+4. `app/page.tsx` and `app/layout.tsx` — "vanishes in 24 hours" copy, two strings.
+5. `docs/superpowers/specs/2026-08-03-anon-lab-chat-design.md` — all 24h references
+   **except** the ban duration.
+6. `design.md` § *Aesthetic risk: fade with age* — the table and its heading;
+   `docs/superpowers/plans/...-implementation.md` — same, minus the ban confirm string.
+
+**Not yet done at the time of writing.** If you are reading this on a fresh session,
+run `git diff main` to see how far it got before continuing.
+
+---
+
+### Standing notes — read before any task
 
 **The Task 9 corrections in Deviations are not optional.** The plan's reaction component
 never updates from the server, so its own step 7 ("a second window sees the count change")
