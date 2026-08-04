@@ -12,10 +12,10 @@ section for the step you're on. Full protocol in `AGENTS.md`.
 
 | | |
 |---|---|
-| **Phase** | Implementing. Tasks 1–4 of 12 done. |
-| **Current step** | **Task 5 — message Server Actions** — not yet started |
-| **Branch** | `main` |
-| **Next action** | Start Task 5 from `docs/superpowers/plans/2026-08-04-hitchat-implementation.md` (line 1226): `git checkout -b feat/<task-5-slug>`, set this file to "In progress" and commit that first, then build. Do **not** re-apply migrations 0001–0004 — they are already live on project `vbbinzmpnszdayrdfsle`. |
+| **Phase** | Implementing. Tasks 1–4 of 12 done. Task 5 in flight. |
+| **Current step** | **Task 5 — message Server Actions** |
+| **Branch** | `feat/message-actions` |
+| **Next action** | Build Task 5 from `docs/superpowers/plans/2026-08-04-hitchat-implementation.md` (line 1226): `lib/guards.ts`, `app/actions/messages.ts`, `tests/helpers/seed-room.ts`, `tests/messages-action.test.ts`. **This is the task that must widen `vitest.config.ts`** to expose `SUPABASE_SERVICE_ROLE_KEY` and `IDENTITY_PEPPER` to tests — Task 2 deliberately withheld them and flagged that the widening be done consciously. |
 | **Blocked?** | No. |
 | **Last updated** | 2026-08-04 |
 
@@ -271,7 +271,17 @@ column-level grant. Test that before trusting anything else.
 
 ## In progress
 
-*Nothing. Task 4 is merged; Task 5 has not been started.*
+- **Step:** Task 5 — message Server Actions, from
+  `docs/superpowers/plans/2026-08-04-hitchat-implementation.md` (line 1226)
+- **Branch:** `feat/message-actions`
+- **Done so far:** nothing but this marker.
+- **Immediately next:** write `lib/guards.ts`, then `app/actions/messages.ts`, then the
+  `tests/helpers/seed-room.ts` fixture (Tasks 9 and 11 reuse it), then
+  `tests/messages-action.test.ts`.
+
+**Guard order is load-bearing: ban → lock → validate → rate limit.** The rate check
+*records* an event, so a message rejected for length must not consume the user's quota.
+Do not reorder these.
 
 **The RLS test is the most important test in the whole suite.** If any assertion in
 `tests/rls.test.ts` fails, fix the migration — do not weaken the test.
