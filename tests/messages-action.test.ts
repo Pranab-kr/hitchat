@@ -146,7 +146,8 @@ describe('sendText', () => {
 
     expect(codes.slice(0, 5)).toEqual([undefined, undefined, undefined, undefined, undefined])
     expect(codes[5]).toBe('rate_limited')
-  })
+    // Six sequential posts, each ~4 round-trips to ap-south-1, do not fit the 5s default.
+  }, 30_000)
 })
 
 describe('postCode', () => {

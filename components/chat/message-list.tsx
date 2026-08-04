@@ -9,10 +9,12 @@ import type { Message } from '@/lib/types'
 export function MessageList({
   groupId,
   initial,
+  initialCodeHtml,
   labFilter,
 }: {
   groupId: string
   initial: Message[]
+  initialCodeHtml: Record<string, string>
   labFilter: string | null
 }) {
   const { messages, connected } = useRealtimeMessages(groupId, initial)
@@ -41,7 +43,13 @@ export function MessageList({
           Nothing here yet. Paste your lab code and someone will thank you.
         </p>
       ) : (
-        visible.map((message) => <MessageRow key={message.id} message={message} />)
+        visible.map((message) => (
+          <MessageRow
+            key={message.id}
+            message={message}
+            codeHtml={initialCodeHtml[message.id] ?? null}
+          />
+        ))
       )}
 
       <div ref={bottomRef} />

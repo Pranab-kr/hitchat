@@ -12,10 +12,10 @@ section for the step you're on. Full protocol in `AGENTS.md`.
 
 | | |
 |---|---|
-| **Phase** | Implementing. Tasks 1–7 of 12 done. |
-| **Current step** | **Task 8 — composer, anonymous token, code rendering in the stream** — IN PROGRESS on `feat/composer` |
-| **Branch** | `feat/composer` |
-| **Next action** | Continue Task 8 from `docs/superpowers/plans/2026-08-04-hitchat-implementation.md` (line 2317). Files to create: `lib/use-anon-token.ts`, `app/actions/highlight.ts`, `components/chat/composer.tsx`, `components/chat/code-composer.tsx`, `tests/use-anon-token.test.ts`; modify `components/chat/message-row.tsx`, `message-list.tsx`, `code-card.tsx`, and the room page. Do **not** re-apply migrations 0001–0004 — they are already live on project `vbbinzmpnszdayrdfsle`. |
+| **Phase** | Implementing. Tasks 1–8 of 12 done. |
+| **Current step** | **Task 9 — reactions and reply-to** — not yet started |
+| **Branch** | `main` |
+| **Next action** | Start Task 9 from `docs/superpowers/plans/2026-08-04-hitchat-implementation.md` (line 2713): `git checkout -b feat/reactions`, set this file to "In progress" and commit that first, then build. **Read the four Task 9 corrections in Deviations → *Task 8/9 planned code corrections* before writing any of it** — the plan's reaction code cannot pass its own step 7. Do **not** re-apply migrations 0001–0004 — they are already live on project `vbbinzmpnszdayrdfsle`. |
 | **Blocked?** | No. |
 | **Last updated** | 2026-08-04 |
 
@@ -53,6 +53,71 @@ unrecoverable by a fresh agent.
 ## Done
 
 Newest first. Each entry: what shipped, what deviated, what the next agent needs.
+
+### 2026-08-04 — Task 8: composer, anonymous token, code in the stream ✅
+**Shipped:** `lib/use-anon-token.ts`, `app/actions/highlight.ts`,
+`components/chat/composer.tsx`, `components/chat/code-composer.tsx`,
+`tests/use-anon-token.test.ts`; modified `components/chat/code-card.tsx`,
+`message-row.tsx`, `message-list.tsx`, the room page, `tests/setup.ts`, and
+`tests/messages-action.test.ts`. Tests 71/71, eslint clean, `tsc --noEmit` clean,
+`bun run build` succeeds. No migration in this task.
+
+**All five of the plan's step 10 checks were run in a real browser and pass:** text
+sends and clears the input; a code post renders with the margin rule, line numbers and a
+working copy button; the 6th message in 10s shows "You are posting too fast." inline
+inside the composer with **zero** dialog elements on the page; 1,001 characters shows
+exactly "Messages are 1,000 characters max. This is 1,001."; and a second browser context
+saw a message **1,035ms** after it was posted. Seeded room and all rows deleted
+afterwards — all eight tables verified back to 0.
+
+**`localStorage` was undefined in every jsdom test, and it is not our bug.** Node 26
+predefines an inert `localStorage` getter on `globalThis`. Vitest's `getWindowKeys`
+(`node_modules/vitest/dist/chunks/index.DC7d2Pf8.js:242`) drops any key already present
+on the global unless it appears in its own `KEYS` list — and `localStorage` does not.
+So jsdom's Storage never gets installed. `sessionStorage` works only because Node does
+not predefine that one. `tests/setup.ts` now installs a real Storage borrowed from a
+throwaway JSDOM. **Any future test touching localStorage depends on this;** do not
+"simplify" it to a Map shim, and if a Node or Vitest upgrade makes it redundant, delete
+it deliberately rather than leaving both.
+
+**Deviations from the plan — five in Task 8, each one the plan contradicting its own
+verification step:**
+- **`useAnonToken` uses `useSyncExternalStore`, not `useEffect` + `setToken`.** The
+  plan's form is an eslint *error* under `react-hooks/set-state-in-effect` — the third
+  time this plan has hit that rule (Tasks 1 and 7 were the others). Minting happens
+  inside `subscribe`, which runs post-mount, so the snapshot read stays pure;
+  doing it in the render body trips `react-hooks/purity` instead.
+- **`CodeCard` was kept, not deleted.** The plan replaces it with an inline card that
+  silently drops the `>15 lines` collapse Task 6 built and verified, and reverts
+  `rounded-card` to a raw `rounded-[8px]`. It is now a presentational **client**
+  component taking pre-rendered HTML. Verified in-browser: a 24-line post still
+  collapses behind "⌄ show 24 lines" with `list-style: none`.
+- **Code is highlighted on the server for the initial 100 messages.** The plan
+  highlights only in an effect, so every server-rendered code message would show an
+  empty box until JS ran — Task 7's bug #2 again. Measured with JS disabled: the card
+  renders with real syntax-highlighted content. The effect now covers only messages
+  arriving over Realtime, which was verified separately.
+- **`renderCode` enforces the same bounds as `postCode`.** It is a public,
+  unauthenticated Server Action; the plan's version accepts unbounded input and an
+  arbitrary language string, which is a free CPU sink.
+- **No `maxLength` on the composer inputs.** The plan sets `maxLength={1000}`, which
+  silently truncates and makes its own check #4 unreachable. An over-length counter
+  appears instead and the server-side message is what rejects the send.
+
+**One unrelated fix:** `tests/messages-action.test.ts` → "stops the sixth message in ten
+seconds" was **already failing on `main`** before this task's changes (verified by
+stashing). It is six sequential posts, each several round-trips to ap-south-1, against
+vitest's 5s default — a latency timeout, not a logic failure. Given a 30s timeout.
+
+**Next agent needs to know:**
+- **`CodeCard` no longer highlights anything.** It takes `html` as a prop. Server
+  callers pass `highlightCode(...)`; client callers let `MessageRow` fetch via the
+  `renderCode` action. A caller that forgets both gets an empty card, not an error.
+- **Playwright was installed temporarily and removed again**, as in Task 7.
+  `package.json` is clean. `bun add -D playwright && bunx playwright install firefox`
+  if you need it. `@types/jsdom` **was** kept — `tests/setup.ts` imports jsdom directly.
+- The dev-tools circle overlapping the composer in local screenshots is Next's dev
+  indicator, not our UI. It does not ship.
 
 ### 2026-08-04 — Task 7: room page, message list, live updates ✅
 **Shipped:** `lib/types.ts`, `lib/age.ts`, `lib/author-color.ts`, `lib/use-now.ts`,
@@ -440,13 +505,11 @@ column-level grant. Test that before trusting anything else.
 
 ## In progress
 
-**Task 8 — composer, anonymous token, code rendering in the stream** on `feat/composer`.
-Started 2026-08-04. Nothing built yet at the time of writing; if you find this line and
-the branch has code on it, read the diff before assuming anything is missing.
+*Nothing. Task 8 is merged; Task 9 has not been started.*
 
-Nine problems were identified in the planned code for Tasks 8 and 9 before starting.
-They are recorded under **Deviations from plan** → *Task 8/9 planned code corrections*.
-Do not "restore" the plan's version of any of them without re-reading that section.
+**The Task 9 corrections in Deviations are not optional.** The plan's reaction component
+never updates from the server, so its own step 7 ("a second window sees the count change")
+cannot pass. Read that section before writing reaction code.
 
 **Never render a stored `author_color` inline.** It is the light-theme hex; all eight fail
 WCAG AA on the dark background. Use `authorColorVar()` from `lib/author-color.ts`.
@@ -459,9 +522,13 @@ never runs.
 several characters that are missing from every bundled font and from monospace on Linux —
 U+29C9 `⧉` was one, and it shipped as tofu until a screenshot caught it.
 
-**Check `fc-list :charset=<hex>` before shipping any new glyph.** design.md's mockups use
-several characters that are missing from every bundled font and from monospace on Linux —
-U+29C9 `⧉` was one, and it shipped as tofu until a screenshot caught it.
+
+**`CodeCard` takes pre-rendered `html`; it does not highlight.** Server callers pass
+`highlightCode(...)`, client callers go through the `renderCode` action. Forgetting both
+gives an empty card with no error.
+
+**`tests/setup.ts` installs `localStorage` by hand** because Node 26 + vitest leave it
+undefined in jsdom. Every localStorage-touching test depends on it.
 
 **Guard order is load-bearing: ban → lock → validate → rate limit.** The rate check
 *records* an event, so a message rejected for length must not consume the user's quota.
@@ -491,37 +558,29 @@ group. See the Deviations section.
 Anything built differently from `plan.md`, and why. Silence about a known deviation is
 how the next agent undoes your work.
 
-### 2026-08-04 — Task 8/9 planned code corrections (recorded before building)
+### 2026-08-04 — Task 8/9 planned code corrections
 
-Nine problems in the plan's code for Tasks 8 and 9, each one a case of the plan
-contradicting its own verification step. Recorded here first so a session that dies
-mid-task does not lose the analysis.
+Nine problems in the plan's code for Tasks 8 and 9, each one the plan contradicting its
+own verification step.
 
-**Task 8**
-1. `useAnonToken` mints in `useEffect` + `setToken`. That is an eslint **error** under
-   `react-hooks/set-state-in-effect` — the same rule Tasks 1 and 7 hit. Use the
-   `useSyncExternalStore` form, alongside `lib/use-mounted.ts`.
-2. Step 8 deletes `code-card.tsx` and inlines a card that drops the `>15 lines`
-   collapse Task 6 built and verified, and reverts `rounded-card` to `rounded-[8px]`.
-   Keep `CodeCard` and make it a presentational client component instead.
-3. Highlighting only in an effect means the server-rendered first 100 messages show
-   empty code boxes until JS runs — Task 7 bug #2 all over again. Pre-render on the
-   server and let the effect cover only Realtime arrivals.
-4. `renderCode` is an unauthenticated Server Action taking unbounded input. Needs the
-   same length and language guards as `postCode`.
-5. `maxLength={1000}` on the composer input makes step 10's own check #4 (paste 1,001
-   chars, see the over-length message) impossible to trigger.
+**Task 8 — all five applied and verified. See the Task 8 entry under Done for detail.**
+1. `useAnonToken` minted in `useEffect` + `setToken` (eslint error) → `useSyncExternalStore`.
+2. Step 8 deleted `code-card.tsx`, losing the `>15 lines` collapse → `CodeCard` kept.
+3. Highlighting only in an effect → server-rendered for the initial 100.
+4. `renderCode` took unbounded input → same bounds as `postCode`.
+5. `maxLength={1000}` made the over-length message unreachable → removed.
 
-**Task 9**
-6. Reactions never update live. `Reactions` seeds state from props and nothing calls
-   `getReactions`; the `reaction_bump` UPDATE carries no counts. Step 7's "second
-   window sees the count change" cannot pass as written.
+**Task 9 — NOT yet applied. Read this before writing reaction code.**
+6. **Reactions never update live.** `Reactions` seeds state from props and nothing calls
+   `getReactions`; the `reaction_bump` UPDATE carries no counts. Step 7's "second window
+   sees the count change" cannot pass as written. The bump tells a client *that*
+   something changed — it still has to fetch *what*.
 7. The reply preview uses `style={{ color: replyTo.author_color }}` — the stored light
    hex. All eight fail WCAG AA on the dark background. Must use `authorColorVar()`.
-8. `onJumpTo` is referenced but never defined, and no UI creates a reply, so the
-   reply half of step 7 is untestable.
+8. `onJumpTo` is referenced but never defined, and no UI creates a reply, so the reply
+   half of step 7 is untestable.
 9. The tests reuse the literal token `'reactor'` across several posts. Per Task 5 that
-   exhausts its own rate quota on a second run inside the window.
+   exhausts its own rate quota on a second run inside the window — use `tok()`.
 
 ### 2026-08-04 — Author colors are a `design.md` token group, not the plan's hexes
 

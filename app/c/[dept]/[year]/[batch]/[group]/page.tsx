@@ -1,7 +1,9 @@
 import { notFound } from 'next/navigation'
 import { getServiceClient } from '@/lib/supabase/admin'
 import { MESSAGE_COLUMNS } from '@/lib/columns'
+import { highlightCode } from '@/lib/highlight'
 import { MessageList } from '@/components/chat/message-list'
+import { Composer } from '@/components/chat/composer'
 import type { Message } from '@/lib/types'
 
 export const dynamic = 'force-dynamic'
@@ -42,6 +44,17 @@ export default async function RoomPage({ params }: { params: Promise<RoomParams>
 
   const initial = ((messages ?? []) as unknown as Message[]).reverse()
 
+  // Highlighted server-side so code is readable on first paint and without JS. Messages
+  // arriving later over Realtime go through the renderCode action instead.
+  const codeMessages = initial.filter((m) => m.kind === 'code' && !m.deleted_at)
+  const rendered = await Promise.all(
+    codeMessages.map(async (m) => [
+      m.id,
+      await highlightCode(m.body, m.code_lang ?? 'plaintext'),
+    ]),
+  )
+  const initialCodeHtml = Object.fromEntries(rendered) as Record<string, string>
+
   return (
     <div className="flex h-dvh flex-col">
       <header className="border-b border-hairline px-4 py-3">
@@ -50,7 +63,14 @@ export default async function RoomPage({ params }: { params: Promise<RoomParams>
         </h1>
       </header>
 
-      <MessageList groupId={room.id} initial={initial} labFilter={null} />
+      <MessageList
+        groupId={room.id}
+        initial={initial}
+        initialCodeHtml={initialCodeHtml}
+        labFilter={null}
+      />
+
+      <Composer groupId={room.id} locked={room.is_locked} />
     </div>
   )
 }

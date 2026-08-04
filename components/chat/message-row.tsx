@@ -1,20 +1,42 @@
 'use client'
 
+import { useEffect, useState } from 'react'
 import { motion, useReducedMotion } from 'motion/react'
 import { ageOpacity } from '@/lib/age'
 import { authorColorVar } from '@/lib/author-color'
 import { useMounted } from '@/lib/use-mounted'
+import { renderCode } from '@/app/actions/highlight'
+import { CodeCard } from './code-card'
 import type { Message } from '@/lib/types'
 
 export function MessageRow({
   message,
+  codeHtml: initialCodeHtml = null,
   children,
 }: {
   message: Message
+  codeHtml?: string | null
   children?: React.ReactNode
 }) {
   const reduce = useReducedMotion()
   const mounted = useMounted()
+  const [codeHtml, setCodeHtml] = useState(initialCodeHtml)
+
+  const isCode = message.kind === 'code' && !message.deleted_at
+  const needsHighlight = isCode && codeHtml === null
+
+  useEffect(() => {
+    // Only for messages that arrived over Realtime; the first 100 are highlighted on
+    // the server so they are readable before hydration and without JS.
+    if (!needsHighlight) return
+    let alive = true
+    void renderCode(message.body, message.code_lang ?? 'plaintext').then((html) => {
+      if (alive) setCodeHtml(html)
+    })
+    return () => {
+      alive = false
+    }
+  }, [needsHighlight, message.body, message.code_lang])
 
   if (message.deleted_at) {
     return (
@@ -61,14 +83,22 @@ export function MessageRow({
 
       {/* Code bodies never fade — someone copying an 18-hour-old answer needs to read it
           perfectly. Only text ages. */}
-      <div
-        className="text-[15px] leading-[24px] break-words whitespace-pre-wrap text-ink"
-        style={
-          message.kind === 'text' ? { opacity: ageOpacity(message.created_at) } : undefined
-        }
-      >
-        {children ?? message.body}
-      </div>
+      {isCode ? (
+        <CodeCard
+          code={message.body}
+          html={codeHtml}
+          lang={message.code_lang ?? 'plaintext'}
+          title={message.code_title}
+          labTag={message.lab_tag}
+        />
+      ) : (
+        <div
+          className="text-[15px] leading-[24px] break-words whitespace-pre-wrap text-ink"
+          style={{ opacity: ageOpacity(message.created_at) }}
+        >
+          {children ?? message.body}
+        </div>
+      )}
     </motion.div>
   )
 }

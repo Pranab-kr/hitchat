@@ -1,27 +1,30 @@
-import { highlightCode } from '@/lib/highlight'
+'use client'
+
 import { CopyButton } from './copy-button'
 
-export async function CodeCard({
+// Presentational only: the caller supplies already-highlighted HTML — from the server on
+// first paint, from the renderCode action for messages arriving over Realtime.
+export function CodeCard({
   code,
+  html,
   lang,
   title,
   labTag,
 }: {
   code: string
+  html: string | null
   lang: string
   title?: string | null
   labTag?: string | null
 }) {
-  const html = await highlightCode(code, lang)
   const lineCount = code.split('\n').length
   const isLong = lineCount > 15
 
   const body = (
     <div
       className="overflow-x-auto px-4 py-3 font-mono text-[13px] leading-[21px]"
-      // Safe: Shiki escapes every '<' in the input (asserted in
-      // tests/highlight.test.ts). We never interpolate the code ourselves.
-      dangerouslySetInnerHTML={{ __html: html }}
+      // Safe: Shiki escapes every '<' in the input (asserted in tests/highlight.test.ts).
+      dangerouslySetInnerHTML={{ __html: html ?? '' }}
     />
   )
 
