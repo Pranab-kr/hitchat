@@ -8,7 +8,10 @@ export const testDb = createClient(
 export type SeededRoom = { groupId: string; deptId: string }
 
 export async function seedRoom(): Promise<SeededRoom> {
-  const { data: dept } = await testDb
+  // Every insert is error-checked. Without this a transient failure against ap-south-1
+  // surfaces as "Cannot read properties of undefined (reading 'id')" from the next line
+  // down, which says nothing about what actually went wrong.
+  const { data: dept, error: deptError } = await testDb
     .from('departments')
     .insert({
       name: 'Test Dept',
@@ -16,29 +19,35 @@ export async function seedRoom(): Promise<SeededRoom> {
     })
     .select('id')
     .single()
+  if (deptError) throw new Error(`seedRoom: departments insert failed: ${deptError.message}`)
 
-  const { data: year } = await testDb
+  const { data: year, error: yearError } = await testDb
     .from('years')
     .insert({ department_id: dept!.id, number: 1 })
     .select('id')
     .single()
+  if (yearError) throw new Error(`seedRoom: years insert failed: ${yearError.message}`)
 
-  const { data: batch } = await testDb
+  const { data: batch, error: batchError } = await testDb
     .from('batches')
     .insert({ year_id: year!.id, number: 1 })
     .select('id')
     .single()
+  if (batchError) throw new Error(`seedRoom: batches insert failed: ${batchError.message}`)
 
-  const { data: group } = await testDb
+  const { data: group, error: groupError } = await testDb
     .from('groups')
     .insert({ batch_id: batch!.id, label: 'A' })
     .select('id')
     .single()
+  if (groupError) throw new Error(`seedRoom: groups insert failed: ${groupError.message}`)
 
   return { groupId: group!.id, deptId: dept!.id }
 }
 
-// Cascades to years, batches, groups, messages and reactions.
-export async function teardownRoom(room: SeededRoom): Promise<void> {
+// Cascades to years, batches, groups, messages and reactions. Tolerates a room that
+// never fully seeded, so a failed beforeAll does not also break afterAll and hide it.
+export async function teardownRoom(room: SeededRoom | undefined): Promise<void> {
+  if (!room?.deptId) return
   await testDb.from('departments').delete().eq('id', room.deptId)
 }

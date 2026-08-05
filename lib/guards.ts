@@ -36,7 +36,7 @@ export async function assertRoomOpen(groupId: string): Promise<ActionResult<null
 
 export async function assertRateOk(
   hash: string,
-  action: 'text' | 'code' | 'reaction',
+  action: 'text' | 'code' | 'reaction' | 'admin_login',
 ): Promise<ActionResult<null>> {
   const db = getServiceClient()
   const { data, error } = await db.rpc('check_rate_limit', {

@@ -13,10 +13,10 @@ section for the step you're on. Full protocol in `AGENTS.md`.
 
 | | |
 |---|---|
-| **Phase** | Implementing. Tasks 1–9 of 12 done. |
-| **Current step** | **Task 10 — admin authentication** — **IN PROGRESS** |
-| **Branch** | `feat/admin-auth` |
-| **Next action** | Continue Task 10 from `docs/superpowers/plans/2026-08-04-hitchat-implementation.md` (heading *Task 10: Admin authentication*). Creates `lib/auth/session.ts`, `lib/auth/require.ts`, `app/actions/admin.ts`, `app/sudo/page.tsx`, `scripts/seed-owner.ts`, `tests/admin-auth.test.ts`, and migration `0007_admin_login_rate_limit.sql`. **`AGENTS.md` hard rules apply hardest here** — secrets hashed, never plaintext; every admin action re-verifies its own session (`proxy.ts` is not authorization). Do **not** re-apply migrations 0001–0006 — all live on `vbbinzmpnszdayrdfsle`. If this branch has commits and this line still says IN PROGRESS, check what exists on disk before rebuilding anything. |
+| **Phase** | Implementing. Tasks 1–10 of 12 done. |
+| **Current step** | **Task 11 — moderation (delete, pin, lock, purge, ban)** — not started |
+| **Branch** | `main`. Task 10 merged; `feat/admin-auth` deleted. |
+| **Next action** | `git checkout main && git pull`, then `git checkout -b feat/moderation`, then **set this table's Current step to "IN PROGRESS" and commit that before writing any code**. Build Task 11 from `docs/superpowers/plans/2026-08-04-hitchat-implementation.md` line 3475 (heading *Task 11: Moderation — delete, pin, lock, purge, ban*). Creates `app/actions/moderation.ts`, `components/chat/admin-controls.tsx`, `components/room/pinned-strip.tsx`, `tests/moderation.test.ts`. **The plan's Task 11 code imports `requireAdmin` from `@/app/actions/admin` — that is wrong now. Import it from `@/lib/auth/require`** (see Task 10's Deviations). Every action must call `requireAdmin()` itself; `proxy.ts` is not authorization. Do **not** re-apply migrations 0001–0007 — all live on `vbbinzmpnszdayrdfsle`. |
 | **Blocked?** | No. |
 | **Last updated** | 2026-08-05 |
 
@@ -54,6 +54,114 @@ unrecoverable by a fresh agent.
 ## Done
 
 Newest first. Each entry: what shipped, what deviated, what the next agent needs.
+
+### 2026-08-05 — Task 10: admin authentication ✅
+**Shipped:** `supabase/migrations/0007_admin_login_rate_limit.sql` (**applied live** to
+`vbbinzmpnszdayrdfsle`), `lib/auth/session.ts`, `lib/auth/require.ts`,
+`app/actions/admin.ts`, `components/admin/sudo-form.tsx`, `app/sudo/page.tsx`,
+`scripts/seed-owner.ts`, `tests/admin-auth.test.ts`; modified `lib/guards.ts` and
+`tests/helpers/seed-room.ts`. Tests 105/105 across 11 files, eslint clean,
+`tsc --noEmit` clean, `bun run build` succeeds (`/sudo` builds as a dynamic route).
+
+**The migration is `0007`, and it is not in the plan at all.** The spec's abuse-control
+table (line 394) says *admin login attempt — 5 per 60 seconds per IP*; the plan
+implements no login limit, which leaves `adminLogin` an **unauthenticated bcrypt
+oracle** — an attacker can drive unlimited cost-12 comparisons on a public endpoint.
+0007 widens the `rate_events_action_check` constraint to accept `admin_login` and
+recreates `check_rate_limit` with a 5-per-60s branch, keeping the Task 4 advisory lock
+and re-running both revokes. Verified live: 5 `true` then 2 `false`; `anon`,
+`authenticated` and `public` all report **false** for EXECUTE; an unknown action still
+denies. Probe rows deleted.
+
+**The rate-limit key is a peppered hash of the IP, never the IP itself.** `clientKey()`
+reads `x-forwarded-for` (first hop) then `x-real-ip`, falls back to `'unknown'`, and
+runs it through `hashToken`. `rate_events` therefore holds no PII.
+
+**Verified in a real browser, dev and production builds, JS on and off — 12 checks:**
+wrong secret shows exactly "That secret doesn't work." and sets **no cookie**; correct
+secret redirects to `/`; the cookie is `httpOnly=true`, `sameSite=Lax`, `path=/`, 64 hex
+chars, **7.00 days**, `secure=false` in dev and **`secure=true` in production**;
+`document.cookie` cannot see it (reads `""`); `/sudo` while signed in redirects to `/`;
+and **with JavaScript disabled the form still logs in** — sets the httpOnly cookie and
+redirects. The rate limit was exercised through the real form: attempts 1–5 rejected,
+attempt 6 rate-limited, and the DB recorded exactly 5 events across 1 distinct hashed IP.
+
+**Verified by mutation — all five guards genuinely covered.** Deleting each guard in
+turn makes exactly the tests that cover it fail: the expiry check, the `revoked_at`
+check, the `timingSafeEqual` comparison, `requireAdmin`'s null-session branch, and
+`requireOwner`'s role check.
+
+**Two browser assertions that were false positives, and how they were caught.** Both
+are the Task 9 selector lesson repeating:
+1. `page.textContent('[role=alert]')` returned empty — Next renders
+   `<div id="__next-route-announcer__" role="alert">` and the bare selector matched
+   **that**, not the error. Now scoped to `#secret-error` and compared exactly.
+2. The rate-limit script counted 4 submits out of 6 clicks, because consecutive
+   attempts render an *identical* message so `waitFor` returned on the stale render.
+   Now synchronised on the actual POST via `page.waitForResponse`.
+**Any future assertion on this page must scope to an id and compare exactly.**
+
+**A WCAG AA failure found by measurement, not by eye.** The error text as `rule` at 12px
+measured **4.28:1** on the card in light mode, under the 4.5 floor. Fixed without
+inventing a color: `rule` moved to a 2px left border plus a 10% wash, with `ink` for the
+text — re-measured from actual screenshot pixels at **15.20:1 light / 14.53:1 dark**, and
+the border at 4.15:1 / 5.51:1 against the 3.0 UI floor. Every other pairing already
+passed (heading 15.69, sub/label 5.50, button 6.18, input 15.20, footnote 5.33 light;
+all dark ≥5.11). Focus ring is 2px solid `pen` in both themes. **`marigold` is
+deliberately absent from `/sudo`** — nobody is authenticated on that page yet.
+
+**Deviations from the plan:**
+- **`requireAdmin`/`requireOwner` live in `lib/auth/require.ts`, not `app/actions/admin.ts`.**
+  Every export of a `'use server'` file is a publicly callable HTTP endpoint; a guard
+  does not belong on that surface. **Task 11 must import them from `@/lib/auth/require`** —
+  the plan's Task 11 code says `@/app/actions/admin` and will not resolve.
+- **A login rate limit was added** (migration 0007, above). The plan has none.
+- **`SudoForm` uses `useActionState`, not the plan's `useState`/`useTransition`/`router.push`.**
+  The plan's form cannot work without JavaScript — `router.push` needs a hydrated client.
+  A `useActionState` form with a `action={...}` prop posts natively, which is what makes
+  the JS-disabled check above pass.
+- **`createSession` error-checks the insert before setting the cookie.** The plan sets
+  the cookie unconditionally, so a failed insert would hand the browser a session cookie
+  with no matching row — a silent permanent logout loop.
+- **`verifySession` compares the token with `timingSafeEqual`**, after a length check.
+  A plain `===` on a session token is a timing oracle.
+- **`adminLogin` does not `break` on a bcrypt match.** It compares against every active
+  admin so the response time does not reveal *which* admin matched, or how many exist.
+- **`loginFormAction` calls `redirect()` outside any try/catch.** `redirect()` works by
+  throwing to unwind; catching it turns a successful login into a generic error.
+- **`lib/guards.ts` widened `assertRateOk`'s action union** to include `'admin_login'`.
+  One-line change, required for `tsc` to pass.
+- **24 tests, not the plan's 5:** secrets at rest (3), `verifySession` (6), session
+  tokens at rest (2), `requireAdmin`/`requireOwner` (5), `adminLogin` (6),
+  `adminLogout` (2).
+
+**One unrelated fix: `tests/helpers/seed-room.ts` now error-checks every insert.**
+`tests/reactions-action.test.ts` failed once with
+`TypeError: Cannot read properties of undefined (reading 'deptId')` — it passed 10/10 in
+isolation and the next full run passed 105/105, so it was a transient ap-south-1 blip.
+The real problem was that `seedRoom` swallowed insert errors, so a network failure
+surfaced as an unrelated TypeError several lines away. Each insert now throws a named
+message and `teardownRoom` tolerates a partially-seeded room.
+
+**My own test leaked a row onto the live database, and the fix was proven under
+failure.** The revoked-owner test cleaned up inline *after* its assertion, so a failing
+assertion skipped cleanup — a stray `Test RO …` owner row was found in `admins`. Fixed
+with an `extraAdminIds` array plus `makeTempAdmin()` and an `afterAll` sweep, then
+**verified by forcing that test to fail**: it failed and the DB showed 0 leaked admins.
+**Any new test that inserts an admin must register its id in `extraAdminIds`.**
+
+**Next agent needs to know:**
+- **`scripts/seed-owner.ts` is idempotent and has already been run.** The live `admins`
+  table holds exactly one row — `Owner`, role `owner`, bcrypt cost 12. Running it again
+  prints "Owner already exists. Nothing to do." The secret is `OWNER_SECRET` in
+  `.env.local`.
+- **Sessions are keyed by a sha256 of the raw cookie token**; the raw value exists only
+  in the cookie. There is no way to recover a session from the DB, by design.
+- The six sessions minted by browser verification were **deleted** afterwards. Live DB
+  is 1 admin, 0 sessions, 0 `admin_login` rate events.
+- Playwright was installed temporarily and **removed again**, as in Tasks 7–9.
+  `package.json` is clean.
+
 
 ### 2026-08-05 — Task 9: reactions and reply-to ✅
 **Shipped:** `supabase/migrations/0006_reaction_counts.sql` (**applied live** to
@@ -644,20 +752,19 @@ column-level grant. Test that before trusting anything else.
 
 ## In progress
 
-**Task 10 — admin authentication**, branch `feat/admin-auth`, started 2026-08-05.
-
-Planned deviations, decided before building (detail lands in Deviations when merged):
-- **`requireAdmin`/`requireOwner` move to `lib/auth/require.ts`, not `app/actions/admin.ts`.**
-  Every export of a `'use server'` file is a callable HTTP endpoint. `requireOwner`
-  exported from one lets anyone POST it directly — harmless in isolation, but it is a
-  guard, and guards do not belong on the public surface.
-- **A login rate limit is added.** The spec's abuse-control table says 5 attempts per
-  60s and the plan implements none, which leaves `adminLogin` an unauthenticated bcrypt
-  oracle. Needs migration `0007` (the plan's numbering is stale — see Deviations).
+*Nothing. Task 10 merged; Task 11 not started.*
 
 ---
 
 ### Standing notes — read before any task
+
+**Import `requireAdmin`/`requireOwner` from `@/lib/auth/require`, never from
+`@/app/actions/admin`.** Guards must not be exported from a `'use server'` file — every
+export there is a callable HTTP endpoint. The plan's Task 11 code gets this wrong.
+
+**Every admin action re-verifies its own session.** `proxy.ts` is not authorization; the
+Next.js docs say so explicitly. A new admin action that trusts an upstream check is a
+hole.
 
 **Messages live 8 hours, not 24.** The fade curve in `lib/age.ts` is expressed in
 absolute hours and must move with it if that ever changes again. **Admin bans are still
@@ -700,7 +807,10 @@ A test enforces this; do not reorder them.
 **Tests run with the service-role key against the live database.** Any new test that
 posts must suffix its token with the per-run id (`tok()` in
 `tests/messages-action.test.ts`), or it will exhaust its own rate-limit quota on the
-second run inside a window.
+second run inside a window. Any new test that inserts an **admin** must register its id
+in `extraAdminIds` (`tests/admin-auth.test.ts`) so an `afterAll` sweep cleans it up even
+when an assertion fails — cleaning up inline after the assertion leaks rows onto the
+live database.
 
 **The RLS test is the most important test in the whole suite.** If any assertion in
 `tests/rls.test.ts` fails, fix the migration — do not weaken the test.
@@ -738,6 +848,17 @@ with it (0–2/2–4/4–6/6–8), and `lib/age.ts` mirrors that table. **If the
 changes again, these two must move together** — the curve is expressed in absolute
 hours, so leaving it behind silently disables the fade rather than breaking anything
 loudly.
+
+### 2026-08-05 — Task 10 added migration `0007`, which the plan does not contain
+
+The plan's Task 10 has no migration and no login rate limit. The **spec** (line 394)
+requires one: *admin login attempt — 5 per 60 seconds per IP*. Without it `adminLogin`
+is an unauthenticated bcrypt oracle on a public endpoint. `0007_admin_login_rate_limit.sql`
+is applied live under that name.
+
+The running rule, now hit three tasks in a row: **check `supabase/migrations/` for the
+real highest number rather than trusting the plan's.** The plan's numbering has been
+stale since `0005_eight_hour_expiry.sql` was inserted out of band.
 
 ### 2026-08-05 — Task 9's migration is `0006`, not the plan's `0005`
 
