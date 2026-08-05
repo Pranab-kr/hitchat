@@ -3,7 +3,8 @@
 **If you are a new agent: read this file top to bottom before touching anything.**
 This is the handoff document. It assumes you have no memory of prior sessions.
 
-Then read `plan.md` (current step + next), run `git status`, and read only the spec
+Then read `docs/superpowers/plans/2026-08-04-hitchat-implementation.md` (current step +
+next), run `git status`, and read only the spec
 section for the step you're on. Full protocol in `AGENTS.md`.
 
 ---
@@ -12,12 +13,12 @@ section for the step you're on. Full protocol in `AGENTS.md`.
 
 | | |
 |---|---|
-| **Phase** | Implementing. Tasks 1–8 of 12 done. **Task 9 is paused for an owner-requested scope change.** |
-| **Current step** | **Message lifetime: 24 hours → 8 hours** — in progress on `feat/8h-expiry` |
-| **Branch** | `feat/8h-expiry` |
-| **Next action** | Finish the 8-hour change (see *In progress* below for the full checklist of six edit sites). When it is merged, start Task 9 from `docs/superpowers/plans/2026-08-04-hitchat-implementation.md` (line 2713): `git checkout -b feat/reactions`, set this file to "In progress" and commit that first, then build. **Read the four Task 9 corrections in Deviations → *Task 8/9 planned code corrections* before writing any of it** — the plan's reaction code cannot pass its own step 7. Do **not** re-apply migrations 0001–0004 — they are already live on project `vbbinzmpnszdayrdfsle`. |
+| **Phase** | Implementing. Tasks 1–8 of 12 done. |
+| **Current step** | **Task 9 — reactions and reply-to** — not yet started |
+| **Branch** | `main` |
+| **Next action** | Start Task 9 from `docs/superpowers/plans/2026-08-04-hitchat-implementation.md` (line 2713): `git checkout -b feat/reactions`, set this file to "In progress" and commit that first, then build. **Read the four Task 9 corrections in Deviations → *Task 8/9 planned code corrections* before writing any of it** — the plan's reaction code cannot pass its own step 7. Do **not** re-apply migrations 0001–0005 — they are already live on project `vbbinzmpnszdayrdfsle`. |
 | **Blocked?** | No. |
-| **Last updated** | 2026-08-04 |
+| **Last updated** | 2026-08-05 |
 
 **Environment:** `.env.local` is complete — Supabase URL, publishable key,
 `SUPABASE_SERVICE_ROLE_KEY`, a generated `IDENTITY_PEPPER`, and a generated
@@ -54,7 +55,56 @@ unrecoverable by a fresh agent.
 
 Newest first. Each entry: what shipped, what deviated, what the next agent needs.
 
-### 2026-08-04 — Task 8: composer, anonymous token, code in the stream ✅
+### 2026-08-04 — Message lifetime: 24 hours → 8 hours ✅
+**Shipped:** `supabase/migrations/0005_eight_hour_expiry.sql` (**applied live** to
+`vbbinzmpnszdayrdfsle`); modified `lib/age.ts`, `tests/age.test.ts`, `app/page.tsx`,
+`app/layout.tsx`, `design.md`, `progress.md`, `supabase/migrations/0001_schema.sql`
+(comment only), the spec, and the implementation plan. Tests 71/71 (see the flaky
+realtime note below), eslint clean, `tsc --noEmit` clean, `bun run build` succeeds.
+
+**Owner decisions, locked — do not re-litigate:**
+- **The fade curve rescales proportionally**, it does not keep absolute hours. Same
+  four bands and the same 0.55 floor: 0–2h full, 2–4h 85%, 4–6h 70%, 6–8h 55%. Had the
+  old 6/12/18 thresholds stayed, every message would expire while still at full or
+  near-full opacity and the whole fade-with-age idea would be invisible in practice.
+- **Admin bans stay at 24 hours.** Ban duration is a moderation decision and is
+  deliberately independent of message lifetime — a ban that expires along with the
+  messages is barely a ban. `spec:365` and `plan:3711` still say 24 hours **on
+  purpose**. Do not "make it consistent."
+
+**Verified against the live database, not just in the migration file:** the column
+default reads `(now() + '08:00:00'::interval)`, and a **real inserted `messages` row**
+came back with `expires_at - created_at = 08:00:00` exactly. Checking the default
+string alone would not have proven a row actually gets 8 hours. Probe rows deleted;
+all ten tables verified back to 0 afterwards.
+
+**`0001_schema.sql` was NOT rewritten.** It still says `interval '24 hours'` with a
+comment pointing at 0005. It is already applied to the live project, so editing it
+would make the file lie about what ran. 0005 is the record of the change. The **plan's**
+copy of that schema block does say 8 hours, with a note explaining the divergence — a
+fresh database should just use 8 directly.
+
+**No backfill, deliberately.** `messages` was empty when 0005 ran (confirmed by count
+before applying). Rows written before a default change keep their original
+`expires_at` regardless; had there been live rows, shortening them would have been a
+separate decision to put to the owner.
+
+**Next agent needs to know:**
+- **`tests/realtime.test.ts` is flaky, and it is not this change's fault.** Across ~13
+  full-suite runs this session it failed twice and passed the other eleven — including
+  a run on stashed, unmodified `main`, which is how it was ruled out as a regression.
+  Two distinct failure modes were seen: (a) 12 DELETE events where 0 were expected,
+  because the DELETE listener at `tests/realtime.test.ts:136` has **no `group_id`
+  filter** and therefore catches other test files' teardown cascades; (b) the file
+  erroring during setup, skipping its tests. Both are live-network/cross-file
+  isolation races against ap-south-1, not product bugs. **The fix, if it bites again,
+  is to add `filter: group_id=eq.${groupId}` to that DELETE listener** — do not weaken
+  the `expect(deletes).toHaveLength(0)` assertion, which is what proves soft deletes
+  never broadcast as DELETE.
+- The 0.55 opacity floor is unchanged and still a hard WCAG AA contrast requirement.
+  Rescaling the *timing* does not touch the contrast math.
+
+
 **Shipped:** `lib/use-anon-token.ts`, `app/actions/highlight.ts`,
 `components/chat/composer.tsx`, `components/chat/code-composer.tsx`,
 `tests/use-anon-token.test.ts`; modified `components/chat/code-card.tsx`,
@@ -490,6 +540,8 @@ signed cookie. `middleware.ts` also does not exist in Next 16 (it is `proxy.ts`)
 - Reads via Supabase Realtime. `pg_cron` purges every 10 min.
 - Owner + co-admin, secrets hashed in DB. Badge reads **SUDO**.
 - 24h expiry with **no exceptions** — pinned messages expire too.
+  **(Superseded 2026-08-04: the lifetime is now 8h. The "no exceptions" part still
+  holds — pinned messages expire at 8h too.)**
 - Students may delete their own message within 5 minutes.
 - Visual concept: lab record file. Code card with margin rule is the signature.
   Messages fade as they age (isolated behind one utility; removable in one line).
@@ -505,36 +557,15 @@ column-level grant. Test that before trusting anything else.
 
 ## In progress
 
-### Message lifetime: 24 hours → 8 hours (`feat/8h-expiry`)
-
-**Requested by the project owner on 2026-08-04.** Messages now self-destruct after
-**8 hours**, not 24. Task 9 does not start until this is merged.
-
-**Owner decisions locked (do not re-litigate):**
-- The fade-with-age curve is **rescaled proportionally**, not left at absolute hours.
-  Same four bands, same 0.55 floor: 0–2h full, 2–4h 85%, 4–6h 70%, 6–8h 55%. Leaving
-  the old 6/12/18 thresholds would mean every message expires at full opacity and the
-  fade becomes invisible.
-- **Admin bans stay at 24 hours.** Ban duration is a moderation decision and is
-  deliberately independent of message lifetime. Do not "make it consistent."
-
-**The six edit sites — all of them, or the docs and the running code disagree:**
-1. `supabase/migrations/0005_eight_hour_expiry.sql` — new migration, alters the
-   `messages.expires_at` default. 0001 is already live and is **not** edited.
-2. `lib/age.ts` — thresholds 6/12/18 → 2/4/6.
-3. `tests/age.test.ts` — thresholds, the floor case, and the monotonic sample hours.
-4. `app/page.tsx` and `app/layout.tsx` — "vanishes in 24 hours" copy, two strings.
-5. `docs/superpowers/specs/2026-08-03-anon-lab-chat-design.md` — all 24h references
-   **except** the ban duration.
-6. `design.md` § *Aesthetic risk: fade with age* — the table and its heading;
-   `docs/superpowers/plans/...-implementation.md` — same, minus the ban confirm string.
-
-**Not yet done at the time of writing.** If you are reading this on a fresh session,
-run `git diff main` to see how far it got before continuing.
+*Nothing. The 8-hour expiry change is merged; Task 9 has not been started.*
 
 ---
 
 ### Standing notes — read before any task
+
+**Messages live 8 hours, not 24.** The fade curve in `lib/age.ts` is expressed in
+absolute hours and must move with it if that ever changes again. **Admin bans are still
+24 hours on purpose**, as is the already-applied `0001_schema.sql`.
 
 **The Task 9 corrections in Deviations are not optional.** The plan's reaction component
 never updates from the server, so its own step 7 ("a second window sees the count change")
@@ -584,8 +615,26 @@ group. See the Deviations section.
 
 ## Deviations from plan
 
-Anything built differently from `plan.md`, and why. Silence about a known deviation is
+Anything built differently from the implementation plan, and why. Silence about a known
+deviation is
 how the next agent undoes your work.
+
+### 2026-08-04 — Message lifetime is 8 hours, not the spec's original 24
+
+Owner-requested after Task 8 merged, before Task 9 started. Every lifetime reference in
+the spec, the plan, `design.md`, the code and the DB now says 8 hours.
+
+**Two things that deliberately still say 24 and must stay that way:**
+- **Admin ban duration** (`spec:365`, `plan:3711`). Moderation decision, independent of
+  message lifetime.
+- **`supabase/migrations/0001_schema.sql`.** Already applied live; `0005` is the record
+  of the change. Never edit an applied migration to match current intent.
+
+The fade-with-age curve in `design.md` § *Aesthetic risk: fade with age* was rescaled
+with it (0–2/2–4/4–6/6–8), and `lib/age.ts` mirrors that table. **If the lifetime ever
+changes again, these two must move together** — the curve is expressed in absolute
+hours, so leaving it behind silently disables the fade rather than breaking anything
+loudly.
 
 ### 2026-08-04 — Task 8/9 planned code corrections
 

@@ -16,7 +16,7 @@ throwaway lab answers.
 
 A web chat where students in a specific department/year/batch/group can anonymously share
 labelled, syntax-highlighted lab code and talk about it. Everything self-destructs
-after 24 hours. One owner (the project author) administers the whole thing and can
+after 8 hours. One owner (the project author) administers the whole thing and can
 delegate moderation to co-admins.
 
 ## Non-goals
@@ -181,7 +181,7 @@ an empty year up front and so every level of the tree has the same CRUD shape.
 | `is_pinned` | bool default false | |
 | `deleted_at` | timestamptz nullable | soft delete; row stays until purged |
 | `created_at` | timestamptz default now() | |
-| `expires_at` | timestamptz | `created_at + interval '24 hours'` |
+| `expires_at` | timestamptz | `created_at + interval '8 hours'` |
 
 Indexes: `(group_id, created_at desc)`, `(expires_at)`, `(group_id, lab_tag)`.
 
@@ -263,7 +263,7 @@ vanishingly unlikely and harmless if they occur.
 
 ## Ephemerality
 
-Every message carries `expires_at = created_at + 24 hours`. A `pg_cron` job runs
+Every message carries `expires_at = created_at + 8 hours`. A `pg_cron` job runs
 every 10 minutes:
 
 ```sql
@@ -285,7 +285,7 @@ header, running the same SQL. The queries are identical either way, so this is a
 deployment detail rather than a design change.
 
 **Pinned messages expire too, with no exception.** The rule is "everything vanishes in
-24 hours" with no asterisk, which is what makes it trustworthy and simple to explain.
+8 hours" with no asterisk, which is what makes it trustworthy and simple to explain.
 A standing announcement gets re-pinned.
 
 Reads always filter `expires_at > now()` so the up-to-10-minute lag between expiry and
@@ -303,7 +303,7 @@ deletion is never visible.
 ### Loading a room
 The room page server-renders the **most recent 100 non-expired messages** for instant
 first paint, then the client subscribes to Realtime for anything newer. Scrolling to
-the top loads the previous 100 by `created_at` cursor. A 24-hour room rarely exceeds a
+the top loads the previous 100 by `created_at` cursor. An 8-hour room rarely exceeds a
 few hundred messages, so this is the whole pagination story.
 
 ### Messaging
@@ -345,7 +345,7 @@ because Supabase's docs warn that high-frequency `track()` floods the channel.
 
 ### Pinned messages
 Admin-pinned messages collapse into a header strip; clicking expands. Pinned messages
-still expire at 24 hours.
+still expire at 8 hours.
 
 ### Self-delete
 A student may delete their own message within **5 minutes** of posting, matched by
@@ -514,6 +514,6 @@ conventions for this project are recorded in `AGENTS.md`.
 - **Free-tier limits.** Supabase free tier allows 200 concurrent Realtime connections.
   Sized for a handful of lab rooms; a college-wide rollout would need re-checking.
 - **Ban evasion by reroll.** Accepted, as noted above.
-- **`localStorage` cleared** ⇒ new identity. Acceptable for a 24-hour-lifetime product.
+- **`localStorage` cleared** ⇒ new identity. Acceptable for an 8-hour-lifetime product.
 - **Anyone with the link can join.** Accepted per the open-access decision; content is
   throwaway lab code that self-destructs.

@@ -9,7 +9,7 @@ export default function Home() {
         hitchat
       </h1>
       <p className="text-graphite">
-        Anonymous lab chat. Everything vanishes in 24 hours.
+        Anonymous lab chat. Everything vanishes in 8 hours.
       </p>
       <ThemeToggle />
     </main>

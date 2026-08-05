@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Build an anonymous, 24-hour-ephemeral chat where college lab students share syntax-highlighted lab code in rooms scoped to department → year → batch → group, moderated by an owner and delegated co-admins.
+**Goal:** Build an anonymous, 8-hour-ephemeral chat where college lab students share syntax-highlighted lab code in rooms scoped to department → year → batch → group, moderated by an owner and delegated co-admins.
 
 **Architecture:** Every write goes through a Next.js Server Action holding the Supabase service-role key, where rate limiting, ban checks, validation and admin authorization are enforced. The browser holds only the publishable key, whose grants permit `SELECT` on named columns and nothing else. Reads are live via Supabase Realtime (INSERT + UPDATE only — never DELETE). A `pg_cron` job hard-deletes expired rows every 10 minutes.
 
@@ -392,7 +392,7 @@ const plexMono = IBM_Plex_Mono({
 
 export const metadata: Metadata = {
   title: 'hitchat',
-  description: 'Anonymous lab chat. Everything vanishes in 24 hours.',
+  description: 'Anonymous lab chat. Everything vanishes in 8 hours.',
 }
 
 export default function RootLayout({
@@ -574,7 +574,9 @@ create table messages (
   is_pinned boolean not null default false,
   deleted_at timestamptz,
   created_at timestamptz not null default now(),
-  expires_at timestamptz not null default (now() + interval '24 hours'),
+  -- Shipped as '24 hours' and changed to 8 by migration 0005 on 2026-08-04.
+  -- A fresh database should just use 8 here.
+  expires_at timestamptz not null default (now() + interval '8 hours'),
 
   constraint body_length check (
     (kind = 'text' and char_length(body) <= 1000) or
@@ -1971,23 +1973,23 @@ describe('ageOpacity', () => {
     expect(ageOpacity(agoHours(0), now)).toBe(1)
   })
 
-  it('stays fully opaque through the first 6 hours', () => {
-    expect(ageOpacity(agoHours(5.9), now)).toBe(1)
+  it('stays fully opaque through the first 2 hours', () => {
+    expect(ageOpacity(agoHours(1.9), now)).toBe(1)
   })
 
   it('steps down at each documented threshold', () => {
-    expect(ageOpacity(agoHours(7), now)).toBe(0.85)
-    expect(ageOpacity(agoHours(13), now)).toBe(0.7)
-    expect(ageOpacity(agoHours(19), now)).toBe(0.55)
+    expect(ageOpacity(agoHours(2.5), now)).toBe(0.85)
+    expect(ageOpacity(agoHours(4.5), now)).toBe(0.7)
+    expect(ageOpacity(agoHours(6.5), now)).toBe(0.55)
   })
 
   it('never drops below the 0.55 contrast floor', () => {
-    expect(ageOpacity(agoHours(23.9), now)).toBe(0.55)
+    expect(ageOpacity(agoHours(7.9), now)).toBe(0.55)
     expect(ageOpacity(agoHours(100), now)).toBe(0.55)
   })
 
   it('decreases monotonically', () => {
-    const values = [0, 7, 13, 19, 23].map((h) => ageOpacity(agoHours(h), now))
+    const values = [0, 2.5, 4.5, 6.5, 7.9].map((h) => ageOpacity(agoHours(h), now))
     for (let i = 1; i < values.length; i++) {
       expect(values[i]).toBeLessThanOrEqual(values[i - 1])
     }
@@ -2010,9 +2012,9 @@ const HOUR = 60 * 60 * 1000
 export function ageOpacity(createdAt: string, now: number = Date.now()): number {
   const ageHours = (now - new Date(createdAt).getTime()) / HOUR
 
-  if (ageHours < 6) return 1
-  if (ageHours < 12) return 0.85
-  if (ageHours < 18) return 0.7
+  if (ageHours < 2) return 1
+  if (ageHours < 4) return 0.85
+  if (ageHours < 6) return 0.7
   return 0.55
 }
 ```
@@ -4150,7 +4152,7 @@ export default async function HomePage() {
             hitchat
           </h1>
           <p className="mt-1 text-[15px] text-graphite">
-            Pick your room. Everything posted here vanishes in 24 hours.
+            Pick your room. Everything posted here vanishes in 8 hours.
           </p>
         </div>
         <ThemeToggle />
@@ -4249,12 +4251,12 @@ cookie expiry."
 
 These are **spec requirements deliberately not in the 12 tasks**, listed so they are not mistaken for oversights. Each is safe to defer because a room is fully usable without it.
 
-- **Scroll-back pagination.** The spec calls for loading the previous 100 messages by `created_at` cursor when scrolling to the top. Tasks 7–8 load the most recent 100 only. A 24-hour room rarely exceeds that, so this matters only for a very busy lab day.
+- **Scroll-back pagination.** The spec calls for loading the previous 100 messages by `created_at` cursor when scrolling to the top. Tasks 7–8 load the most recent 100 only. An 8-hour room rarely exceeds that, so this matters only for a very busy lab day.
 - **Presence and typing indicators.** Spec'd (Supabase Presence for "N here", Broadcast for typing, throttled to one event per 3 seconds). Add once real traffic exists.
 - **Lab tag filter chips.** `MessageList` already accepts a `labFilter` prop and filters on it; only the header UI to set the value is missing. Small follow-up.
 - **Sidebar room tree.** The picker at `/` covers navigation for a handful of rooms; the two-column sidebar in `design.md` is the fuller version.
 - **Vercel Cron fallback** if `pg_cron` proves unavailable on the free tier (Task 2, Step 4). The SQL is identical either way.
 - **Magic UI component.** Budget is at most one, currently zero. Only add if something clearly earns it.
 
-**Not deferred — these are non-negotiable and are covered by tasks:** the RLS read-only test (Task 2), admin authorization on every action (Tasks 10–12), hashed secrets (Task 10), server-side rate limiting (Task 4), and the 24-hour purge (Task 2).
+**Not deferred — these are non-negotiable and are covered by tasks:** the RLS read-only test (Task 2), admin authorization on every action (Tasks 10–12), hashed secrets (Task 10), server-side rate limiting (Task 4), and the 8-hour purge (Task 2).
 

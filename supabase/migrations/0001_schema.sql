@@ -67,6 +67,8 @@ create table messages (
   is_pinned boolean not null default false,
   deleted_at timestamptz,
   created_at timestamptz not null default now(),
+  -- Superseded by 0005: the default is now 8 hours. Left as written because this
+  -- migration is already applied to the live project.
   expires_at timestamptz not null default (now() + interval '24 hours'),
 
   constraint body_length check (

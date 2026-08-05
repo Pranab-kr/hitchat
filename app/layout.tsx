@@ -23,7 +23,7 @@ const plexMono = IBM_Plex_Mono({
 
 export const metadata: Metadata = {
   title: 'hitchat',
-  description: 'Anonymous lab chat. Everything vanishes in 24 hours.',
+  description: 'Anonymous lab chat. Everything vanishes in 8 hours.',
 }
 
 export default function RootLayout({

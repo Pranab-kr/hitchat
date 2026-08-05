@@ -10,23 +10,23 @@ describe('ageOpacity', () => {
     expect(ageOpacity(agoHours(0), now)).toBe(1)
   })
 
-  it('stays fully opaque through the first 6 hours', () => {
-    expect(ageOpacity(agoHours(5.9), now)).toBe(1)
+  it('stays fully opaque through the first 2 hours', () => {
+    expect(ageOpacity(agoHours(1.9), now)).toBe(1)
   })
 
   it('steps down at each documented threshold', () => {
-    expect(ageOpacity(agoHours(7), now)).toBe(0.85)
-    expect(ageOpacity(agoHours(13), now)).toBe(0.7)
-    expect(ageOpacity(agoHours(19), now)).toBe(0.55)
+    expect(ageOpacity(agoHours(2.5), now)).toBe(0.85)
+    expect(ageOpacity(agoHours(4.5), now)).toBe(0.7)
+    expect(ageOpacity(agoHours(6.5), now)).toBe(0.55)
   })
 
   it('never drops below the 0.55 contrast floor', () => {
-    expect(ageOpacity(agoHours(23.9), now)).toBe(0.55)
+    expect(ageOpacity(agoHours(7.9), now)).toBe(0.55)
     expect(ageOpacity(agoHours(100), now)).toBe(0.55)
   })
 
   it('decreases monotonically', () => {
-    const values = [0, 7, 13, 19, 23].map((h) => ageOpacity(agoHours(h), now))
+    const values = [0, 2.5, 4.5, 6.5, 7.9].map((h) => ageOpacity(agoHours(h), now))
     for (let i = 1; i < values.length; i++) {
       expect(values[i]).toBeLessThanOrEqual(values[i - 1])
     }

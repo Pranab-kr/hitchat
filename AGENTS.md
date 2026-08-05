@@ -15,7 +15,8 @@ in this order:
 
 1. **Read `progress.md`.** It states the current branch, the current step, and the
    exact next action. It is the handoff document.
-2. **Read `plan.md`** — the step you are on, plus the one after it.
+2. **Read `docs/superpowers/plans/2026-08-04-hitchat-implementation.md`** — the step you
+   are on, plus the one after it.
 3. **Run `git status` and `git branch --show-current`.** Reconcile against what
    `progress.md` claims. If they disagree, trust git for *what exists* and
    `progress.md` for *what was intended*, then say so before continuing.
@@ -54,7 +55,7 @@ An accurate half-finished status beats a stale complete-looking one.
 |---|---|
 | `docs/superpowers/specs/2026-08-03-anon-lab-chat-design.md` | The spec. Source of truth for behavior. |
 | `design.md` | Visual system. Source of truth for every color, font, and spacing value. |
-| `plan.md` | Ordered build steps. |
+| `docs/superpowers/plans/2026-08-04-hitchat-implementation.md` | Ordered build steps. There is no top-level `plan.md`. |
 | `progress.md` | Running status and session handoff. **Update it as part of the work, not after.** |
 
 If the spec and the code disagree, the spec wins — or the spec gets updated
@@ -76,7 +77,8 @@ Assume no shared context. That means:
 - The **Next action** line is mandatory and must be executable as-is by someone who
   just opened the repo. "Add the rate-limit check to `postMessage` in
   `app/actions/messages.ts`" — not "continue rate limiting".
-- Record **deviations from `plan.md` and why**. A silent deviation is how the next
+- Record **deviations from the implementation plan and why**. A silent deviation is how
+  the next
   agent undoes your work.
 - If blocked, put it in Blocked with what you tried. Don't mark the step done.
 - Record decisions the next agent would otherwise re-litigate.

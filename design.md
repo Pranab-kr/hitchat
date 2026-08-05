@@ -226,14 +226,14 @@ would break the whole conceit.
 
 ## Aesthetic risk: fade with age
 
-**Message text desaturates toward `graphite` as its 24-hour expiry approaches.**
+**Message text desaturates toward `graphite` as its 8-hour expiry approaches.**
 
 | Age | Text color |
 |---|---|
-| 0–6h | `ink` (full) |
-| 6–12h | 85% toward `graphite` |
-| 12–18h | 70% |
-| 18–24h | 55% — the floor |
+| 0–2h | `ink` (full) |
+| 2–4h | 85% toward `graphite` |
+| 4–6h | 70% |
+| 6–8h | 55% — the floor |
 
 Like pencil fading on paper. The product's central promise becomes visible in the
 material rather than needing a countdown widget in every row.
@@ -241,7 +241,7 @@ material rather than needing a countdown widget in every row.
 **Constraints:**
 - The 55% floor is a **hard contrast floor** — the oldest message must still clear
   WCAG AA against `paper`. Verify with a real contrast check, do not eyeball it.
-- **Code bodies never fade.** Someone copying an 18-hour-old answer needs to read it
+- **Code bodies never fade.** Someone copying a 6-hour-old answer needs to read it
   perfectly. Only the surrounding chrome and text messages age.
 - Recomputed on a 5-minute interval, not per render.
 
