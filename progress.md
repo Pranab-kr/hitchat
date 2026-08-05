@@ -14,9 +14,9 @@ section for the step you're on. Full protocol in `AGENTS.md`.
 | | |
 |---|---|
 | **Phase** | Implementing. Tasks 1–10 of 12 done. |
-| **Current step** | **Task 11 — moderation (delete, pin, lock, purge, ban)** — not started |
-| **Branch** | `main`. Task 10 merged; `feat/admin-auth` deleted. |
-| **Next action** | `git checkout main && git pull`, then `git checkout -b feat/moderation`, then **set this table's Current step to "IN PROGRESS" and commit that before writing any code**. Build Task 11 from `docs/superpowers/plans/2026-08-04-hitchat-implementation.md` line 3475 (heading *Task 11: Moderation — delete, pin, lock, purge, ban*). Creates `app/actions/moderation.ts`, `components/chat/admin-controls.tsx`, `components/room/pinned-strip.tsx`, `tests/moderation.test.ts`. **The plan's Task 11 code imports `requireAdmin` from `@/app/actions/admin` — that is wrong now. Import it from `@/lib/auth/require`** (see Task 10's Deviations). Every action must call `requireAdmin()` itself; `proxy.ts` is not authorization. Do **not** re-apply migrations 0001–0007 — all live on `vbbinzmpnszdayrdfsle`. |
+| **Current step** | **Task 11 — moderation (delete, pin, lock, purge, ban)** — **IN PROGRESS** |
+| **Branch** | `feat/moderation`, branched from `main` at `3e5e156` (Task 10). |
+| **Next action** | Build Task 11 from `docs/superpowers/plans/2026-08-04-hitchat-implementation.md` line 3475 (heading *Task 11: Moderation — delete, pin, lock, purge, ban*). Creates `app/actions/moderation.ts`, `components/chat/admin-controls.tsx`, `components/room/pinned-strip.tsx`, `tests/moderation.test.ts`. **The plan's Task 11 code imports `requireAdmin` from `@/app/actions/admin` — that is wrong now. Import it from `@/lib/auth/require`** (see Task 10's Deviations). Every action must call `requireAdmin()` itself; `proxy.ts` is not authorization. Do **not** re-apply migrations 0001–0007 — all live on `vbbinzmpnszdayrdfsle`. If this branch has commits beyond this one, read them with `git log` before assuming nothing was built. |
 | **Blocked?** | No. |
 | **Last updated** | 2026-08-05 |
 
@@ -752,7 +752,11 @@ column-level grant. Test that before trusting anything else.
 
 ## In progress
 
-*Nothing. Task 10 merged; Task 11 not started.*
+**Task 11 — moderation**, on `feat/moderation`. Nothing built yet as of this commit; this
+entry exists so a session that dies mid-step is recoverable. Planned surface:
+`adminDeleteMessage`, `togglePin`, `toggleLock`, `purgeRoom`, `banAuthor` in
+`app/actions/moderation.ts`, plus `AdminControls` and `PinnedStrip` components and
+`tests/moderation.test.ts`.
 
 ---
 
