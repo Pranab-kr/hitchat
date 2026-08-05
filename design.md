@@ -275,8 +275,13 @@ people use during a lab session, not a landing page.
   Default to zero.
 - Buttons: `pen` filled for primary, hairline outline for secondary, `rule` text for
   destructive. Three variants total.
-- **SUDO badge:** 11px Plex Mono, `marigold` text on `marigold` @ 12%, 4px radius,
-  tracking 0.08em.
+- **SUDO badge:** 11px Plex Mono, 4px radius, tracking 0.08em. A 2px `marigold` left
+  border plus `marigold` @ 12% as the background, with the **label text in `ink`**.
+  *Amended 2026-08-05:* this previously read "`marigold` text on `marigold` @ 12%",
+  which measures **1.57:1 in light mode** against a 4.5 floor. Marigold survives as a
+  border and wash — both UI surfaces, where the floor is 3.0 — so the badge still reads
+  as marigold at a glance without failing contrast. The same recipe applies to any
+  marigold-on-marigold label, including the pinned strip. No new color was introduced.
 - **Empty room:** an invitation, not an apology — "Nothing here yet. Paste your lab
   code and someone will thank you." Set in Figtree at Body, `graphite`.
 

@@ -10,11 +10,13 @@ import type { Message } from '@/lib/types'
 export function Composer({
   groupId,
   locked,
+  isAdmin = false,
   replyTo = null,
   onClearReply,
 }: {
   groupId: string
   locked: boolean
+  isAdmin?: boolean
   replyTo?: Message | null
   onClearReply?: () => void
 }) {
@@ -44,7 +46,11 @@ export function Composer({
     })
   }
 
-  if (locked) {
+  // Admins are exempt from the lock (spec: "read-only for students; admins can still
+  // post"), so hiding their composer would make that exemption unreachable. This is
+  // presentation only — sendText derives the exemption from the session cookie, never
+  // from this prop.
+  if (locked && !isAdmin) {
     return (
       <div className="border-t border-hairline px-4 py-3 text-[15px] text-graphite">
         This room is read-only right now.
