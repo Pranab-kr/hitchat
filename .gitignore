@@ -42,12 +42,10 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-./skills-lock.json
- 
-
-./skills-lock.json
- 
-
-.claude
-.agents 
+# agent tooling — local to whoever is working on this, not project code.
+# NB: a leading "./" is not a valid gitignore pattern and silently matches nothing,
+# which is how skills-lock.json ended up tracked.
+/skills-lock.json
+.claude/
+.agents/
 .mcp.json
