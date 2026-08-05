@@ -2,7 +2,9 @@ import { notFound } from 'next/navigation'
 import { getServiceClient } from '@/lib/supabase/admin'
 import { MESSAGE_COLUMNS } from '@/lib/columns'
 import { highlightCode } from '@/lib/highlight'
+import { verifySession } from '@/lib/auth/session'
 import { MessageList } from '@/components/chat/message-list'
+import { AdminBar } from '@/components/room/admin-bar'
 import type { Message } from '@/lib/types'
 
 export const dynamic = 'force-dynamic'
@@ -54,6 +56,11 @@ export default async function RoomPage({ params }: { params: Promise<RoomParams>
   )
   const initialCodeHtml = Object.fromEntries(rendered) as Record<string, string>
 
+  // Controls the presence of the moderation UI only. Every moderation action
+  // re-verifies its own session server-side; this flag is never authorization.
+  const session = await verifySession()
+  const isAdmin = session !== null
+
   return (
     <div className="flex h-dvh flex-col">
       <header className="border-b border-hairline px-4 py-3">
@@ -62,12 +69,15 @@ export default async function RoomPage({ params }: { params: Promise<RoomParams>
         </h1>
       </header>
 
+      {isAdmin && <AdminBar groupId={room.id} locked={room.is_locked} />}
+
       <MessageList
         groupId={room.id}
         locked={room.is_locked}
         initial={initial}
         initialCodeHtml={initialCodeHtml}
         labFilter={null}
+        isAdmin={isAdmin}
       />
     </div>
   )
