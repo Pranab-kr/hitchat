@@ -14,9 +14,9 @@ section for the step you're on. Full protocol in `AGENTS.md`.
 | | |
 |---|---|
 | **Phase** | Implementing. Tasks 1–9 of 12 done. |
-| **Current step** | **Task 10 — admin authentication** — not yet started |
-| **Branch** | `main` |
-| **Next action** | Start Task 10 from `docs/superpowers/plans/2026-08-04-hitchat-implementation.md` (search for the heading *Task 10: Admin authentication*): `git checkout -b feat/admin-auth`, set this file to "In progress" and commit that first, then build. Task 10 creates `lib/auth/session.ts`, `app/actions/admin.ts`, `app/sudo/page.tsx`, `scripts/seed-owner.ts`, `tests/admin-auth.test.ts`. **`AGENTS.md` hard rules apply hardest here** — secrets hashed, never plaintext; every admin action re-verifies its own session (`proxy.ts` is not authorization). Do **not** re-apply migrations 0001–0006 — all live on `vbbinzmpnszdayrdfsle`. |
+| **Current step** | **Task 10 — admin authentication** — **IN PROGRESS** |
+| **Branch** | `feat/admin-auth` |
+| **Next action** | Continue Task 10 from `docs/superpowers/plans/2026-08-04-hitchat-implementation.md` (heading *Task 10: Admin authentication*). Creates `lib/auth/session.ts`, `lib/auth/require.ts`, `app/actions/admin.ts`, `app/sudo/page.tsx`, `scripts/seed-owner.ts`, `tests/admin-auth.test.ts`, and migration `0007_admin_login_rate_limit.sql`. **`AGENTS.md` hard rules apply hardest here** — secrets hashed, never plaintext; every admin action re-verifies its own session (`proxy.ts` is not authorization). Do **not** re-apply migrations 0001–0006 — all live on `vbbinzmpnszdayrdfsle`. If this branch has commits and this line still says IN PROGRESS, check what exists on disk before rebuilding anything. |
 | **Blocked?** | No. |
 | **Last updated** | 2026-08-05 |
 
@@ -644,7 +644,16 @@ column-level grant. Test that before trusting anything else.
 
 ## In progress
 
-*Nothing. Task 9 is merged; Task 10 has not been started.*
+**Task 10 — admin authentication**, branch `feat/admin-auth`, started 2026-08-05.
+
+Planned deviations, decided before building (detail lands in Deviations when merged):
+- **`requireAdmin`/`requireOwner` move to `lib/auth/require.ts`, not `app/actions/admin.ts`.**
+  Every export of a `'use server'` file is a callable HTTP endpoint. `requireOwner`
+  exported from one lets anyone POST it directly — harmless in isolation, but it is a
+  guard, and guards do not belong on the public surface.
+- **A login rate limit is added.** The spec's abuse-control table says 5 attempts per
+  60s and the plan implements none, which leaves `adminLogin` an unauthenticated bcrypt
+  oracle. Needs migration `0007` (the plan's numbering is stale — see Deviations).
 
 ---
 
