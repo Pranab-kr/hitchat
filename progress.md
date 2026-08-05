@@ -69,8 +69,8 @@ realtime note below), eslint clean, `tsc --noEmit` clean, `bun run build` succee
   near-full opacity and the whole fade-with-age idea would be invisible in practice.
 - **Admin bans stay at 24 hours.** Ban duration is a moderation decision and is
   deliberately independent of message lifetime — a ban that expires along with the
-  messages is barely a ban. `spec:365` and `plan:3711` still say 24 hours **on
-  purpose**. Do not "make it consistent."
+  messages is barely a ban. The ban lines in the spec and the plan still say 24 hours
+  **on purpose**. Do not "make it consistent."
 
 **Verified against the live database, not just in the migration file:** the column
 default reads `(now() + '08:00:00'::interval)`, and a **real inserted `messages` row**
@@ -625,7 +625,7 @@ Owner-requested after Task 8 merged, before Task 9 started. Every lifetime refer
 the spec, the plan, `design.md`, the code and the DB now says 8 hours.
 
 **Two things that deliberately still say 24 and must stay that way:**
-- **Admin ban duration** (`spec:365`, `plan:3711`). Moderation decision, independent of
+- **Admin ban duration** (the "Ban an `author_token_hash` for 24 hours" line in the spec, and the ban-confirm string in the plan). Moderation decision, independent of
   message lifetime.
 - **`supabase/migrations/0001_schema.sql`.** Already applied live; `0005` is the record
   of the change. Never edit an applied migration to match current intent.
