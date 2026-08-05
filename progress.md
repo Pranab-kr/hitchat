@@ -14,9 +14,9 @@ section for the step you're on. Full protocol in `AGENTS.md`.
 | | |
 |---|---|
 | **Phase** | Implementing. Tasks 1–8 of 12 done. |
-| **Current step** | **Task 9 — reactions and reply-to** — not yet started |
-| **Branch** | `main` |
-| **Next action** | Start Task 9 from `docs/superpowers/plans/2026-08-04-hitchat-implementation.md` (line 2713): `git checkout -b feat/reactions`, set this file to "In progress" and commit that first, then build. **Read the four Task 9 corrections in Deviations → *Task 8/9 planned code corrections* before writing any of it** — the plan's reaction code cannot pass its own step 7. Do **not** re-apply migrations 0001–0005 — they are already live on project `vbbinzmpnszdayrdfsle`. |
+| **Current step** | **Task 9 — reactions and reply-to** — **IN PROGRESS** on `feat/reactions` |
+| **Branch** | `feat/reactions` |
+| **Next action** | Continue Task 9 (plan section *Task 9: Reactions and reply-to*). Files to create: `supabase/migrations/0006_reaction_counts.sql` (**0005 is taken by the expiry change — this migration is 0006, not the plan's 0005**), `app/actions/reactions.ts`, `components/chat/reactions.tsx`, `tests/reactions-action.test.ts`; modify `lib/columns.ts`, `lib/types.ts`, `components/chat/message-row.tsx`, `components/chat/message-list.tsx`, `components/chat/composer.tsx`. **The four Task 9 corrections in Deviations → *Task 8/9 planned code corrections* are mandatory** — the plan's reaction component never refetches, so its own step 7 cannot pass. Do **not** re-apply migrations 0001–0005 — already live on `vbbinzmpnszdayrdfsle`. |
 | **Blocked?** | No. |
 | **Last updated** | 2026-08-05 |
 
@@ -557,7 +557,21 @@ column-level grant. Test that before trusting anything else.
 
 ## In progress
 
-*Nothing. The 8-hour expiry change is merged; Task 9 has not been started.*
+**Task 9 — reactions and reply-to**, branch `feat/reactions`, started 2026-08-05.
+
+Nothing is built yet beyond this status line. The order being followed is the plan's:
+migration → columns/types → `app/actions/reactions.ts` → tests → `reactions.tsx` →
+`message-row.tsx` reply preview + reply UI → browser verification.
+
+Known-required departures from the plan, decided before writing any code (detail in
+Deviations → *Task 8/9 planned code corrections*):
+- The migration is **0006**, not 0005. 0005 is the 8-hour expiry change, already live.
+- Reaction state must refetch on the `reaction_bump` UPDATE; seeding from props alone
+  cannot pass step 7.
+- The reply preview must use `authorColorVar()`, never the stored hex.
+- Reply UI (`onJumpTo` + a way to start a reply) has to be built; the plan references it
+  but never defines it.
+- Test tokens go through a `tok()` helper.
 
 ---
 
