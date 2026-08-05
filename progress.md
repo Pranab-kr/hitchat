@@ -13,11 +13,11 @@ section for the step you're on. Full protocol in `AGENTS.md`.
 
 | | |
 |---|---|
-| **Phase** | Implementing. Tasks 1–10 of 12 done. |
-| **Current step** | **Task 11 — moderation (delete, pin, lock, purge, ban)** — not started |
-| **Branch** | `main`. Task 10 merged; `feat/admin-auth` deleted. |
-| **Next action** | `git checkout main && git pull`, then `git checkout -b feat/moderation`, then **set this table's Current step to "IN PROGRESS" and commit that before writing any code**. Build Task 11 from `docs/superpowers/plans/2026-08-04-hitchat-implementation.md` line 3475 (heading *Task 11: Moderation — delete, pin, lock, purge, ban*). Creates `app/actions/moderation.ts`, `components/chat/admin-controls.tsx`, `components/room/pinned-strip.tsx`, `tests/moderation.test.ts`. **The plan's Task 11 code imports `requireAdmin` from `@/app/actions/admin` — that is wrong now. Import it from `@/lib/auth/require`** (see Task 10's Deviations). Every action must call `requireAdmin()` itself; `proxy.ts` is not authorization. Do **not** re-apply migrations 0001–0007 — all live on `vbbinzmpnszdayrdfsle`. |
-| **Blocked?** | No. |
+| **Phase** | Implementing. Tasks 1–11 of 12 done. |
+| **Current step** | **Task 12 — owner pages (structure + admin management)** — not started |
+| **Branch** | `main`. Task 11 merged; `feat/moderation` deleted. |
+| **Next action** | `git checkout main && git pull`, then `git checkout -b feat/owner-pages`, then **set this table's Current step to "IN PROGRESS" and commit that before writing any code**. Build Task 12 from `docs/superpowers/plans/2026-08-04-hitchat-implementation.md` line 3788 (heading *Task 12: Owner pages — structure and admin management*). Creates `app/actions/structure.ts`, `app/actions/admins.ts`, `app/sudo/structure/page.tsx`, `app/sudo/admins/page.tsx`, `app/page.tsx` (room picker), `components/room/sidebar.tsx`, `tests/owner-actions.test.ts`. **Import `requireOwner` from `@/lib/auth/require`, not `@/app/actions/admin`.** Do **not** re-apply migrations 0001–0007 — all live on `vbbinzmpnszdayrdfsle`. **Read the two open items under Blocked first** — one is a spec/code conflict about admins posting in locked rooms, the other a design.md contrast failure; both need an owner decision. |
+| **Blocked?** | No, but **two items need an owner decision** — see Blocked. |
 | **Last updated** | 2026-08-05 |
 
 **Environment:** `.env.local` is complete — Supabase URL, publishable key,
@@ -55,7 +55,108 @@ unrecoverable by a fresh agent.
 
 Newest first. Each entry: what shipped, what deviated, what the next agent needs.
 
-### 2026-08-05 — Task 10: admin authentication ✅
+### 2026-08-05 — Task 11: moderation ✅
+**Shipped:** `app/actions/moderation.ts`, `components/chat/admin-controls.tsx`,
+`components/room/pinned-strip.tsx`, `components/room/admin-bar.tsx` (**not in the
+plan** — see Deviations), `tests/moderation.test.ts`; modified
+`components/chat/message-row.tsx`, `message-list.tsx`, the room page, and
+`tests/realtime.test.ts`. Tests 120/120 across 12 files, eslint clean, `tsc --noEmit`
+clean, `bun run build` succeeds. No migration in this task.
+
+**Guards imported from `@/lib/auth/require`, as Task 10 requires.** All five actions
+call `requireAdmin()` themselves.
+
+**Verified by mutation — all four guards genuinely covered.** Deleting each in turn
+fails exactly the tests that cover it: the `admin_id` ban check, `togglePin`'s
+`.is('deleted_at', null)`, `requireAdmin` in `adminDeleteMessage` (fails 2 tests), and
+`purgeRoom`'s `.is('deleted_at', null)`.
+
+**Verified in two real browser contexts — 16 checks, all passing.** A student window and
+an admin window side by side: the student sees no admin bar and no pin button; pinning
+reaches the student window in **821ms with no reload**; unpin removes the strip in 414ms;
+delete shows "message deleted" in 820ms and **exactly one message was affected**; locking
+replaces the composer with "This room is read-only right now." and removes the input
+entirely; unlock restores it; ban asks for confirmation and cancel dismisses it.
+
+**The most important check: moderation actions were POSTed with no session cookie over
+real HTTP** (not through a mock). Harvesting the Server Action ids from the page bundle
+and calling them anonymously produced **exactly 5 `unauthorized` responses** — one per
+action — and the database was **unchanged**: same message count, zero delete markers.
+The tests mock `next/headers`; this check does not, which is why it is worth keeping.
+
+**A false-positive browser run that deleted two messages from one click.** The first
+harness used `locator('[id^="m-"]').first()`, which **re-resolves against a list that
+Realtime is mutating** — so after the first delete the "same" locator pointed at a
+different row. It reported 15/15 passing while corrupting its own fixture. Rewritten to
+capture explicit message ids up front and target `[id="m-<uuid>"]`. **Any future check
+on this stream must pin the id before acting, never use `.first()`/`.last()`.** This is
+the Task 9/10 selector lesson in a third form.
+
+**Two WCAG AA failures found by measurement, and one of them is not mine.** Composited
+colors were read from real rendered pixels (walking the tree to multiply `opacity`,
+because reading `color` alone ignores it):
+- **My controls inherited `group-hover:opacity-60` → 2.44:1 light / 2.86:1 dark.** Now
+  `opacity-100` on hover: **5.33:1 / 5.69:1**.
+- **`PINNED` as marigold text measured 1.72:1 light.** Fixed the way Task 10 fixed
+  `/sudo` — marigold survives as a 2px left border plus the 8% wash (UI surfaces), and
+  the label is `ink`: **12.72:1 light / 14.77:1 dark**. No new color was invented.
+- The marigold border itself is **2.06:1 against paper in light mode, below the 3.0 UI
+  floor.** Accepted **only because the word "PINNED" in `ink` carries the meaning** — the
+  color is not the sole indicator. Stated plainly rather than claimed to pass.
+
+**`tests/realtime.test.ts` was fixed, not weakened — and this task is what exposed it.**
+The DELETE listener at line 136 had **no `group_id` filter**, so it caught other files'
+teardown cascades; adding `tests/moderation.test.ts` (which seeds and tears down two
+rooms) made it fail on the first full run. progress.md predicted this exact failure and
+prescribed this exact fix. `expect(deletes).toHaveLength(0)` is untouched — it is what
+proves a soft delete never broadcasts as a DELETE. **Four consecutive full-suite runs
+pass**, where the flake previously appeared roughly 2-in-13.
+
+**Deviations from the plan:**
+- **`components/room/admin-bar.tsx` was added; the plan builds no UI for `toggleLock` or
+  `purgeRoom` at all.** Both actions would have been unreachable dead code, yet the
+  plan's own Step 6 says to verify locking in the browser. The bar holds the SUDO badge,
+  lock/unlock, and a two-step "clear room".
+- **`PinnedStrip` is fed from the live message array, not a server prop.** The plan
+  renders it from `pinned` but nothing ever computes or passes that. A prop-seeded strip
+  could never update, because pin/unpin arrives as a Realtime UPDATE — **this is exactly
+  the Task 9 reactions bug** and it would have failed the same way.
+- **`PinnedStrip` renders nothing for a pinned code post's body.** The plan prints
+  `m.body`, which for a code message is raw source. It shows `code_title ?? 'code'`.
+- **Ban confirmation is an in-page prompt, not `window.confirm`.** The plan calls
+  `confirm()`, which is unstyleable, and Task 8 established that this app reports
+  everything inline. It lifted to `MessageList` so the row keeps one owner of the state.
+- **`AdminControls` surfaces failures.** The plan discards every result with `void`, so
+  a failed delete or ban looked identical to a success.
+- **`togglePin` refuses a deleted message** (`.is('deleted_at', null)`). Pinning a
+  soft-deleted row would put a blank line in the strip with no way to unpin it, since
+  deleted rows render as "message deleted" and show no controls.
+- **`purgeRoom` skips already-expired rows** (`.gt('expires_at', now)`). They are already
+  invisible to every reader, so counting them reports a number the admin cannot see.
+- **`banAuthor` refuses to ban an admin.** Without it a co-admin can ban the owner's
+  browser token for 24 hours by banning any SUDO-badged message.
+- **15 tests, not the plan's 2.** The plan's own test could not have run: it mocks
+  `verifySession` to return `adminId: 'test-admin'`, which is not a UUID, so
+  `bans.created_by` would fail its foreign key. Real session rows are used instead, as
+  in `tests/admin-auth.test.ts`.
+
+**Next agent needs to know:**
+- **`isAdmin` on the room page is presentation only, never authorization.** It exists to
+  show or hide controls; every action re-verifies its own session. Do not add a check
+  that trusts it.
+- **Groups are not in the Realtime publication — only `messages` are.** Lock/unlock
+  therefore does *not* push to other clients; `AdminBar` calls `router.refresh()` and the
+  student's composer updates on their next load. If live lock is ever wanted, that needs
+  a publication change, not a client fix.
+- **`tests/moderation.test.ts` registers every token it posts in `usedTokens`** so
+  `afterAll` sweeps bans and rate events even when an assertion fails. Any new test that
+  bans or posts must do the same — the Task 10 leak lesson.
+- Playwright was installed temporarily and **removed again**, as in Tasks 7–10.
+  `package.json` is clean. Live DB verified back to 0 across departments, messages, bans,
+  admin_sessions and rate_events.
+
+
+
 **Shipped:** `supabase/migrations/0007_admin_login_rate_limit.sql` (**applied live** to
 `vbbinzmpnszdayrdfsle`), `lib/auth/session.ts`, `lib/auth/require.ts`,
 `app/actions/admin.ts`, `components/admin/sudo-form.tsx`, `app/sudo/page.tsx`,
@@ -752,11 +853,25 @@ column-level grant. Test that before trusting anything else.
 
 ## In progress
 
-*Nothing. Task 10 merged; Task 11 not started.*
+*Nothing. Task 11 merged; Task 12 not started.*
 
 ---
 
 ### Standing notes — read before any task
+
+**Never target a message row with `.first()` or `.last()` in a browser check.** Those
+locators re-resolve against a list Realtime is actively mutating, so an action can land
+on a different row than the one you inspected. A Task 11 harness reported 15/15 passing
+while deleting two messages from one click. Capture the id first, then target
+`[id="m-<uuid>"]`.
+
+**Moderation UI visibility is not authorization.** `isAdmin` on the room page only shows
+or hides controls. Every action in `app/actions/moderation.ts` calls `requireAdmin()`
+itself, and that is the only thing standing between a student and a purge.
+
+**Only `messages` is in the Realtime publication.** `groups` is not, so a lock/unlock does
+not reach other clients on its own — `AdminBar` uses `router.refresh()`. Anything that
+needs a live non-message change requires a publication change, not a client-side fix.
 
 **Import `requireAdmin`/`requireOwner` from `@/lib/auth/require`, never from
 `@/app/actions/admin`.** Guards must not be exported from a `'use server'` file — every
@@ -815,6 +930,16 @@ live database.
 **The RLS test is the most important test in the whole suite.** If any assertion in
 `tests/rls.test.ts` fails, fix the migration — do not weaken the test.
 
+**The `tests/realtime.test.ts` DELETE-listener flake is fixed** (Task 11): the listener
+now filters on `group_id`, so it no longer catches other files' teardown cascades.
+`expect(deletes).toHaveLength(0)` is deliberately untouched — that assertion is the
+whole point of the test. If it ever fails again, the cause is a real DELETE broadcast.
+
+**Measure contrast on composited pixels, not on the `color` value.** A control inside
+`opacity-60` measures nothing like its declared color — Task 11's admin buttons read
+2.44:1 while declaring the same `graphite` that passes at 5.33:1 elsewhere. Walk the
+tree multiplying `opacity` and blend onto the real backdrop.
+
 **Schema note:** the room hierarchy is four levels — department → **year** → batch →
 group. See the Deviations section.
 
@@ -822,7 +947,40 @@ group. See the Deviations section.
 
 ## Blocked
 
-*Nothing.*
+*Nothing is blocking Task 12.* Two items below need an **owner decision** and were
+deliberately not decided unilaterally.
+
+### 1. The spec says admins can post in a locked room. The code refuses everyone.
+
+Spec line 363: *"Lock room (read-only for students; **admins can still post**)"*. But
+`assertRoomOpen` in `lib/guards.ts` refuses every writer, and **nothing anywhere in the
+codebase ever sets `messages.admin_id`** — so the SUDO badge that Task 7 built into
+`MessageRow` (line 110) is unreachable dead code, and no admin has ever posted as an
+admin.
+
+Not fixed in Task 11 because it is outside this task's file list and the change is not
+local: `sendText`/`postCode` would have to read the admin session, and `verifySession`
+calls `cookies()`, which **throws outside a request scope**. Three existing test files
+call those actions without mocking `next/headers` and would break. That is a Task 5
+change with test fallout, not a moderation change.
+
+**Options:** (a) make `sendText`/`postCode` session-aware and set `admin_id`, giving
+admins a badge and a locked-room exemption; (b) drop the exemption from the spec and
+delete the dead `admin_id` branch. **Do not half-do it** — a badge with no exemption, or
+an exemption with no badge, is worse than either.
+
+### 2. design.md's SUDO badge recipe fails WCAG AA in light mode.
+
+design.md line 278 prescribes *"`marigold` text on `marigold` @ 12%"*. Measured from real
+rendered pixels: **1.57:1 in light mode** against a 4.5 floor (dark is fine at 10.12:1).
+The same recipe applied to the pinned strip measured 1.72:1.
+
+Task 11 fixed **its own** two surfaces (`AdminBar`'s badge and `PinnedStrip`'s label) by
+keeping marigold as border-plus-wash and setting the text in `ink`. **The badge in
+`components/chat/message-row.tsx:110` still uses the failing recipe** — it shipped in
+Task 7, it is currently unreachable (see item 1), and changing it means changing
+`design.md`, which is prescriptive. **If item 1 is resolved as (a), this must be fixed
+at the same time or admin messages ship an illegible badge.**
 
 ---
 
@@ -848,6 +1006,27 @@ with it (0–2/2–4/4–6/6–8), and `lib/age.ts` mirrors that table. **If the
 changes again, these two must move together** — the curve is expressed in absolute
 hours, so leaving it behind silently disables the fade rather than breaking anything
 loudly.
+
+### 2026-08-05 — Task 11 built UI the plan omitted, and corrected six things
+
+The plan's Task 11 ships five Server Actions but builds UI for only three of them.
+`toggleLock` and `purgeRoom` had **no call site anywhere**, which would have made them
+unreachable dead code — while the plan's own Step 6 instructs you to verify locking in a
+browser. `components/room/admin-bar.tsx` exists to close that gap and is not in the
+plan's file list.
+
+Likewise `PinnedStrip` is defined but **never rendered**, and nothing computes the
+`pinned` array it takes. Wiring it from a server prop would have reproduced the Task 9
+reactions bug exactly — pin state arrives as a Realtime UPDATE, so a prop-seeded strip
+can never change. It is derived from the live message array in `MessageList`.
+
+The other corrections — the plan's untestable `vi.doMock` (a non-UUID `adminId` breaks
+`bans.created_by`), `window.confirm`, `void`-discarded results, pinning a deleted
+message, purging already-expired rows, and banning an admin — are listed in full under
+the Task 11 entry in Done.
+
+**The `admin_id` / locked-room exemption gap the plan never addresses is recorded under
+Blocked.** It needs an owner decision; do not resolve it silently.
 
 ### 2026-08-05 — Task 10 added migration `0007`, which the plan does not contain
 

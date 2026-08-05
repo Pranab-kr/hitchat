@@ -8,6 +8,7 @@ import { useMounted } from '@/lib/use-mounted'
 import { renderCode } from '@/app/actions/highlight'
 import { CodeCard } from './code-card'
 import { Reactions } from './reactions'
+import { AdminControls } from './admin-controls'
 import type { Message } from '@/lib/types'
 import type { ReactionState } from '@/app/actions/reactions'
 
@@ -20,6 +21,8 @@ export function MessageRow({
   onToggleReaction,
   onReply,
   onJumpTo,
+  isAdmin = false,
+  onBan,
   highlighted = false,
   children,
 }: {
@@ -31,6 +34,8 @@ export function MessageRow({
   onToggleReaction?: (messageId: string, emoji: string) => void
   onReply?: (message: Message) => void
   onJumpTo?: (messageId: string) => void
+  isAdmin?: boolean
+  onBan?: (messageId: string) => void
   highlighted?: boolean
   children?: React.ReactNode
 }) {
@@ -128,6 +133,14 @@ export function MessageRow({
           >
             reply
           </button>
+        )}
+
+        {isAdmin && (
+          <AdminControls
+            messageId={message.id}
+            isPinned={message.is_pinned}
+            onBan={onBan}
+          />
         )}
       </div>
 

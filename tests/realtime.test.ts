@@ -133,8 +133,14 @@ describe('Realtime message delivery', () => {
         { event: 'UPDATE', schema: 'public', table: 'messages', filter: `group_id=eq.${groupId}` },
         (p) => updates.push(p.new as Record<string, unknown>),
       )
-      .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'messages' }, (p) =>
-        deletes.push(p.old),
+      // The filter is load-bearing for isolation, not for the assertion below: without
+      // it this listener catches other test files' teardown cascades and reports them
+      // as DELETEs in this room. Do not weaken the toHaveLength(0) — that assertion is
+      // what proves a soft delete never broadcasts as a DELETE.
+      .on(
+        'postgres_changes',
+        { event: 'DELETE', schema: 'public', table: 'messages', filter: `group_id=eq.${groupId}` },
+        (p) => deletes.push(p.old),
       )
 
     expect(await waitForSubscribed(channel)).toBe(true)
