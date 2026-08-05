@@ -3,13 +3,17 @@
 import { useState, useTransition } from 'react'
 import { postCode } from '@/app/actions/messages'
 import { useAnonToken } from '@/lib/use-anon-token'
+import { authorColorVar } from '@/lib/author-color'
 import { ALLOWED_LANGS } from '@/lib/validate'
+import type { Message } from '@/lib/types'
 
 export function CodeComposer({
   groupId,
+  replyTo = null,
   onClose,
 }: {
   groupId: string
+  replyTo?: Message | null
   onClose: () => void
 }) {
   const { token } = useAnonToken()
@@ -24,7 +28,15 @@ export function CodeComposer({
     if (!token) return
 
     startTransition(async () => {
-      const result = await postCode({ token, groupId, body, lang, title, labTag })
+      const result = await postCode({
+        token,
+        groupId,
+        body,
+        lang,
+        title,
+        labTag,
+        replyToId: replyTo?.id,
+      })
       if (result.ok) {
         onClose()
       } else {
@@ -35,6 +47,18 @@ export function CodeComposer({
 
   return (
     <div className="border-t border-hairline px-4 py-3">
+      {replyTo && (
+        <div className="mb-2 flex items-center gap-2 border-l-2 border-pen pl-2 font-mono text-[12px] text-graphite">
+          <span>replying to</span>
+          <span style={{ color: authorColorVar(replyTo.author_color) }}>
+            {replyTo.author_name}
+          </span>
+          <span className="truncate">
+            {replyTo.kind === 'code' ? 'code' : replyTo.body}
+          </span>
+        </div>
+      )}
+
       {error && (
         <p className="mb-2 font-mono text-[12px] text-rule" role="alert">
           {error}

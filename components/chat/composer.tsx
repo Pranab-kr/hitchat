@@ -3,9 +3,21 @@
 import { useState, useTransition } from 'react'
 import { sendText } from '@/app/actions/messages'
 import { useAnonToken } from '@/lib/use-anon-token'
+import { authorColorVar } from '@/lib/author-color'
 import { CodeComposer } from './code-composer'
+import type { Message } from '@/lib/types'
 
-export function Composer({ groupId, locked }: { groupId: string; locked: boolean }) {
+export function Composer({
+  groupId,
+  locked,
+  replyTo = null,
+  onClearReply,
+}: {
+  groupId: string
+  locked: boolean
+  replyTo?: Message | null
+  onClearReply?: () => void
+}) {
   const { token } = useAnonToken()
   const [body, setBody] = useState('')
   const [error, setError] = useState<string | null>(null)
@@ -16,10 +28,16 @@ export function Composer({ groupId, locked }: { groupId: string; locked: boolean
     if (!token || !body.trim()) return
 
     startTransition(async () => {
-      const result = await sendText({ token, groupId, body })
+      const result = await sendText({
+        token,
+        groupId,
+        body,
+        replyToId: replyTo?.id,
+      })
       if (result.ok) {
         setBody('')
         setError(null)
+        onClearReply?.()
       } else {
         setError(result.message)
       }
@@ -35,11 +53,40 @@ export function Composer({ groupId, locked }: { groupId: string; locked: boolean
   }
 
   if (codeMode) {
-    return <CodeComposer groupId={groupId} onClose={() => setCodeMode(false)} />
+    return (
+      <CodeComposer
+        groupId={groupId}
+        replyTo={replyTo}
+        onClose={() => {
+          setCodeMode(false)
+          onClearReply?.()
+        }}
+      />
+    )
   }
 
   return (
     <div className="border-t border-hairline px-4 py-3">
+      {replyTo && (
+        <div className="mb-2 flex items-center gap-2 border-l-2 border-pen pl-2 font-mono text-[12px] text-graphite">
+          <span>replying to</span>
+          <span style={{ color: authorColorVar(replyTo.author_color) }}>
+            {replyTo.author_name}
+          </span>
+          <span className="truncate">
+            {replyTo.kind === 'code' ? 'code' : replyTo.body}
+          </span>
+          <button
+            type="button"
+            onClick={onClearReply}
+            aria-label="Cancel reply"
+            className="ml-auto shrink-0 px-1 transition-colors hover:text-ink"
+          >
+            ×
+          </button>
+        </div>
+      )}
+
       {error && (
         <p className="mb-2 font-mono text-[12px] text-rule" role="alert">
           {error}
@@ -53,12 +100,17 @@ export function Composer({ groupId, locked }: { groupId: string; locked: boolean
           value={body}
           onChange={(e) => setBody(e.target.value)}
           onKeyDown={(e) => {
+            if (e.key === 'Escape' && replyTo) {
+              e.preventDefault()
+              onClearReply?.()
+              return
+            }
             if (e.key === 'Enter' && !e.shiftKey) {
               e.preventDefault()
               submit()
             }
           }}
-          placeholder="Message"
+          placeholder={replyTo ? 'Reply' : 'Message'}
           disabled={pending}
           className="flex-1 rounded-input border border-hairline bg-surface px-3 py-2 text-[15px] text-ink placeholder:text-graphite"
         />

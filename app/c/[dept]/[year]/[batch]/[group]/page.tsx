@@ -3,7 +3,6 @@ import { getServiceClient } from '@/lib/supabase/admin'
 import { MESSAGE_COLUMNS } from '@/lib/columns'
 import { highlightCode } from '@/lib/highlight'
 import { MessageList } from '@/components/chat/message-list'
-import { Composer } from '@/components/chat/composer'
 import type { Message } from '@/lib/types'
 
 export const dynamic = 'force-dynamic'
@@ -65,12 +64,11 @@ export default async function RoomPage({ params }: { params: Promise<RoomParams>
 
       <MessageList
         groupId={room.id}
+        locked={room.is_locked}
         initial={initial}
         initialCodeHtml={initialCodeHtml}
         labFilter={null}
       />
-
-      <Composer groupId={room.id} locked={room.is_locked} />
     </div>
   )
 }

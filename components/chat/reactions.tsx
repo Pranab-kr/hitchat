@@ -1,0 +1,74 @@
+'use client'
+
+import { motion, useReducedMotion } from 'motion/react'
+import { cn } from '@/lib/utils'
+import type { ReactionState } from '@/app/actions/reactions'
+
+const SET = [
+  { key: 'works', glyph: '✓', label: 'Works' },
+  { key: 'buggy', glyph: '⚠', label: 'Buggy' },
+  { key: 'fire', glyph: '🔥', label: 'Nice' },
+  { key: 'eyes', glyph: '👀', label: 'Looking' },
+] as const
+
+export function Reactions({
+  messageId,
+  state,
+  error,
+  onToggle,
+}: {
+  messageId: string
+  state: ReactionState
+  error: string | null
+  onToggle: (messageId: string, emoji: string) => void
+}) {
+  const reduce = useReducedMotion()
+
+  return (
+    <div className="mt-1 flex items-center gap-1">
+      {SET.map(({ key, glyph, label }) => {
+        const count = state.counts[key] ?? 0
+        const active = state.mine.includes(key)
+
+        if (count === 0 && !active) {
+          return (
+            <button
+              key={key}
+              type="button"
+              onClick={() => onToggle(messageId, key)}
+              aria-label={label}
+              className="rounded-[4px] px-1.5 py-0.5 text-[12px] leading-[16px] opacity-0 transition-opacity hover:bg-wash focus-visible:opacity-100 group-hover:opacity-60"
+            >
+              {glyph}
+            </button>
+          )
+        }
+
+        return (
+          <motion.button
+            key={key}
+            type="button"
+            onClick={() => onToggle(messageId, key)}
+            aria-label={`${label}, ${count}`}
+            aria-pressed={active}
+            whileTap={reduce ? undefined : { scale: 1.15 }}
+            transition={{ type: 'spring', duration: 0.2 }}
+            className={cn(
+              'flex items-center gap-1 rounded-[4px] px-1.5 py-0.5 font-mono text-[12px] leading-[16px]',
+              active ? 'bg-pen/12 text-pen' : 'bg-wash text-graphite',
+            )}
+          >
+            <span>{glyph}</span>
+            <span>{count}</span>
+          </motion.button>
+        )
+      })}
+
+      {error && (
+        <span className="ml-1 font-mono text-[12px] text-rule" role="alert">
+          {error}
+        </span>
+      )}
+    </div>
+  )
+}

@@ -14,4 +14,5 @@ export type Message = {
   deleted_at: string | null
   created_at: string
   expires_at: string
+  reaction_bump: string
 }

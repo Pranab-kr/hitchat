@@ -13,10 +13,10 @@ section for the step you're on. Full protocol in `AGENTS.md`.
 
 | | |
 |---|---|
-| **Phase** | Implementing. Tasks 1–8 of 12 done. |
-| **Current step** | **Task 9 — reactions and reply-to** — **IN PROGRESS** on `feat/reactions` |
-| **Branch** | `feat/reactions` |
-| **Next action** | Continue Task 9 (plan section *Task 9: Reactions and reply-to*). Files to create: `supabase/migrations/0006_reaction_counts.sql` (**0005 is taken by the expiry change — this migration is 0006, not the plan's 0005**), `app/actions/reactions.ts`, `components/chat/reactions.tsx`, `tests/reactions-action.test.ts`; modify `lib/columns.ts`, `lib/types.ts`, `components/chat/message-row.tsx`, `components/chat/message-list.tsx`, `components/chat/composer.tsx`. **The four Task 9 corrections in Deviations → *Task 8/9 planned code corrections* are mandatory** — the plan's reaction component never refetches, so its own step 7 cannot pass. Do **not** re-apply migrations 0001–0005 — already live on `vbbinzmpnszdayrdfsle`. |
+| **Phase** | Implementing. Tasks 1–9 of 12 done. |
+| **Current step** | **Task 10 — admin authentication** — not yet started |
+| **Branch** | `main` |
+| **Next action** | Start Task 10 from `docs/superpowers/plans/2026-08-04-hitchat-implementation.md` (search for the heading *Task 10: Admin authentication*): `git checkout -b feat/admin-auth`, set this file to "In progress" and commit that first, then build. Task 10 creates `lib/auth/session.ts`, `app/actions/admin.ts`, `app/sudo/page.tsx`, `scripts/seed-owner.ts`, `tests/admin-auth.test.ts`. **`AGENTS.md` hard rules apply hardest here** — secrets hashed, never plaintext; every admin action re-verifies its own session (`proxy.ts` is not authorization). Do **not** re-apply migrations 0001–0006 — all live on `vbbinzmpnszdayrdfsle`. |
 | **Blocked?** | No. |
 | **Last updated** | 2026-08-05 |
 
@@ -54,6 +54,93 @@ unrecoverable by a fresh agent.
 ## Done
 
 Newest first. Each entry: what shipped, what deviated, what the next agent needs.
+
+### 2026-08-05 — Task 9: reactions and reply-to ✅
+**Shipped:** `supabase/migrations/0006_reaction_counts.sql` (**applied live** to
+`vbbinzmpnszdayrdfsle`), `app/actions/reactions.ts`, `lib/use-reactions.ts`,
+`components/chat/reactions.tsx`, `tests/reactions-action.test.ts`; modified
+`lib/columns.ts`, `lib/types.ts`, `components/chat/message-row.tsx`,
+`message-list.tsx`, `composer.tsx`, `code-composer.tsx`, and the room page.
+Tests 81/81, eslint clean, `tsc --noEmit` clean, `bun run build` succeeds.
+
+**The migration is `0006`, not the plan's `0005`.** 0005 is the eight-hour expiry
+change and was already applied. Verified live after applying: `anon` and
+`authenticated` both hold `SELECT` on `messages.reaction_bump`, and the
+`reactions_bump_message` trigger exists on `reactions`.
+
+**All of the plan's step 7 checks were run in two real browser contexts and pass:**
+reaction buttons sit at `opacity: 0` at rest and `0.6` on hover; clicking gives
+`aria-label="Works, 1"` with `aria-pressed="true"`; **the second window saw the count
+appear in 530ms and disappear again in 742ms**, with `aria-pressed="false"` there — it
+sees the count without being told it owns it. The seeded reply rendered its quoted
+preview, clicking it scrolled to and highlighted the original, and the reply composer
+banner posted a real reply and cleared itself.
+
+**The four planned Task 9 corrections were all applied.** Detail below under
+Deviations; the short version is that the plan's component seeds from props and never
+refetches, so its own "second window sees the count change" step could not have passed.
+
+**Verified by mutation, not just by passing:** deleting the `assertRoomOpen` call and
+the `deleted_at` branch from `toggleReaction` makes exactly the two tests that cover
+them fail ("refuses a reaction in a locked room", "refuses a reaction on a deleted
+message"). Both guards are genuinely covered.
+
+**A passing browser assertion that was actually a false positive, and how it was
+caught.** Playwright's `getByRole(name)` matches **substrings**, so a check written as
+`getByRole('button', { name: 'Works' })` matches the reacted `Works, 1` label too — the
+un-react assertion passed against the still-reacted state. Re-run reading
+`aria-label` off the DOM and comparing exactly, it still passes, but the first version
+proved nothing. **Any future assertion on these pills must compare the label exactly.**
+
+**Contrast checked numerically for all four pill states**, since the pills introduce
+text on a tinted background that did not exist before: active is `pen` on `pen/12`
+(5.20:1 light, 6.44:1 dark), idle is `graphite` on `wash` (4.96:1 light, 4.99:1 dark).
+All clear AA.
+
+**The four reaction glyphs are in none of the app's bundled fonts** — checked by parsing
+every `.woff2` charset under `.next/static/media`. They come from system fallback
+(`Adwaita`/`DejaVu` for ✓ and ⚠, `Noto Color Emoji` for 🔥 and 👀). Screenshotted in both
+themes at 4× to confirm none render as tofu. This is the U+29C9 lesson from Task 6
+applying again, and it is worth re-checking on any machine that ships this.
+
+**Deviations from the plan:**
+- **Reaction state lives in `lib/use-reactions.ts`, not in the component.** The bump
+  carries no counts, so a component seeded from props can never update. The hook watches
+  every visible message's `reaction_bump`, debounces 250ms so a burst costs one fetch,
+  and batches the whole stream into one `getReactions` call rather than one per row.
+- **`toggleReaction` also checks room lock and `deleted_at`.** A reaction is a write, so
+  a locked room must refuse it; and reacting to a soft-deleted message would hang a live
+  count on a row whose content is already blanked. The plan checks neither.
+- **`getReactions` caps the batch at 100 ids.** It is a public unauthenticated action;
+  unbounded input is a free query sink. Same reasoning as Task 8's `renderCode` fix.
+- **`toggleReaction` handles a failed DELETE.** The plan checks `error` only on the
+  insert branch, so a failed un-react would return a stale count as a success.
+- **The reply UI was built, since the plan references `onJumpTo` but never defines it
+  and no UI creates a reply.** A `reply` button appears on hover; the target lifts to
+  `MessageList`; `Composer`/`CodeComposer` show a banner with the quoted message and pass
+  `replyToId`. `Escape` cancels a reply. `sendText`/`postCode` already accepted
+  `replyToId` from Task 5 — nothing server-side changed.
+- **`Composer` moved inside `MessageList`.** The reply target is chosen in the list and
+  consumed by the composer, and the room page is a server component that cannot hold that
+  state. The page renders `<MessageList locked={...}>` and no longer renders `<Composer>`.
+- **Jump-to highlights for 1600ms** via a `bg-pen/8` class rather than scrolling silently
+  — a scroll with no visual confirmation reads as nothing having happened.
+- **Seven tests beyond the plan's three:** two people counted separately with `mine`
+  correct for a third party, the `reaction_bump` actually moving, locked-room refusal,
+  deleted-message refusal, an empty entry for an unreacted message, the empty-list
+  short-circuit, and the oversized-list rejection.
+
+**Next agent needs to know:**
+- **`reaction_bump` is now in `MESSAGE_COLUMNS`,** so it is in the Realtime payload.
+  `tests/realtime.test.ts` asserts the payload keys equal `MESSAGE_COLUMNS` exactly —
+  adding a column without granting `select` on it to `anon` will fail that test, which is
+  the intended alarm.
+- **Nothing calls `getReactions` server-side.** Reactions are fetched after hydration, so
+  a JS-less client sees message content but no counts. That is a deliberate trade —
+  server-rendering them would need the anon token, which only exists in `localStorage`.
+- Playwright was installed temporarily and **removed again**, as in Tasks 7 and 8.
+  `package.json` is clean.
+
 
 ### 2026-08-04 — Message lifetime: 24 hours → 8 hours ✅
 **Shipped:** `supabase/migrations/0005_eight_hour_expiry.sql` (**applied live** to
@@ -557,21 +644,7 @@ column-level grant. Test that before trusting anything else.
 
 ## In progress
 
-**Task 9 — reactions and reply-to**, branch `feat/reactions`, started 2026-08-05.
-
-Nothing is built yet beyond this status line. The order being followed is the plan's:
-migration → columns/types → `app/actions/reactions.ts` → tests → `reactions.tsx` →
-`message-row.tsx` reply preview + reply UI → browser verification.
-
-Known-required departures from the plan, decided before writing any code (detail in
-Deviations → *Task 8/9 planned code corrections*):
-- The migration is **0006**, not 0005. 0005 is the 8-hour expiry change, already live.
-- Reaction state must refetch on the `reaction_bump` UPDATE; seeding from props alone
-  cannot pass step 7.
-- The reply preview must use `authorColorVar()`, never the stored hex.
-- Reply UI (`onJumpTo` + a way to start a reply) has to be built; the plan references it
-  but never defines it.
-- Test tokens go through a `tok()` helper.
+*Nothing. Task 9 is merged; Task 10 has not been started.*
 
 ---
 
@@ -581,9 +654,16 @@ Deviations → *Task 8/9 planned code corrections*):
 absolute hours and must move with it if that ever changes again. **Admin bans are still
 24 hours on purpose**, as is the already-applied `0001_schema.sql`.
 
-**The Task 9 corrections in Deviations are not optional.** The plan's reaction component
-never updates from the server, so its own step 7 ("a second window sees the count change")
-cannot pass. Read that section before writing reaction code.
+**The Task 9 corrections in Deviations were applied.** They are recorded there as history;
+nothing is outstanding.
+
+**Reaction counts never arrive over Realtime — only the fact that they changed.**
+`reaction_bump` is a timestamp. `lib/use-reactions.ts` is what turns a bump into counts.
+Any new surface showing reactions must go through that hook, not read the message row.
+
+**`Composer` is rendered by `MessageList`, not by the room page.** The reply target is
+chosen in the list and consumed by the composer. A page that renders `<Composer>` directly
+gets a composer that can never reply.
 
 **Never render a stored `author_color` inline.** It is the light-theme hex; all eight fail
 WCAG AA on the dark background. Use `authorColorVar()` from `lib/author-color.ts`.
@@ -650,6 +730,15 @@ changes again, these two must move together** — the curve is expressed in abso
 hours, so leaving it behind silently disables the fade rather than breaking anything
 loudly.
 
+### 2026-08-05 — Task 9's migration is `0006`, not the plan's `0005`
+
+The plan was written before the eight-hour expiry change existed, and both claim the
+number 0005. `0005_eight_hour_expiry.sql` is already applied, so the reaction migration
+is `0006_reaction_counts.sql` and was applied live under that name. **The plan's Task 9
+step 1 heading and its step 8 `git add` line still say 0005** — read them as 0006. Any
+later task that adds a migration should check `supabase/migrations/` for the real
+highest number rather than trusting the plan's.
+
 ### 2026-08-04 — Task 8/9 planned code corrections
 
 Nine problems in the plan's code for Tasks 8 and 9, each one the plan contradicting its
@@ -662,17 +751,17 @@ own verification step.
 4. `renderCode` took unbounded input → same bounds as `postCode`.
 5. `maxLength={1000}` made the over-length message unreachable → removed.
 
-**Task 9 — NOT yet applied. Read this before writing reaction code.**
-6. **Reactions never update live.** `Reactions` seeds state from props and nothing calls
+**Task 9 — all four applied and verified. See the Task 9 entry under Done for detail.**
+6. **Reactions never updated live.** `Reactions` seeded state from props and nothing called
    `getReactions`; the `reaction_bump` UPDATE carries no counts. Step 7's "second window
-   sees the count change" cannot pass as written. The bump tells a client *that*
-   something changed — it still has to fetch *what*.
-7. The reply preview uses `style={{ color: replyTo.author_color }}` — the stored light
-   hex. All eight fail WCAG AA on the dark background. Must use `authorColorVar()`.
-8. `onJumpTo` is referenced but never defined, and no UI creates a reply, so the reply
-   half of step 7 is untestable.
-9. The tests reuse the literal token `'reactor'` across several posts. Per Task 5 that
-   exhausts its own rate quota on a second run inside the window — use `tok()`.
+   sees the count change" could not pass as written. The bump tells a client *that*
+   something changed — it still has to fetch *what*. → `lib/use-reactions.ts`.
+7. The reply preview used `style={{ color: replyTo.author_color }}` — the stored light
+   hex, which fails WCAG AA on the dark background for all eight. → `authorColorVar()`.
+8. `onJumpTo` was referenced but never defined, and no UI created a reply. → reply button,
+   composer banner, and jump-to-highlight were built.
+9. The tests reused the literal token `'reactor'` across several posts, which per Task 5
+   exhausts its own rate quota on a second run inside the window. → `tok()`.
 
 ### 2026-08-04 — Author colors are a `design.md` token group, not the plan's hexes
 
