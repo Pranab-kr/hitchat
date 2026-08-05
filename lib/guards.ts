@@ -51,15 +51,7 @@ export async function assertRateOk(
   return ok(null)
 }
 
-export async function assertPostable(
-  hash: string,
-  groupId: string,
-): Promise<ActionResult<null>> {
-  const banned = await assertNotBanned(hash)
-  if (!banned.ok) return banned
-
-  const open = await assertRoomOpen(groupId)
-  if (!open.ok) return open
-
-  return ok(null)
-}
+// Note: the former assertPostable(hash, groupId) helper was removed when admins gained
+// the locked-room exemption. Composing ban + lock now requires knowing whether the
+// poster is an admin, so app/actions/messages.ts owns that composition as
+// assertPostableAs(). Call assertNotBanned and assertRoomOpen directly.

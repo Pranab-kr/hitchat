@@ -140,7 +140,7 @@ export function MessageList({
               reactions={reactionsFor(message.id)}
               reactionError={errorFor(message.id)}
               onToggleReaction={toggle}
-              onReply={locked ? undefined : setReplyTo}
+              onReply={locked && !isAdmin ? undefined : setReplyTo}
               onJumpTo={jumpTo}
               isAdmin={isAdmin}
               onBan={setBanTarget}
@@ -155,6 +155,7 @@ export function MessageList({
       <Composer
         groupId={groupId}
         locked={locked}
+        isAdmin={isAdmin}
         replyTo={replyTo}
         onClearReply={() => setReplyTo(null)}
       />

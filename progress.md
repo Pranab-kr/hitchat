@@ -13,12 +13,12 @@ section for the step you're on. Full protocol in `AGENTS.md`.
 
 | | |
 |---|---|
-| **Phase** | Implementing. Tasks 1–11 of 12 done. |
-| **Current step** | **Task 12 — owner pages (structure + admin management)** — **IN PROGRESS** |
-| **Branch** | `feat/owner-pages`, branched from `main` at `38ea356`. |
-| **Next action** | Work through the step checklist under **In progress** below, in order. It starts at "Step 1". If a step is already ticked there, it is done and verified — start at the first unticked one. |
-| **Blocked?** | No. **Both previously-open owner decisions were answered on 2026-08-05 — see "Owner decisions" under In progress. Do not re-ask them.** |
-| **Last updated** | 2026-08-05 |
+| **Phase** | **Implementing complete. All 12 tasks done.** Next work is post-launch (see *Deferred to after launch* in the plan). |
+| **Current step** | **Nothing in flight.** Task 12 built, verified and merged. |
+| **Branch** | `main`. Task 12 merged; `feat/owner-pages` deleted. |
+| **Next action** | No task is queued. The 12-task plan is finished. Before anything ships publicly: **rotate the Supabase service-role key** (it was pasted into a chat transcript on 2026-08-04) and **rotate `OWNER_SECRET`** (it was read by browser verification harnesses in Tasks 10 and 12). Then pick from *Deferred to after launch* at the end of `docs/superpowers/plans/2026-08-04-hitchat-implementation.md` — scroll-back pagination, presence/typing, lab tag filter chips, or the sidebar room tree. |
+| **Blocked?** | No. |
+| **Last updated** | 2026-08-06 |
 
 **Environment:** `.env.local` is complete — Supabase URL, publishable key,
 `SUPABASE_SERVICE_ROLE_KEY`, a generated `IDENTITY_PEPPER`, and a generated
@@ -54,6 +54,145 @@ unrecoverable by a fresh agent.
 ## Done
 
 Newest first. Each entry: what shipped, what deviated, what the next agent needs.
+
+### 2026-08-06 — Task 12: owner pages, admin posting, badge contrast ✅
+
+**Shipped:** `app/actions/structure.ts`, `app/actions/admins.ts`, `lib/owner-forms.ts`,
+`lib/auth/current-admin.ts`, `app/sudo/structure/page.tsx`, `app/sudo/admins/page.tsx`,
+`components/admin/owner-shell.tsx`, `components/admin/structure-forms.tsx`,
+`components/admin/admins-panel.tsx`, `tests/owner-actions.test.ts`; modified
+`app/page.tsx` (real room picker), `app/actions/messages.ts`, `lib/guards.ts`,
+`components/chat/composer.tsx`, `message-list.tsx`, `message-row.tsx`, `design.md`,
+`tests/moderation.test.ts`. Tests **139/139 across 13 files**, eslint clean,
+`tsc --noEmit` clean, `bun run build` succeeds. **No migration** — the schema already
+had everything (`admins.revoked_at`, `messages.admin_id`, the four structure tables).
+
+**Both owner decisions from 2026-08-05 are implemented. Do not re-litigate them.**
+- **(a) Admins may post in a locked room.** `sendText`/`postCode` read the session and
+  set `messages.admin_id`; the lock check is waived only for them.
+- **design.md's SUDO badge recipe was amended**, because (a) made the badge reachable
+  and the prescribed recipe fails AA. See § Component notes — the amendment is dated
+  and explains itself.
+
+**A bug that only a browser could find: `'use server'` files may export ONLY async
+functions.** I first put `emptyStructureState` / `emptyAdminsState` (plain objects) in
+the action files. Every test passed, `tsc` passed, **and `bun run build` passed** — but
+every form on both owner pages returned **HTTP 500** on submit with
+*"A 'use server' file can only export async functions, found object."* The module throws
+at import time. They now live in **`lib/owner-forms.ts`**; the action files import them.
+**Never export a non-function value from a `'use server'` file** — type-only exports are
+erased and are fine, runtime values are not. Nothing but a real POST catches this.
+
+**A second browser-only bug: the server exemption worked but the UI made it
+unreachable.** `composer.tsx` returned "This room is read-only right now." for *everyone*
+when `locked`, so an admin in a locked room had no composer to type into — the whole of
+decision (a) was invisible through the interface. `Composer` and `MessageList` now take
+`isAdmin`, and `onReply` is gated on `locked && !isAdmin` too. This is the Task 11
+lesson again: **a server-side capability with no call site is dead code**, and the tests
+could not see it because they call the action directly.
+
+**Verified in a real browser — 33 checks, all passing.** Signed out, both owner pages
+redirect to `/sudo`. As owner: department → year → batch → group created through the
+real forms; a lowercase `a` **stored as `A`** (the room page looks groups up
+uppercased, so a lowercase row would be a room nobody could open); the new room appears
+on `/` and opens **HTTP 200**. In a locked room the admin **posts successfully and the
+row carries `admin_id`**, the badge renders, and a student in a second context sees no
+composer and the read-only notice. Co-admin: secret shown once with the warning, **gone
+after reload**, `bcrypt.compare` verifies it against the stored hash and the raw value
+is **not** in the hash; the co-admin signs in, is **redirected away from both owner
+pages**, and after the owner revokes them their **session rows are deleted (0)** and the
+same cookie **no longer authenticates**. The owner has **no revoke control** rendered.
+Deleting a department **refuses a wrong confirmation**, quotes the exact required name,
+then deletes and **cascades to groups**.
+
+**The badge now measures 11.59:1 light / 14.89:1 dark**, read from composited pixels
+(walking the tree multiplying `opacity`, because reading `color` alone ignores it). The
+old recipe was 1.57:1 light.
+
+**A separate unauthenticated-HTTP check — 12 checks, all passing.** The tests mock
+`next/headers`; this did not. Harvesting the four Server Action ids from the page bundle
+and POSTing them **with no cookie** and **with a real co-admin cookie** produced
+refusals in every case, and the database was unchanged: 0 departments written, admins
+still 1, the injected `hax` slug and `Backdoor`/`CoMade` names absent. Revoking the
+owner over raw HTTP **as the owner** also failed — `revoked_at` stayed null.
+
+**Verified by mutation — three guards proven genuinely covered:**
+- Deleting `requireOwner()` from `createDepartment` fails exactly the 2 tests covering
+  it (`rejects every structure change`, `rejects everything when no session exists`).
+- Deleting the owner-revoke check fails 3 tests.
+- Deleting the lock exemption fails the 3 new admin-posting tests **and** 5 others;
+  making the exemption *unconditional* (ignoring `adminId`) fails exactly the
+  student-lock test. **Both directions are covered**, which matters because the
+  dangerous mutation here is the permissive one.
+
+**My own test leaked a row, and it is worth knowing why.** `rejects a malformed or
+reserved slug` asserted that `UPPER` is refused, but `createDepartment` **lowercases the
+slug before validating** (deliberately — the room URL is matched verbatim, so an
+uppercase slug would be unreachable). The insert succeeded and left a `Nope`/`upper`
+department on the live database. Deleted, and the test rewritten: the malformed list no
+longer contains a normalizable value, a **new** test asserts the lowercase-and-trim
+behavior, and both now assert **no row was written**. The mutation runs also leaked 2
+departments (guard absent = insert succeeds); all were removed and the DB verified back
+to 0.
+
+**Deviations from the plan:**
+- **`requireOwner` imported from `@/lib/auth/require`, not the plan's
+  `@/app/actions/admin`** — that path does not resolve and would put a guard on a public
+  HTTP surface. Predicted by Task 10; confirmed.
+- **`lib/owner-forms.ts` is not in the plan** — forced by the `'use server'` export rule
+  above.
+- **Form-action wrappers (`createDepartmentForm` etc.) are not in the plan.** The plan
+  says only "renders a form calling the matching action via `useActionState`". Wrappers
+  taking `(prevState, FormData)` are what make `<form action={...}>` post natively, which
+  is what makes these pages work with JS disabled — the same correction Task 10 made to
+  `SudoForm`.
+- **`listAdmins` added.** The plan's admins page has no read path, so it could not list
+  anyone. It never selects `secret_hash`; a test asserts the response contains neither
+  the secret nor that column name.
+- **`lib/auth/current-admin.ts` wraps `verifySession` in try/catch.** `cookies()` throws
+  outside a request scope. The fallback is `null` — "treat them as a student" — so the
+  helper **can only ever remove privilege, never grant it**. This is also why the two
+  test files that don't mock `next/headers` did not break, contrary to what progress.md
+  predicted.
+- **`assertPostable` was removed from `lib/guards.ts`.** Composing ban + lock now needs
+  to know whether the poster is an admin, so `app/actions/messages.ts` owns that as
+  `assertPostableAs()`. A comment in `guards.ts` records where it went.
+- **`createGroup` stores the label uppercase; `createDepartment` lowercases the slug.**
+  Both are required for the room URL to resolve, and both are now covered by a test.
+- **Reserved slugs** (`c`, `sudo`, `api`, `admin`, …) are refused — the plan allows a
+  department slugged `sudo`.
+- **Foreign-key violations (`23503`) are reported as `invalid`, not `server`.** A bad
+  parent id can never succeed, so "try again" is the wrong instruction.
+- **`revokeAdmin` is idempotent** and returns `ok` for an already-revoked admin.
+- **Empty departments are hidden from the room picker** (but shown on
+  `/sudo/structure`, where they can be acted on). A department with no rooms is noise on
+  a picker.
+- **21 tests in `tests/owner-actions.test.ts`, not the plan's 5.** The plan's own test
+  mocks `@/lib/auth/session`, which tests `requireOwner` against a stub of itself; these
+  mock only `next/headers` and use **real session rows**, as Task 10 established.
+- **`tests/moderation.test.ts` gained `signOut()`/`postAsStudent()` and 3 new tests.**
+  Three of its tests broke *correctly*: they signed in as admin and then posted, so
+  their "student" posts now carried `admin_id` — and `banAuthor` refuses to ban an
+  admin. The distinction between "acting as admin" and "acting as a student" did not
+  exist in that file before this change.
+
+**Next agent needs to know:**
+- **`messages.admin_id` is now written on every post** — `null` for students, the admin's
+  id otherwise. `MessageRow` renders the SUDO badge from it. It is set from the session
+  cookie only; there is deliberately no parameter for it.
+- **The lock exemption is for the lock alone.** Admins are still rate limited (5 text /
+  60s), still validated, and still blocked by a ban on their own token. A test asserts
+  the rate limit still bites an admin.
+- **`isAdmin` on `Composer`/`MessageList` is presentation only.** The server derives the
+  exemption independently. Do not add a check that trusts the prop.
+- **Playwright was installed temporarily and removed again**, as in Tasks 7–11.
+  `package.json` and `bun.lock` are clean. Live DB verified back to **1 admin (Owner),
+  0 everything else** — including the 8 sessions and 10 rate events the verification
+  runs created.
+- **Rotate both secrets before this goes public.** The service-role key was pasted into
+  a transcript on 2026-08-04, and `OWNER_SECRET` has now been read by browser harnesses
+  in Tasks 10 and 12.
+
 
 ### 2026-08-05 — Task 11: moderation ✅
 **Shipped:** `app/actions/moderation.ts`, `components/chat/admin-controls.tsx`,
@@ -853,76 +992,23 @@ column-level grant. Test that before trusting anything else.
 
 ## In progress
 
-### Task 12 — owner pages, plus two owner decisions from 2026-08-05
-
-Branch `feat/owner-pages`. Plan reference:
-`docs/superpowers/plans/2026-08-04-hitchat-implementation.md`, heading
-*Task 12: Owner pages — structure and admin management*.
-
-#### Owner decisions — ANSWERED 2026-08-05. Do not re-ask, do not re-litigate.
-
-Both items that sat under **Blocked** through Task 11 were put to the owner and decided.
-They are folded into this task's checklist.
-
-1. **Admins CAN post in a locked room — option (a) was chosen.** `sendText`/`postCode`
-   become session-aware, set `messages.admin_id`, and skip the lock check when a valid
-   admin session exists. This makes the SUDO badge in `components/chat/message-row.tsx`
-   reachable for the first time. The spec line 363 stands as written; the *code* changes
-   to match it. Option (b) — dropping the exemption — was explicitly rejected.
-2. **`design.md`'s SUDO badge recipe is amended to the border-plus-wash form.** The
-   prescribed "`marigold` text on `marigold` @ 12%" measures **1.57:1 in light mode**
-   against a 4.5 floor. `design.md` line 278 becomes: 2px `marigold` left border + the
-   12% marigold wash, with the label text in `ink`. This is what Tasks 10 and 11 already
-   built locally in `AdminBar` and `PinnedStrip`; the amendment makes it the single
-   source of truth instead of a workaround each surface rediscovers. **No new color is
-   introduced** — marigold survives as a UI surface, where the floor is 3.0.
-
-Because decision 1 makes the badge reachable, **decision 2 must land in the same task**
-or admin messages ship an illegible badge. That coupling was the whole reason both were
-held for one decision point.
-
-#### Step checklist — tick each only when verified, not when written
-
-- [ ] **Step 1** — `app/actions/structure.ts`: `createDepartment`, `createYear`,
-      `createBatch`, `createGroup`, `deleteDepartment`. Import `requireOwner` from
-      **`@/lib/auth/require`**, NOT the plan's `@/app/actions/admin` — that path does
-      not resolve and guards must not be exported from a `'use server'` file.
-- [ ] **Step 2** — `app/actions/admins.ts`: `createCoAdmin`, `revokeAdmin`. Same import
-      correction. Secret is generated server-side, returned once, stored bcrypt-hashed.
-- [ ] **Step 3** — `tests/owner-actions.test.ts`. Any test inserting an admin MUST
-      register its id for an `afterAll` sweep, as `tests/admin-auth.test.ts` does —
-      cleaning up inline after an assertion leaks rows onto the live DB when it fails.
-- [ ] **Step 4** — `app/page.tsx` room picker (replaces the Task 1 placeholder).
-- [ ] **Step 5** — `app/sudo/structure/page.tsx` and `app/sudo/admins/page.tsx`.
-      Each re-verifies its own session and redirects to `/sudo` when not `owner`.
-- [ ] **Step 6** — Decision 1: make `sendText`/`postCode` session-aware. See the
-      "How to do Step 6 safely" notes below before starting — it has known test fallout.
-- [ ] **Step 7** — Decision 2: amend `design.md` line 278, then fix the badge in
-      `components/chat/message-row.tsx` to match. Re-measure both themes from rendered
-      pixels, not from declared color values.
-- [ ] **Step 8** — Full suite, `bun run build`, `bunx eslint .`, browser verification.
-- [ ] **Step 9** — Update this file, commit, merge to `main`, delete the branch.
-
-#### How to do Step 6 safely
-
-This is a **Task 5 change with Task 5 test fallout**, which is why Task 11 correctly
-refused to do it in passing:
-
-- `verifySession()` calls `cookies()`, which **throws outside a request scope**.
-  `tests/messages-action.test.ts`, `tests/reactions-action.test.ts` and
-  `tests/moderation.test.ts` all call these actions. `moderation.test.ts` already mocks
-  `next/headers`; the other two do **not** and will break.
-- The pattern to copy is `tests/admin-auth.test.ts:16` and `tests/moderation.test.ts:13`
-  — `vi.mock('next/headers', ...)` driving the cookie jar from a variable.
-- **Guard order stays ban → lock → validate → rate limit.** The admin exemption is a
-  bypass of the *lock* check only. An admin is still rate-limited and still validated.
-  A test enforces this order; do not reorder to make the exemption easier.
-- **Derive the admin flag from the session, never from an argument.** A `isAdmin`
-  parameter on `sendText` would let any client post with a SUDO badge.
+*Nothing. Task 12 merged; the 12-task plan is complete.*
 
 ---
 
 ### Standing notes — read before any task
+
+**A `'use server'` file may export ONLY async functions.** Exporting a plain object or
+constant from one makes the module throw at import time and every form on the page
+returns HTTP 500 — while `bun run test`, `tsc --noEmit` **and `bun run build` all pass**.
+Shared form-state constants live in `lib/owner-forms.ts` for exactly this reason.
+Type-only exports are erased at compile time and are safe; runtime values are not.
+
+**A server-side capability with no reachable call site is dead code.** Task 11 shipped
+`toggleLock`/`purgeRoom` with no UI; Task 12's admin locked-room exemption worked
+server-side while `composer.tsx` still hid the composer from admins, making it
+unreachable. Tests that call an action directly cannot see this. **After adding a
+capability, drive it from the UI in a browser.**
 
 **Never target a message row with `.first()` or `.last()` in a browser check.** Those
 locators re-resolve against a list Realtime is actively mutating, so an action can land
@@ -930,9 +1016,19 @@ on a different row than the one you inspected. A Task 11 harness reported 15/15 
 while deleting two messages from one click. Capture the id first, then target
 `[id="m-<uuid>"]`.
 
-**Moderation UI visibility is not authorization.** `isAdmin` on the room page only shows
-or hides controls. Every action in `app/actions/moderation.ts` calls `requireAdmin()`
-itself, and that is the only thing standing between a student and a purge.
+**Moderation UI visibility is not authorization.** `isAdmin` on the room page, and on
+`Composer`/`MessageList`, only shows or hides controls. Every action in
+`app/actions/moderation.ts` calls `requireAdmin()` itself, every action in
+`structure.ts`/`admins.ts` calls `requireOwner()`, and `sendText`/`postCode` derive the
+locked-room exemption from the session cookie — never from the prop. Those server-side
+checks are the only thing standing between a student and a purge.
+
+**Admins may post in a locked room, and their messages carry `admin_id`.** Decided by
+the owner on 2026-08-05 and implemented in Task 12; the spec always said so. The
+exemption covers the **lock check only** — an admin is still rate limited, still
+validated, and still blocked by a ban on their own token. `banAuthor` refuses to ban an
+admin, so a test that wants a bannable message must post it **without** a session
+(`postAsStudent` in `tests/moderation.test.ts`).
 
 **Only `messages` is in the Realtime publication.** `groups` is not, so a lock/unlock does
 not reach other clients on its own — `AdminBar` uses `router.refresh()`. Anything that
@@ -1026,6 +1122,30 @@ under **In progress → Owner decisions**. They are settled; do not reopen them.
 Anything built differently from the implementation plan, and why. Silence about a known
 deviation is
 how the next agent undoes your work.
+
+### 2026-08-06 — Task 12 resolved both open owner decisions, and needed a new module
+
+The plan's Task 12 is only the owner pages. Two extra pieces of work landed with it
+because the owner decided the items that had sat under **Blocked** since Task 11:
+
+1. **Admins may post in a locked room** (spec line 363, never implemented). Cost:
+   `lib/auth/current-admin.ts`, `assertPostableAs()` in `app/actions/messages.ts`, the
+   removal of `assertPostable` from `lib/guards.ts`, an `isAdmin` prop on
+   `Composer`/`MessageList`, and 3 new tests plus a `signOut()`/`postAsStudent()` split
+   in `tests/moderation.test.ts`.
+2. **`design.md` § Component notes was amended** — the prescribed SUDO badge recipe
+   measures 1.57:1 in light mode. It now prescribes the border-plus-wash form Tasks 10
+   and 11 had already been forced to invent locally. `design.md` is prescriptive, so this
+   was an amendment with a dated note, not a silent override.
+
+**`lib/owner-forms.ts` exists because a `'use server'` file may export only async
+functions.** The form-state constants started out in the action files, which built and
+tested clean but 500'd every form on submit. This is now a standing note.
+
+**Form-action wrappers are not in the plan** (it says only "via `useActionState`"), and
+`listAdmins` is not either — the plan's admins page has no way to list anyone. Both
+follow Task 10's `SudoForm` precedent: a `(prevState, FormData)` action posted from
+`<form action={...}>` works without JavaScript.
 
 ### 2026-08-04 — Message lifetime is 8 hours, not the spec's original 24
 

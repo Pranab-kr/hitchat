@@ -64,8 +64,21 @@ async function signIn(id: string) {
   mocks.cookies.set('hitchat_admin', raw)
 }
 
-async function messageRow(id: string) {
-  const { data } = await db
+// Admins may post in a locked room and their messages carry admin_id, so a test that
+// wants to act as a *student* must drop the cookie first. Before that exemption
+// existed, every post in this file was implicitly a student post.
+function signOut() {
+  mocks.cookies.clear()
+}
+
+// Posts with no admin session, as a student would.
+async function postAsStudent(token: string, body: string) {
+  signOut()
+  usedTokens.push(token)
+  return sendText({ token, groupId: room.groupId, body })
+}
+
+async function messageRow(id: string) {  const { data } = await db
     .from('messages')
     .select('body, code_lang, code_title, lab_tag, is_pinned, deleted_at')
     .eq('id', id)
@@ -212,17 +225,81 @@ describe('toggleLock', () => {
     await signIn(adminId)
     expect((await toggleLock(room.groupId, true)).ok).toBe(true)
 
-    const blocked = await sendText({
-      token: tok('locked'),
-      groupId: room.groupId,
-      body: 'let me in',
-    })
+    // Explicitly as a student: an admin is exempt from the lock, so leaving the
+    // session cookie in place would test the exemption instead of the lock.
+    const blocked = await postAsStudent(tok('locked'), 'let me in')
     expect(blocked.ok).toBe(false)
     if (!blocked.ok) expect(blocked.code).toBe('locked')
 
+    await signIn(adminId)
     expect((await toggleLock(room.groupId, false)).ok).toBe(true)
-    await post(tok('unlocked'), 'back open')
+
+    const reopened = await postAsStudent(tok('unlocked'), 'back open')
+    expect(reopened.ok).toBe(true)
   })
+
+  it('lets an admin post in a locked room, and badges it', async () => {
+    await signIn(adminId)
+    expect((await toggleLock(room.groupId, true)).ok).toBe(true)
+
+    // Spec: "read-only for students; admins can still post". Same cookie, same room
+    // the student was just refused from.
+    const token = tok('adminpost')
+    usedTokens.push(token)
+    const posted = await sendText({
+      token,
+      groupId: room.groupId,
+      body: 'office hours at 4',
+    })
+    expect(posted.ok).toBe(true)
+    if (!posted.ok) return
+
+    // admin_id is what MessageRow renders the SUDO badge from. Without it the
+    // exemption would be invisible in the UI.
+    const { data } = await db
+      .from('messages')
+      .select('admin_id')
+      .eq('id', posted.data.id)
+      .single()
+    expect(data!.admin_id).toBe(adminId)
+
+    await signIn(adminId)
+    expect((await toggleLock(room.groupId, false)).ok).toBe(true)
+  })
+
+  it('does not badge a student message', async () => {
+    const token = tok('studentbadge')
+    const posted = await postAsStudent(token, 'just me')
+    expect(posted.ok).toBe(true)
+    if (!posted.ok) return
+
+    const { data } = await db
+      .from('messages')
+      .select('admin_id')
+      .eq('id', posted.data.id)
+      .single()
+    expect(data!.admin_id).toBeNull()
+  })
+
+  it('still rate limits an admin', async () => {
+    await signIn(adminId)
+    const token = tok('adminrate')
+    usedTokens.push(token)
+
+    // The exemption covers the lock check only. Text is capped at 5 per 60s per
+    // author, admin or not.
+    const results = []
+    for (let i = 0; i < 6; i++) {
+      results.push(
+        await sendText({ token, groupId: room.groupId, body: `flood ${i}` }),
+      )
+    }
+
+    expect(results.slice(0, 5).every((r) => r.ok)).toBe(true)
+    const last = results[5]
+    expect(last.ok).toBe(false)
+    if (!last.ok) expect(last.code).toBe('rate_limited')
+  }, 30_000)
 })
 
 describe('purgeRoom', () => {
@@ -282,22 +359,29 @@ describe('purgeRoom', () => {
 
 describe('banAuthor', () => {
   it('blocks the banned author from posting again', async () => {
-    await signIn(adminId)
+    // Posted as a student: banAuthor refuses to ban an admin, so a message carrying
+    // admin_id is not bannable by design.
     const token = tok('spammer')
-    const id = await post(token, 'spam')
+    const posted = await postAsStudent(token, 'spam')
+    expect(posted.ok).toBe(true)
+    if (!posted.ok) return
 
-    expect((await banAuthor(id)).ok).toBe(true)
+    await signIn(adminId)
+    expect((await banAuthor(posted.data.id)).ok).toBe(true)
 
-    const blocked = await sendText({ token, groupId: room.groupId, body: 'more spam' })
+    const blocked = await postAsStudent(token, 'more spam')
     expect(blocked.ok).toBe(false)
     if (!blocked.ok) expect(blocked.code).toBe('banned')
   })
 
   it('derives the hash server-side and stores no raw token', async () => {
-    await signIn(adminId)
     const token = tok('derive')
-    const id = await post(token, 'hash me')
-    await banAuthor(id)
+    const posted = await postAsStudent(token, 'hash me')
+    expect(posted.ok).toBe(true)
+    if (!posted.ok) return
+
+    await signIn(adminId)
+    await banAuthor(posted.data.id)
 
     const { data } = await db
       .from('bans')

@@ -3,11 +3,35 @@
 import { getServiceClient } from '@/lib/supabase/admin'
 import { hashToken, deriveHandle } from '@/lib/identity'
 import { validateText, validateCode } from '@/lib/validate'
-import { assertPostable, assertRateOk } from '@/lib/guards'
+import { assertNotBanned, assertRoomOpen, assertRateOk } from '@/lib/guards'
+import { currentAdminId } from '@/lib/auth/current-admin'
 import { type ActionResult, ok, err } from '@/lib/result'
 
-// Order matters: ban, lock, validate, then rate limit. The rate check records an
-// event, so an invalid message must not consume the user's quota.
+// Spec: "Lock room (read-only for students; admins can still post)". The admin id is
+// derived from the session cookie server-side and never accepted as an argument — an
+// isAdmin parameter would let any client mint itself a SUDO badge.
+//
+// The exemption covers the LOCK check only. An admin is still rate limited, still
+// validated, and still subject to a ban on their own token. Guard order stays
+// ban → lock → validate → rate limit: the rate check records an event, so a message
+// rejected for length must not consume the poster's quota.
+async function assertPostableAs(
+  hash: string,
+  groupId: string,
+  adminId: string | null,
+): Promise<ActionResult<null>> {
+  const banned = await assertNotBanned(hash)
+  if (!banned.ok) return banned
+
+  const open = await assertRoomOpen(groupId)
+  if (!open.ok) {
+    // A room that no longer exists is refused for everyone; only the lock is waived.
+    if (open.code !== 'locked' || !adminId) return open
+  }
+
+  return ok(null)
+}
+
 export async function sendText(input: {
   token: string
   groupId: string
@@ -15,8 +39,9 @@ export async function sendText(input: {
   replyToId?: string
 }): Promise<ActionResult<{ id: string }>> {
   const hash = hashToken(input.token)
+  const adminId = await currentAdminId()
 
-  const postable = await assertPostable(hash, input.groupId)
+  const postable = await assertPostableAs(hash, input.groupId, adminId)
   if (!postable.ok) return postable
 
   const invalid = validateText(input.body)
@@ -38,6 +63,7 @@ export async function sendText(input: {
       author_token_hash: hash,
       author_name: name,
       author_color: color,
+      admin_id: adminId,
     })
     .select('id')
     .single()
@@ -56,8 +82,9 @@ export async function postCode(input: {
   replyToId?: string
 }): Promise<ActionResult<{ id: string }>> {
   const hash = hashToken(input.token)
+  const adminId = await currentAdminId()
 
-  const postable = await assertPostable(hash, input.groupId)
+  const postable = await assertPostableAs(hash, input.groupId, adminId)
   if (!postable.ok) return postable
 
   const invalid = validateCode(input)
@@ -82,6 +109,7 @@ export async function postCode(input: {
       author_token_hash: hash,
       author_name: name,
       author_color: color,
+      admin_id: adminId,
     })
     .select('id')
     .single()

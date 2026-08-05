@@ -113,7 +113,11 @@ export function MessageRow({
         </span>
 
         {message.admin_id && (
-          <span className="rounded-[4px] bg-marigold/12 px-1.5 py-0.5 font-mono text-[11px] tracking-[0.08em] text-marigold">
+          // marigold text on its own 12% wash measures 1.57:1 on the light paper,
+          // against a 4.5 floor. design.md § Component notes prescribes this
+          // border-plus-wash form instead: marigold stays as a UI surface (3.0 floor)
+          // and the label is ink. Same recipe as AdminBar and PinnedStrip.
+          <span className="rounded-[4px] border-l-2 border-l-marigold bg-marigold/12 px-1.5 py-0.5 font-mono text-[11px] tracking-[0.08em] text-ink">
             SUDO
           </span>
         )}
