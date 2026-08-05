@@ -14,10 +14,10 @@ section for the step you're on. Full protocol in `AGENTS.md`.
 | | |
 |---|---|
 | **Phase** | Implementing. Tasks 1–11 of 12 done. |
-| **Current step** | **Task 12 — owner pages (structure + admin management)** — not started |
-| **Branch** | `main`. Task 11 merged; `feat/moderation` deleted. |
-| **Next action** | `git checkout main && git pull`, then `git checkout -b feat/owner-pages`, then **set this table's Current step to "IN PROGRESS" and commit that before writing any code**. Build Task 12 from `docs/superpowers/plans/2026-08-04-hitchat-implementation.md` line 3788 (heading *Task 12: Owner pages — structure and admin management*). Creates `app/actions/structure.ts`, `app/actions/admins.ts`, `app/sudo/structure/page.tsx`, `app/sudo/admins/page.tsx`, `app/page.tsx` (room picker), `components/room/sidebar.tsx`, `tests/owner-actions.test.ts`. **Import `requireOwner` from `@/lib/auth/require`, not `@/app/actions/admin`.** Do **not** re-apply migrations 0001–0007 — all live on `vbbinzmpnszdayrdfsle`. **Read the two open items under Blocked first** — one is a spec/code conflict about admins posting in locked rooms, the other a design.md contrast failure; both need an owner decision. |
-| **Blocked?** | No, but **two items need an owner decision** — see Blocked. |
+| **Current step** | **Task 12 — owner pages (structure + admin management)** — **IN PROGRESS** |
+| **Branch** | `feat/owner-pages`, branched from `main` at `38ea356`. |
+| **Next action** | Work through the step checklist under **In progress** below, in order. It starts at "Step 1". If a step is already ticked there, it is done and verified — start at the first unticked one. |
+| **Blocked?** | No. **Both previously-open owner decisions were answered on 2026-08-05 — see "Owner decisions" under In progress. Do not re-ask them.** |
 | **Last updated** | 2026-08-05 |
 
 **Environment:** `.env.local` is complete — Supabase URL, publishable key,
@@ -853,7 +853,72 @@ column-level grant. Test that before trusting anything else.
 
 ## In progress
 
-*Nothing. Task 11 merged; Task 12 not started.*
+### Task 12 — owner pages, plus two owner decisions from 2026-08-05
+
+Branch `feat/owner-pages`. Plan reference:
+`docs/superpowers/plans/2026-08-04-hitchat-implementation.md`, heading
+*Task 12: Owner pages — structure and admin management*.
+
+#### Owner decisions — ANSWERED 2026-08-05. Do not re-ask, do not re-litigate.
+
+Both items that sat under **Blocked** through Task 11 were put to the owner and decided.
+They are folded into this task's checklist.
+
+1. **Admins CAN post in a locked room — option (a) was chosen.** `sendText`/`postCode`
+   become session-aware, set `messages.admin_id`, and skip the lock check when a valid
+   admin session exists. This makes the SUDO badge in `components/chat/message-row.tsx`
+   reachable for the first time. The spec line 363 stands as written; the *code* changes
+   to match it. Option (b) — dropping the exemption — was explicitly rejected.
+2. **`design.md`'s SUDO badge recipe is amended to the border-plus-wash form.** The
+   prescribed "`marigold` text on `marigold` @ 12%" measures **1.57:1 in light mode**
+   against a 4.5 floor. `design.md` line 278 becomes: 2px `marigold` left border + the
+   12% marigold wash, with the label text in `ink`. This is what Tasks 10 and 11 already
+   built locally in `AdminBar` and `PinnedStrip`; the amendment makes it the single
+   source of truth instead of a workaround each surface rediscovers. **No new color is
+   introduced** — marigold survives as a UI surface, where the floor is 3.0.
+
+Because decision 1 makes the badge reachable, **decision 2 must land in the same task**
+or admin messages ship an illegible badge. That coupling was the whole reason both were
+held for one decision point.
+
+#### Step checklist — tick each only when verified, not when written
+
+- [ ] **Step 1** — `app/actions/structure.ts`: `createDepartment`, `createYear`,
+      `createBatch`, `createGroup`, `deleteDepartment`. Import `requireOwner` from
+      **`@/lib/auth/require`**, NOT the plan's `@/app/actions/admin` — that path does
+      not resolve and guards must not be exported from a `'use server'` file.
+- [ ] **Step 2** — `app/actions/admins.ts`: `createCoAdmin`, `revokeAdmin`. Same import
+      correction. Secret is generated server-side, returned once, stored bcrypt-hashed.
+- [ ] **Step 3** — `tests/owner-actions.test.ts`. Any test inserting an admin MUST
+      register its id for an `afterAll` sweep, as `tests/admin-auth.test.ts` does —
+      cleaning up inline after an assertion leaks rows onto the live DB when it fails.
+- [ ] **Step 4** — `app/page.tsx` room picker (replaces the Task 1 placeholder).
+- [ ] **Step 5** — `app/sudo/structure/page.tsx` and `app/sudo/admins/page.tsx`.
+      Each re-verifies its own session and redirects to `/sudo` when not `owner`.
+- [ ] **Step 6** — Decision 1: make `sendText`/`postCode` session-aware. See the
+      "How to do Step 6 safely" notes below before starting — it has known test fallout.
+- [ ] **Step 7** — Decision 2: amend `design.md` line 278, then fix the badge in
+      `components/chat/message-row.tsx` to match. Re-measure both themes from rendered
+      pixels, not from declared color values.
+- [ ] **Step 8** — Full suite, `bun run build`, `bunx eslint .`, browser verification.
+- [ ] **Step 9** — Update this file, commit, merge to `main`, delete the branch.
+
+#### How to do Step 6 safely
+
+This is a **Task 5 change with Task 5 test fallout**, which is why Task 11 correctly
+refused to do it in passing:
+
+- `verifySession()` calls `cookies()`, which **throws outside a request scope**.
+  `tests/messages-action.test.ts`, `tests/reactions-action.test.ts` and
+  `tests/moderation.test.ts` all call these actions. `moderation.test.ts` already mocks
+  `next/headers`; the other two do **not** and will break.
+- The pattern to copy is `tests/admin-auth.test.ts:16` and `tests/moderation.test.ts:13`
+  — `vi.mock('next/headers', ...)` driving the cookie jar from a variable.
+- **Guard order stays ban → lock → validate → rate limit.** The admin exemption is a
+  bypass of the *lock* check only. An admin is still rate-limited and still validated.
+  A test enforces this order; do not reorder to make the exemption easier.
+- **Derive the admin flag from the session, never from an argument.** A `isAdmin`
+  parameter on `sendText` would let any client post with a SUDO badge.
 
 ---
 
@@ -947,40 +1012,12 @@ group. See the Deviations section.
 
 ## Blocked
 
-*Nothing is blocking Task 12.* Two items below need an **owner decision** and were
-deliberately not decided unilaterally.
+*Nothing.*
 
-### 1. The spec says admins can post in a locked room. The code refuses everyone.
-
-Spec line 363: *"Lock room (read-only for students; **admins can still post**)"*. But
-`assertRoomOpen` in `lib/guards.ts` refuses every writer, and **nothing anywhere in the
-codebase ever sets `messages.admin_id`** — so the SUDO badge that Task 7 built into
-`MessageRow` (line 110) is unreachable dead code, and no admin has ever posted as an
-admin.
-
-Not fixed in Task 11 because it is outside this task's file list and the change is not
-local: `sendText`/`postCode` would have to read the admin session, and `verifySession`
-calls `cookies()`, which **throws outside a request scope**. Three existing test files
-call those actions without mocking `next/headers` and would break. That is a Task 5
-change with test fallout, not a moderation change.
-
-**Options:** (a) make `sendText`/`postCode` session-aware and set `admin_id`, giving
-admins a badge and a locked-room exemption; (b) drop the exemption from the spec and
-delete the dead `admin_id` branch. **Do not half-do it** — a badge with no exemption, or
-an exemption with no badge, is worse than either.
-
-### 2. design.md's SUDO badge recipe fails WCAG AA in light mode.
-
-design.md line 278 prescribes *"`marigold` text on `marigold` @ 12%"*. Measured from real
-rendered pixels: **1.57:1 in light mode** against a 4.5 floor (dark is fine at 10.12:1).
-The same recipe applied to the pinned strip measured 1.72:1.
-
-Task 11 fixed **its own** two surfaces (`AdminBar`'s badge and `PinnedStrip`'s label) by
-keeping marigold as border-plus-wash and setting the text in `ink`. **The badge in
-`components/chat/message-row.tsx:110` still uses the failing recipe** — it shipped in
-Task 7, it is currently unreachable (see item 1), and changing it means changing
-`design.md`, which is prescriptive. **If item 1 is resolved as (a), this must be fixed
-at the same time or admin messages ship an illegible badge.**
+Both items that lived here through Task 11 — the locked-room admin-posting conflict and
+the `design.md` SUDO badge contrast failure — **were decided by the owner on 2026-08-05**
+and are now Steps 6 and 7 of Task 12. The decisions and their reasoning are recorded
+under **In progress → Owner decisions**. They are settled; do not reopen them.
 
 ---
 
