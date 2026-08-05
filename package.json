@@ -8,7 +8,9 @@
     "start": "next start",
     "lint": "eslint",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "seed-owner": "bun run scripts/seed-owner.ts",
+    "rotate-owner": "bun run scripts/rotate-owner-secret.ts"
   },
   "dependencies": {
     "@shikijs/langs": "^4.4.1",
