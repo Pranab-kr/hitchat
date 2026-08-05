@@ -1,5 +1,10 @@
+// Must stay in sync with the code_lang_allowed check constraint (migration 0008) and
+// with the grammars loaded in lib/highlight.ts. A language in this list but missing a
+// grammar silently renders as plaintext; one missing from the constraint is rejected
+// by the database after passing validation.
 export const ALLOWED_LANGS = [
-  'c', 'cpp', 'java', 'python', 'javascript', 'sql', 'bash', 'plaintext',
+  'c', 'cpp', 'java', 'python', 'javascript', 'sql', 'bash',
+  'html', 'css', 'verilog', 'plaintext',
 ] as const
 
 const n = (x: number) => x.toLocaleString('en-US')

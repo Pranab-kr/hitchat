@@ -50,9 +50,14 @@ describe('validateCode', () => {
     )
   })
 
-  it('allows exactly the eight documented languages', () => {
+  // Pinned deliberately. This list is duplicated in the code_lang_allowed DB check
+  // constraint and in lib/highlight.ts's grammar imports, so adding a language here
+  // without the other two ships either a database rejection or silent plaintext.
+  // If this fails, update all three — do not just widen the expectation.
+  it('allows exactly the eleven documented languages', () => {
     expect([...ALLOWED_LANGS]).toEqual([
-      'c', 'cpp', 'java', 'python', 'javascript', 'sql', 'bash', 'plaintext',
+      'c', 'cpp', 'java', 'python', 'javascript', 'sql', 'bash',
+      'html', 'css', 'verilog', 'plaintext',
     ])
   })
 

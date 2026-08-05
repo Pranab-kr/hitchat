@@ -49,3 +49,6 @@ next-env.d.ts
 .claude/
 .agents/
 .mcp.json
+
+# Planning/spec docs — working notes, kept local rather than published.
+/docs/

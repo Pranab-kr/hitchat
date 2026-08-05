@@ -17,14 +17,22 @@ function getHighlighter() {
       import('@shikijs/langs/javascript'),
       import('@shikijs/langs/sql'),
       import('@shikijs/langs/bash'),
+      import('@shikijs/langs/html'),
+      import('@shikijs/langs/css'),
+      import('@shikijs/langs/verilog'),
     ],
     engine: createOnigurumaEngine(import('shiki/wasm')),
   })
   return highlighterPromise
 }
 
-export async function highlightCode(code: string, lang: string): Promise<string> {
-  const highlighter = await getHighlighter()
+// Which grammars actually loaded. A language allowed by validate.ts but missing here
+// degrades silently to plaintext, so a test asserts these two lists agree.
+export async function loadedLanguages(): Promise<string[]> {
+  return (await getHighlighter()).getLoadedLanguages()
+}
+
+export async function highlightCode(code: string, lang: string): Promise<string> {  const highlighter = await getHighlighter()
 
   // 'plaintext' is a SpecialLanguage — it needs no grammar.
   const loaded = highlighter.getLoadedLanguages()

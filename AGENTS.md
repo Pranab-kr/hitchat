@@ -58,6 +58,10 @@ An accurate half-finished status beats a stale complete-looking one.
 | `docs/superpowers/plans/2026-08-04-hitchat-implementation.md` | Ordered build steps. There is no top-level `plan.md`. |
 | `progress.md` | Running status and session handoff. **Update it as part of the work, not after.** |
 
+**`docs/` is gitignored and exists only in the owner's working copy.** The spec and plan
+are working notes, not published artifacts, so a fresh clone will not have them — if
+they are missing, work from `progress.md`, `design.md` and the code.
+
 If the spec and the code disagree, the spec wins — or the spec gets updated
 deliberately. Never silently diverge.
 
