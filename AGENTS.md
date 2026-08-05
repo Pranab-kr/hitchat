@@ -15,13 +15,19 @@ in this order:
 
 1. **Read `progress.md`.** It states the current branch, the current step, and the
    exact next action. It is the handoff document.
-2. **Read `docs/superpowers/plans/2026-08-04-hitchat-implementation.md`** — the step you
-   are on, plus the one after it.
-3. **Run `git status` and `git branch --show-current`.** Reconcile against what
+2. **Run `git status` and `git branch --show-current`.** Reconcile against what
    `progress.md` claims. If they disagree, trust git for *what exists* and
    `progress.md` for *what was intended*, then say so before continuing.
-4. **Read the spec section** for the feature you're building. Only that section.
-5. Only then start work.
+3. **Read the spec section** for the feature you're touching. Only that section.
+4. Only then start work.
+
+**The original 12-task build plan is complete** (finished 2026-08-06 — all tasks are
+recorded under Done in `progress.md`). The plan at
+`docs/superpowers/plans/2026-08-04-hitchat-implementation.md` is now **history plus a
+backlog**: its *Deferred to after launch* section at the end is the live list. Read the
+plan's task bodies only when you need to know why something was built the way it was —
+the code and `progress.md` are ahead of it in several places, all recorded under
+Deviations.
 
 If `progress.md` and the repo disagree in a way you can't reconcile, stop and ask.
 Do not guess and do not restart a step that may already be half-done.
@@ -55,12 +61,8 @@ An accurate half-finished status beats a stale complete-looking one.
 |---|---|
 | `docs/superpowers/specs/2026-08-03-anon-lab-chat-design.md` | The spec. Source of truth for behavior. |
 | `design.md` | Visual system. Source of truth for every color, font, and spacing value. |
-| `docs/superpowers/plans/2026-08-04-hitchat-implementation.md` | Ordered build steps. There is no top-level `plan.md`. |
+| `docs/superpowers/plans/2026-08-04-hitchat-implementation.md` | The original 12-task build plan — **complete**. Now history plus the *Deferred to after launch* backlog at its end. There is no top-level `plan.md`. |
 | `progress.md` | Running status and session handoff. **Update it as part of the work, not after.** |
-
-**`docs/` is gitignored and exists only in the owner's working copy.** The spec and plan
-are working notes, not published artifacts, so a fresh clone will not have them — if
-they are missing, work from `progress.md`, `design.md` and the code.
 
 If the spec and the code disagree, the spec wins — or the spec gets updated
 deliberately. Never silently diverge.
@@ -68,7 +70,30 @@ deliberately. Never silently diverge.
 ## Workflow
 
 See "The loop" above. One branch per step, `feat/<step-slug>`, branched from `main`.
-Never commit directly to `main` except for docs.
+
+The loop was written for the 12-task build and still applies to any multi-step feature.
+For a genuinely small change — one file, one obvious fix — a direct commit on `main` is
+fine; the point of the ceremony is recoverability, and there is nothing to recover from
+a two-line change. Anything that spans files, touches the database, or could leave the
+repo half-done gets a branch and a `progress.md` entry **written before the work**.
+
+## Operations
+
+- **Secrets.** `SUPABASE_SERVICE_ROLE_KEY` and `OWNER_SECRET` both leaked during the
+  build and the rotation procedure is in `progress.md` under "Resume here". Rotate the
+  owner secret with `bun run rotate-owner` (put the new value in `.env.local` first).
+  **Never rotate `IDENTITY_PEPPER`** — it re-derives every anonymous handle and orphans
+  every live ban.
+- **The repo is public** (`Pranab-kr/hitchat`). Before pushing, confirm no secret value
+  appears in a tracked file or in history. `.env.local`, `.claude`, `.mcp.json`,
+  `.agents` and `skills-lock.json` are gitignored.
+- **Migrations are applied live** to `vbbinzmpnszdayrdfsle` via the supabase MCP
+  `apply_migration` tool, and the file in `supabase/migrations/` is the record. Check
+  that directory for the real highest number — the plan's numbering went stale at 0005.
+  **Never edit a migration that has already been applied.**
+- **The live database holds real data.** There is a department the owner created by
+  hand. Read before you delete, and never clear a table wholesale to tidy up after a
+  test.
 
 ## Writing progress.md so the next agent can resume
 
@@ -99,10 +124,44 @@ Assume no shared context. That means:
   the Next.js docs say so explicitly. Check the session inside the action itself.
 - **Never trust a client-supplied role, admin flag, or token hash.** Derive them
   server-side.
+- **A `'use server'` file may export ONLY async functions.** Exporting a plain object or
+  constant from one makes the module throw at import time and every form on the page
+  returns HTTP 500 — while the test suite, `tsc --noEmit` *and* `bun run build` all
+  pass. Shared form-state constants live in `lib/owner-forms.ts` for this reason.
+  Type-only exports are erased at compile time and are safe.
+- **Adding a code language means changing three places at once:** the
+  `code_lang_allowed` check constraint (a migration), `ALLOWED_LANGS` in
+  `lib/validate.ts`, and the grammar imports in `lib/highlight.ts`. Miss the constraint
+  and the database rejects a post that passed validation; miss the grammar and it
+  renders as plaintext with no error. Tests in `tests/validate.test.ts` and
+  `tests/highlight.test.ts` pin all three — if they fail, update all three rather than
+  widening the expectation.
 - **No new colors or fonts.** If `design.md` doesn't define it, it doesn't go in.
 - Don't use stock shadcn appearance. If a component still looks like default shadcn,
   it isn't finished.
 - At most one Magic UI component in the entire app. Default to zero.
+
+## Verifying — a green suite is not enough
+
+Two bugs in this project passed the full suite, `tsc`, and `bun run build`, and were
+caught only by a real browser: the `'use server'` export rule above, and a server-side
+capability whose UI still hid the control that would reach it.
+
+- **Prove a guard by breaking it.** Delete or invert a new check and confirm the
+  specific test covering it fails. A test that passes with *and* without the guard is
+  not coverage.
+- **Drive a new capability from the UI before calling it done.** A Server Action with no
+  reachable call site is dead code, and a test that calls the action directly cannot
+  see that.
+- **Compare browser assertions exactly.** Playwright's `getByRole(name)` and `text=`
+  match substrings. Never assert a 404 by looking for "could not be found" in page text
+  — Next's dev overlay ships that string on every page. Assert on HTTP status.
+- **Never target a message row with `.first()`/`.last()`.** Those re-resolve against a
+  list Realtime is mutating. Capture the id, then target `[id="m-<uuid>"]`.
+- **Tests run against the live database with the service-role key.** Any test that
+  posts must use a per-run token suffix, and any test that inserts an admin must
+  register its id for an `afterAll` sweep — cleaning up inline after an assertion leaks
+  rows when that assertion fails.
 
 ## Next.js 16 gotchas
 
