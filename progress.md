@@ -16,15 +16,40 @@ section for the step you're on. Full protocol in `AGENTS.md`.
 | **Phase** | **Implementing complete. All 12 tasks done.** Next work is post-launch (see *Deferred to after launch* in the plan). |
 | **Current step** | **Nothing in flight.** Task 12 built, verified and merged. |
 | **Branch** | `main`. Task 12 merged; `feat/owner-pages` deleted. |
-| **Next action** | No task is queued. The 12-task plan is finished. Before anything ships publicly: **rotate the Supabase service-role key** (it was pasted into a chat transcript on 2026-08-04) and **rotate `OWNER_SECRET`** (it was read by browser verification harnesses in Tasks 10 and 12). Then pick from *Deferred to after launch* at the end of `docs/superpowers/plans/2026-08-04-hitchat-implementation.md` — scroll-back pagination, presence/typing, lab tag filter chips, or the sidebar room tree. |
+| **Next action** | No task is queued. The 12-task plan is finished. **Before any public deploy, rotate both secrets — see the rotation steps under "Resume here" below** (`bun run rotate-owner` for the owner secret; roll the service-role key in the Supabase dashboard; do **not** touch `IDENTITY_PEPPER`). Then pick from *Deferred to after launch* at the end of `docs/superpowers/plans/2026-08-04-hitchat-implementation.md` — scroll-back pagination, presence/typing, lab tag filter chips, or the sidebar room tree. |
 | **Blocked?** | No. |
 | **Last updated** | 2026-08-06 |
 
 **Environment:** `.env.local` is complete — Supabase URL, publishable key,
 `SUPABASE_SERVICE_ROLE_KEY`, a generated `IDENTITY_PEPPER`, and a generated
-`OWNER_SECRET`. It is gitignored and verified not tracked. The secret key was pasted
-into a chat transcript on 2026-08-04 and **should be rotated** in the Supabase
-dashboard before this goes anywhere public.
+`OWNER_SECRET`. It is gitignored and **verified never committed** (checked by value
+against every tracked file and the full history on 2026-08-06 — 0 hits for all three
+secrets).
+
+**Secret rotation — do this before any public deploy.** Both were exposed during the
+build: the service-role key to a chat transcript on 2026-08-04, and `OWNER_SECRET` to
+browser verification harnesses in Tasks 10 and 12.
+
+1. **Service-role key** — Supabase dashboard → Project Settings → API Keys → roll
+   `service_role`. Paste the new value into `.env.local` and into the host's env vars.
+   Nothing in the code hardcodes it. `IDENTITY_PEPPER` must **not** be rotated:
+   changing it re-derives every anonymous handle and orphans every live ban.
+2. **Owner secret** — put the NEW value in `.env.local`, then `bun run rotate-owner`.
+   It re-hashes the owner row at bcrypt cost 12 and deletes the owner's sessions (a
+   leaked secret may already have minted 7-day cookies). It **refuses to run** if
+   `OWNER_SECRET` still matches the stored hash, so a no-op cannot masquerade as a
+   rotation. `scripts/seed-owner.ts` will not do this — it is idempotent by design.
+
+Login reads the bcrypt hash from the database, never the env var, so the owner rotation
+needs no redeploy.
+
+**The Supabase project ref is not a secret** and is deliberately left in this file: it
+is part of `NEXT_PUBLIC_SUPABASE_URL`, which ships to every browser. Security rests on
+the publishable key being `SELECT`-only, not on the ref being unguessable.
+
+**The GitHub repo (`Pranab-kr/hitchat`) is PUBLIC.** Audited 2026-08-06: no secret value
+appears in any tracked file or in history; `.env.local`, `.claude`, `.mcp.json` and
+`.agents` are all gitignored and confirmed excluded.
 
 **Supabase project:** `hitchat` / ref `vbbinzmpnszdayrdfsle` (ap-south-1, Postgres
 17.6). Use the supabase MCP tools: `apply_migration` for migrations, `execute_sql`
