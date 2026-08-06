@@ -16,9 +16,58 @@ const REDACTED = {
   lab_tag: null,
 }
 
+// Moderation is deliberately not peer-to-peer: the owner can moderate every message,
+// while a co-admin cannot alter a SUDO post made by the owner. This reads both roles
+// server-side; the client only ever gets presentation hints.
+async function assertCanModerateMessage(
+  messageId: string,
+  role: 'owner' | 'co_admin',
+): Promise<ActionResult<null>> {
+  if (role === 'owner') return ok(null)
+
+  const db = getServiceClient()
+  const { data: message, error: messageError } = await db
+    .from('messages')
+    .select('admin_id')
+    .eq('id', messageId)
+    .maybeSingle()
+
+  if (messageError) return err('server', 'Could not check that message. Try again.')
+  // Preserve the idempotent delete/pin behavior for a message that has already gone.
+  if (!message?.admin_id) return ok(null)
+
+  const { data: author, error: authorError } = await db
+    .from('admins')
+    .select('role')
+    .eq('id', message.admin_id)
+    .maybeSingle()
+
+  if (authorError) return err('server', 'Could not check that message. Try again.')
+  if (author?.role === 'owner') {
+    return err('invalid', "Co-admins can't moderate the owner's messages.")
+  }
+
+  return ok(null)
+}
+
+async function ownerAdminIds(): Promise<string[]> {
+  const db = getServiceClient()
+  const { data, error } = await db
+    .from('admins')
+    .select('id')
+    .eq('role', 'owner')
+    .is('revoked_at', null)
+
+  if (error) throw new Error('Could not load owner ids')
+  return (data ?? []).map((admin) => admin.id)
+}
+
 export async function adminDeleteMessage(messageId: string): Promise<ActionResult<null>> {
   const auth = await requireAdmin()
   if (!auth.ok) return auth
+
+  const allowed = await assertCanModerateMessage(messageId, auth.data.role)
+  if (!allowed.ok) return allowed
 
   const db = getServiceClient()
   const { error } = await db
@@ -36,6 +85,9 @@ export async function togglePin(
 ): Promise<ActionResult<null>> {
   const auth = await requireAdmin()
   if (!auth.ok) return auth
+
+  const allowed = await assertCanModerateMessage(messageId, auth.data.role)
+  if (!allowed.ok) return allowed
 
   const db = getServiceClient()
   // A deleted message must not be pinnable: the strip would show a blank line with no
@@ -69,7 +121,7 @@ export async function purgeRoom(groupId: string): Promise<ActionResult<{ count: 
   if (!auth.ok) return auth
 
   const db = getServiceClient()
-  const { data, error } = await db
+  let query = db
     .from('messages')
     .update({ deleted_at: new Date().toISOString(), ...REDACTED })
     .eq('group_id', groupId)
@@ -77,7 +129,23 @@ export async function purgeRoom(groupId: string): Promise<ActionResult<{ count: 
     // Expired rows are already invisible to every reader and are waiting on the cron
     // job. Counting them would report a number the admin cannot see on screen.
     .gt('expires_at', new Date().toISOString())
-    .select('id')
+
+  // The owner is the one moderation authority a co-admin cannot override. Filter the
+  // owner's SUDO messages in the update itself so a room-wide clear follows the same
+  // hierarchy as the one-message controls.
+  if (auth.data.role === 'co_admin') {
+    let owners: string[]
+    try {
+      owners = await ownerAdminIds()
+    } catch {
+      return err('server', "Couldn't clear the room. Try again.")
+    }
+    if (owners.length) {
+      query = query.or(`admin_id.is.null,admin_id.not.in.(${owners.join(',')})`)
+    }
+  }
+
+  const { data, error } = await query.select('id')
 
   if (error) return err('server', "Couldn't clear the room. Try again.")
   return ok({ count: data?.length ?? 0 })

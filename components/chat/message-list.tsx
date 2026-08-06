@@ -17,6 +17,8 @@ export function MessageList({
   initialCodeHtml,
   labFilter,
   isAdmin = false,
+  adminRole = null,
+  ownerAdminIds = [],
 }: {
   groupId: string
   locked: boolean
@@ -24,6 +26,8 @@ export function MessageList({
   initialCodeHtml: Record<string, string>
   labFilter: string | null
   isAdmin?: boolean
+  adminRole?: 'owner' | 'co_admin' | null
+  ownerAdminIds?: string[]
 }) {
   const { messages, connected } = useRealtimeMessages(groupId, initial)
   const { reactionsFor, errorFor, isPendingFor, toggle } = useReactions(messages)
@@ -130,6 +134,8 @@ export function MessageList({
           </p>
         ) : (
           visible.map((message) => (
+            // UI visibility is only a convenience. Server Actions enforce this same
+            // owner-message boundary independently for every request.
             <MessageRow
               key={message.id}
               message={message}
@@ -144,6 +150,11 @@ export function MessageList({
               onReply={locked && !isAdmin ? undefined : setReplyTo}
               onJumpTo={jumpTo}
               isAdmin={isAdmin}
+              canModerate={
+                adminRole === 'owner' ||
+                !message.admin_id ||
+                !ownerAdminIds.includes(message.admin_id)
+              }
               onBan={setBanTarget}
               highlighted={jumpedTo === message.id}
             />

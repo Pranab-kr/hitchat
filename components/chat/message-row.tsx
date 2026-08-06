@@ -23,6 +23,7 @@ export function MessageRow({
   onReply,
   onJumpTo,
   isAdmin = false,
+  canModerate = true,
   onBan,
   highlighted = false,
   children,
@@ -37,6 +38,7 @@ export function MessageRow({
   onReply?: (message: Message) => void
   onJumpTo?: (messageId: string) => void
   isAdmin?: boolean
+  canModerate?: boolean
   onBan?: (messageId: string) => void
   highlighted?: boolean
   children?: React.ReactNode
@@ -141,7 +143,7 @@ export function MessageRow({
           </button>
         )}
 
-        {isAdmin && (
+        {isAdmin && canModerate && (
           <AdminControls
             messageId={message.id}
             isPinned={message.is_pinned}

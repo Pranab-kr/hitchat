@@ -31,7 +31,8 @@ delegate moderation to co-admins.
 ## Users
 
 - **Student** — anonymous, no account. Joins a room, reads, chats, posts code, reacts.
-- **Co-admin** — holds a secret. Moderates any room. Cannot alter structure or admins.
+- **Co-admin** — holds a secret. Moderates student and co-admin messages in any room,
+  but cannot alter an owner SUDO message. Cannot alter structure or admins.
 - **Owner** — holds the root secret. Everything a co-admin can do, plus managing
   departments/years/batches/groups and creating/revoking co-admins.
 
@@ -360,11 +361,11 @@ constant-time verify; on success an httpOnly, `secure`, `sameSite=lax` session c
 is set, valid 3 hours.
 
 Admin capabilities in any room:
-- Delete any message
-- Pin / unpin
+- Owner: delete or pin / unpin any message. Co-admin: delete or pin / unpin student
+  and co-admin messages, never an owner SUDO message.
 - Lock room (read-only for students; admins can still post)
-- Purge all messages in the room
-- Ban an `author_token_hash` for 24 hours
+- Owner: purge all messages in the room. Co-admin: purge all non-owner messages.
+- Ban a student `author_token_hash` for 24 hours (admin posts are never bannable)
 - Post with a **SUDO** badge
 
 Owner-only pages:

@@ -60,6 +60,15 @@ export default async function RoomPage({ params }: { params: Promise<RoomParams>
   // re-verifies its own session server-side; this flag is never authorization.
   const session = await verifySession()
   const isAdmin = session !== null
+  const ownerAdminIds = isAdmin
+    ? (
+        await db
+          .from('admins')
+          .select('id')
+          .eq('role', 'owner')
+          .is('revoked_at', null)
+      ).data?.map((admin) => admin.id) ?? []
+    : []
 
   return (
     <div className="flex h-dvh flex-col">
@@ -69,7 +78,9 @@ export default async function RoomPage({ params }: { params: Promise<RoomParams>
         </h1>
       </header>
 
-      {isAdmin && <AdminBar groupId={room.id} locked={room.is_locked} />}
+      {isAdmin && (
+        <AdminBar groupId={room.id} locked={room.is_locked} role={session.role} />
+      )}
 
       <MessageList
         groupId={room.id}
@@ -78,6 +89,8 @@ export default async function RoomPage({ params }: { params: Promise<RoomParams>
         initialCodeHtml={initialCodeHtml}
         labFilter={null}
         isAdmin={isAdmin}
+        adminRole={session?.role ?? null}
+        ownerAdminIds={ownerAdminIds}
       />
     </div>
   )

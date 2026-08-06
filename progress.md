@@ -13,10 +13,10 @@ section for the step you're on. Full protocol in `AGENTS.md`.
 
 | | |
 |---|---|
-| **Phase** | **Post-launch UI responsiveness and perceived-performance pass in progress.** |
-| **Current step** | Reduce admin-session lifetime to 3 hours; improve optimistic responsiveness, mobile access to message/admin controls, concise handle generation, and room-loading feedback. |
-| **Branch** | `feat/ui-speed-mobile` (branched from up-to-date `main`). Do not merge or touch `main` during this work. |
-| **Next action** | Apply `supabase/migrations/0009_admin_sessions_three_hours.sql` to `vbbinzmpnszdayrdfsle` with the Supabase MCP `apply_migration` tool, then verify no active `admin_sessions.expires_at` exceeds `created_at + interval '3 hours'`. The MCP tool was unavailable in this session; do not edit the applied migration afterward. |
+| **Phase** | **Post-launch UI responsiveness and moderation hierarchy pass complete.** |
+| **Current step** | Complete on `feat/ui-speed-mobile`; ready to merge to `main` and push. |
+| **Branch** | `feat/ui-speed-mobile` (branched from up-to-date `main`). |
+| **Next action** | Merge this branch into `main`, push `main`, then delete the feature branch. |
 | **Blocked?** | No. |
 | **Last updated** | 2026-08-06 |
 
@@ -79,6 +79,32 @@ unrecoverable by a fresh agent.
 ## Done
 
 Newest first. Each entry: what shipped, what deviated, what the next agent needs.
+
+### 2026-08-06 — UI responsiveness, 3-hour sessions, and owner-safe moderation ✅
+
+**Shipped:** Immediate text-send feedback and a normal Send button; optimistic
+reaction toggles with rollback; touch-visible reply/reaction/pin/delete/ban controls;
+pending states for moderation actions; prefetched owner navigation with loading
+skeletons; instant `Opening room…` feedback that preserves real room 404s; compact
+one-token handles such as `NixFox042`; 3-hour admin sessions; and migration
+`0009_admin_sessions_three_hours.sql` to shorten existing sessions.
+
+**Moderation hierarchy:** Co-admins can moderate student and co-admin messages but
+cannot delete, pin/unpin, ban, or purge owner SUDO messages. The Server Actions enforce
+this independently of UI visibility. Room-wide co-admin purge excludes owner messages
+in the update query. The UI receives owner ids only as a presentation hint. The spec
+was updated to make this hierarchy explicit.
+
+**Database:** Supabase MCP applied `0009_admin_sessions_three_hours` to project
+`vbbinzmpnszdayrdfsle`; a read-only verification returned
+`active_sessions_over_three_hours = 0`.
+
+**Verification:** `tests/moderation.test.ts` 21/21, full suite 147/147, ESLint,
+`tsc --noEmit`, `bun run build`, and `git diff --check` all pass. The moderation tests
+include owner/co-admin delete, pin/unpin, purge, and ban cases.
+
+**Next agent needs to know:** Keep the owner-message guard in every moderation action;
+the client-side `canModerate` prop is not authorization. Do not edit migration 0009.
 
 ### 2026-08-06 — Task 12: owner pages, admin posting, badge contrast ✅
 
@@ -1017,50 +1043,7 @@ column-level grant. Test that before trusting anything else.
 
 ## In progress
 
-### 2026-08-06 — UI responsiveness, mobile controls, short handles, and 3-hour admin sessions
-
-**Branch:** `feat/ui-speed-mobile` (created from current `main`).
-
-**Intent:** Make interactions feel immediate without weakening Server Action guards:
-reduce the admin-session expiry from 7 days to 3 hours; give text/reaction/admin
-controls prompt pending feedback; make message reply/reaction and admin controls
-reachable on touch devices; generate shorter one-word anonymous handles; and show an
-immediate room-opening state while navigation fetches the room in the background. Add
-an explicit normal text send button alongside the existing keyboard submit path.
-
-**Next concrete action:** Read the existing `components/chat`, `components/admin`,
-`components/room`, `app/actions/admin.ts`, and room-picker code to make the smallest
-compatible changes; retain all server-side authorization and rate-limit checks.
-
-**Implemented and verified locally:**
-- `lib/auth/session.ts` now issues both the database row and httpOnly cookie for **3
-  hours**, and `/sudo` says so. `tests/admin-auth.test.ts` asserts the new lifetime.
-- Added `0009_admin_sessions_three_hours.sql` to shorten already-issued seven-day
-  sessions. A read-only live check found **4 active sessions**, so applying this
-  migration is required before this step can be called fully complete. This execution
-  environment did not expose the required Supabase MCP tool, so it has **not** been
-  applied live here.
-- Text sends clear instantly, show `Sending…`, restore the draft on an expected
-  failure, and now have an explicit **Send** button. Reactions update optimistically
-  and roll back on server failure; no client-side guard replaces the Server Action.
-- Reply, reaction, pin, delete, and ban controls remain hover-revealed on desktop but
-  are visible and touchable below `md`. Admin lock/purge controls now state their
-  pending action.
-- Owner tabs are prefetched and receive lightweight loading skeletons. Room buttons
-  immediately become `Opening room…` while Next fetches the dynamic room. A room
-  `loading.tsx` was deliberately not used: it streamed missing rooms as HTTP 200;
-  the final dev-server smoke test confirms `/c/nope/1/1/a` returns **404**.
-- Handles are compact one-token names such as `NixFox042`, mixing cool, playful,
-  professional, Linux-style, and meme-adjacent syllables while still never using a
-  colour word. The spec and design system were deliberately updated with this change.
-
-**Verification:** focused tests, full suite **144/144**, eslint, `tsc --noEmit`, and
-`bun run build` all pass. `/sudo` rendered `Sessions last 3 hours.` in a dev-server
-smoke test; the direct missing-room status was checked as HTTP 404.
-
-**Next concrete action:** Use the Supabase MCP `apply_migration` tool to apply
-`0009_admin_sessions_three_hours.sql`, run the read-only active-session expiry query,
-then update this entry to done and commit the final status on `feat/ui-speed-mobile`.
+*Nothing. The UI responsiveness, 3-hour session, and owner-safe moderation work is complete; merge and push are the remaining repository operations.*
 
 ---
 
