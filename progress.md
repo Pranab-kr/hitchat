@@ -13,10 +13,10 @@ section for the step you're on. Full protocol in `AGENTS.md`.
 
 | | |
 |---|---|
-| **Phase** | **Post-launch UI responsiveness and moderation hierarchy pass complete.** |
-| **Current step** | Complete on `feat/ui-speed-mobile`; ready to merge to `main` and push. |
-| **Branch** | `main`. `feat/ui-speed-mobile` was merged and deleted after verification. |
-| **Next action** | No task is queued. Before public deploy, rotate the leaked service-role key and owner secret as described below; do not rotate `IDENTITY_PEPPER`. |
+| **Phase** | **Online user count in room header — in progress.** |
+| **Current step** | Building `lib/use-online-count.ts`, `components/room/online-count.tsx`, and wiring into the room page header. |
+| **Branch** | `feat/online-count` (from `main`). |
+| **Next action** | Finish implementing and verifying in a real browser (two tabs → count updates). Merge to `main` and delete branch when done. |
 | **Blocked?** | No. |
 | **Last updated** | 2026-08-06 |
 
