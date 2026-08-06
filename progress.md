@@ -13,10 +13,10 @@ section for the step you're on. Full protocol in `AGENTS.md`.
 
 | | |
 |---|---|
-| **Phase** | **Implementing complete. All 12 tasks done.** Next work is post-launch (see *Deferred to after launch* in the plan). |
-| **Current step** | **Nothing in flight.** Task 12 built, verified and merged. |
-| **Branch** | `main`. Task 12 merged; `feat/owner-pages` deleted. |
-| **Next action** | No task is queued. The 12-task plan is finished. **Before any public deploy, rotate both secrets — see the rotation steps under "Resume here" below** (`bun run rotate-owner` for the owner secret; roll the service-role key in the Supabase dashboard; do **not** touch `IDENTITY_PEPPER`). Then pick from *Deferred to after launch* at the end of `docs/superpowers/plans/2026-08-04-hitchat-implementation.md` — scroll-back pagination, presence/typing, lab tag filter chips, or the sidebar room tree. |
+| **Phase** | **Post-launch UI responsiveness and perceived-performance pass in progress.** |
+| **Current step** | Reduce admin-session lifetime to 3 hours; improve optimistic responsiveness, mobile access to message/admin controls, concise handle generation, and room-loading feedback. |
+| **Branch** | `feat/ui-speed-mobile` (branched from up-to-date `main`). Do not merge or touch `main` during this work. |
+| **Next action** | Inspect the existing chat, admin, auth, and room-picker components; identify synchronous UI waits and hover-only controls, then implement the requested feedback and verify in a browser. |
 | **Blocked?** | No. |
 | **Last updated** | 2026-08-06 |
 
@@ -1017,7 +1017,20 @@ column-level grant. Test that before trusting anything else.
 
 ## In progress
 
-*Nothing. Task 12 merged; the 12-task plan is complete.*
+### 2026-08-06 — UI responsiveness, mobile controls, short handles, and 3-hour admin sessions
+
+**Branch:** `feat/ui-speed-mobile` (created from current `main`).
+
+**Intent:** Make interactions feel immediate without weakening Server Action guards:
+reduce the admin-session expiry from 7 days to 3 hours; give text/reaction/admin
+controls prompt pending feedback; make message reply/reaction and admin controls
+reachable on touch devices; generate shorter one-word anonymous handles; and show a
+room-loading skeleton while navigation fetches the room in the background. Add an
+explicit normal text send button alongside the existing keyboard submit path.
+
+**Next concrete action:** Read the existing `components/chat`, `components/admin`,
+`components/room`, `app/actions/admin.ts`, and room-picker code to make the smallest
+compatible changes; retain all server-side authorization and rate-limit checks.
 
 ---
 
