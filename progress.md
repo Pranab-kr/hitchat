@@ -15,8 +15,8 @@ section for the step you're on. Full protocol in `AGENTS.md`.
 |---|---|
 | **Phase** | **Post-launch UI responsiveness and moderation hierarchy pass complete.** |
 | **Current step** | Complete on `feat/ui-speed-mobile`; ready to merge to `main` and push. |
-| **Branch** | `feat/ui-speed-mobile` (branched from up-to-date `main`). |
-| **Next action** | Merge this branch into `main`, push `main`, then delete the feature branch. |
+| **Branch** | `main`. `feat/ui-speed-mobile` was merged and deleted after verification. |
+| **Next action** | No task is queued. Before public deploy, rotate the leaked service-role key and owner secret as described below; do not rotate `IDENTITY_PEPPER`. |
 | **Blocked?** | No. |
 | **Last updated** | 2026-08-06 |
 
@@ -1043,7 +1043,7 @@ column-level grant. Test that before trusting anything else.
 
 ## In progress
 
-*Nothing. The UI responsiveness, 3-hour session, and owner-safe moderation work is complete; merge and push are the remaining repository operations.*
+*Nothing. The UI responsiveness, 3-hour session, and owner-safe moderation work is complete and merged to `main`.*
 
 ---
 
