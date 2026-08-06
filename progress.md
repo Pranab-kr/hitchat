@@ -13,10 +13,10 @@ section for the step you're on. Full protocol in `AGENTS.md`.
 
 | | |
 |---|---|
-| **Phase** | **Online user count in room header — in progress.** |
-| **Current step** | Building `lib/use-online-count.ts`, `components/room/online-count.tsx`, and wiring into the room page header. |
-| **Branch** | `feat/online-count` (from `main`). |
-| **Next action** | Finish implementing and verifying in a real browser (two tabs → count updates). Merge to `main` and delete branch when done. |
+| **Phase** | **Online user count in room header — complete.** |
+| **Current step** | Complete on `feat/online-count`; merged to `main`. |
+| **Branch** | `main`. `feat/online-count` was merged and deleted after verification. |
+| **Next action** | No task is queued. Before public deploy, rotate the leaked service-role key and owner secret as described below; do not rotate `IDENTITY_PEPPER`. |
 | **Blocked?** | No. |
 | **Last updated** | 2026-08-06 |
 

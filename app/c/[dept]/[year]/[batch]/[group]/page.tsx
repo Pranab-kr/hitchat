@@ -5,6 +5,7 @@ import { highlightCode } from '@/lib/highlight'
 import { verifySession } from '@/lib/auth/session'
 import { MessageList } from '@/components/chat/message-list'
 import { AdminBar } from '@/components/room/admin-bar'
+import { OnlineCount } from '@/components/room/online-count'
 import type { Message } from '@/lib/types'
 
 export const dynamic = 'force-dynamic'
@@ -72,10 +73,11 @@ export default async function RoomPage({ params }: { params: Promise<RoomParams>
 
   return (
     <div className="flex h-dvh flex-col">
-      <header className="border-b border-hairline px-4 py-3">
+      <header className="flex items-end justify-between border-b border-hairline px-4 py-3">
         <h1 className="font-display text-[32px] leading-[36px] font-semibold tracking-[-0.02em] text-ink">
           {room.label}
         </h1>
+        <OnlineCount groupId={room.id} />
       </header>
 
       {isAdmin && (
