@@ -13,9 +13,9 @@ section for the step you're on. Full protocol in `AGENTS.md`.
 
 | | |
 |---|---|
-| **Phase** | **Post-launch UI responsiveness and moderation hierarchy pass complete.** |
-| **Current step** | Complete on `feat/ui-speed-mobile`; ready to merge to `main` and push. |
-| **Branch** | `main`. `feat/ui-speed-mobile` was merged and deleted after verification. |
+| **Phase** | **Online user count in room header — complete.** |
+| **Current step** | Complete on `feat/online-count`; merged to `main`. |
+| **Branch** | `main`. `feat/online-count` was merged and deleted after verification. |
 | **Next action** | No task is queued. Before public deploy, rotate the leaked service-role key and owner secret as described below; do not rotate `IDENTITY_PEPPER`. |
 | **Blocked?** | No. |
 | **Last updated** | 2026-08-06 |
