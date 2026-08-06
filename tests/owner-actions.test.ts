@@ -432,7 +432,7 @@ describe('revokeAdmin', () => {
     expect(row!.revoked_at).not.toBeNull()
 
     // Revoked is not enough on its own — the session rows must be gone, not merely
-    // ignored, or a 7-day cookie keeps a row alive in the database for 7 days.
+    // ignored, or a three-hour cookie keeps a row alive in the database until expiry.
     const { count } = await db
       .from('admin_sessions')
       .select('token', { count: 'exact', head: true })

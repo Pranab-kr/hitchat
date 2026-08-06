@@ -26,7 +26,7 @@ export function MessageList({
   isAdmin?: boolean
 }) {
   const { messages, connected } = useRealtimeMessages(groupId, initial)
-  const { reactionsFor, errorFor, toggle } = useReactions(messages)
+  const { reactionsFor, errorFor, isPendingFor, toggle } = useReactions(messages)
   const bottomRef = useRef<HTMLDivElement>(null)
   const [replyTo, setReplyTo] = useState<Message | null>(null)
   const [jumpedTo, setJumpedTo] = useState<string | null>(null)
@@ -139,6 +139,7 @@ export function MessageList({
               }
               reactions={reactionsFor(message.id)}
               reactionError={errorFor(message.id)}
+              reactionPending={isPendingFor(message.id)}
               onToggleReaction={toggle}
               onReply={locked && !isAdmin ? undefined : setReplyTo}
               onJumpTo={jumpTo}

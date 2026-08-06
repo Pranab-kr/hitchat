@@ -87,9 +87,11 @@ consequence of `rule` owning red-orange and `marigold` owning amber; the warm ba
 genuinely occupied. Widening it means changing what those tokens own, which is a
 deliberate decision to make on its own, not a side effect of adding an author.
 
-**Handle names carry no color word.** The name and the color come from different
-slices of the same hash, so an adjective like "Amber" would eventually render in
-violet and contradict itself. Adjectives describe texture or quality instead.
+**Handle names carry no color word.** A handle is one compact username token made from
+two hash-picked syllables plus a 3-digit suffix (for example, `NixFox042`). The name
+and colour come from different slices of the same hash, so a colour word like "Amber"
+would eventually render in violet and contradict itself. The syllables deliberately
+mix cool, playful, professional, Linux-style, and meme-adjacent language instead.
 
 ### Derived surfaces
 

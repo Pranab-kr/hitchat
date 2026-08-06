@@ -61,7 +61,7 @@ export async function revokeAdmin(adminId: string): Promise<ActionResult<null>> 
 
   // Kill their live sessions immediately rather than waiting for cookie expiry.
   // verifySession() also re-reads revoked_at on every call, so this is belt and braces —
-  // but it means their rows leave the database now rather than in up to 7 days.
+  // but it means their rows leave the database now rather than in up to 3 hours.
   await db.from('admin_sessions').delete().eq('admin_id', adminId)
   return ok(null)
 }

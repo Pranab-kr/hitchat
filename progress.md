@@ -16,7 +16,7 @@ section for the step you're on. Full protocol in `AGENTS.md`.
 | **Phase** | **Post-launch UI responsiveness and perceived-performance pass in progress.** |
 | **Current step** | Reduce admin-session lifetime to 3 hours; improve optimistic responsiveness, mobile access to message/admin controls, concise handle generation, and room-loading feedback. |
 | **Branch** | `feat/ui-speed-mobile` (branched from up-to-date `main`). Do not merge or touch `main` during this work. |
-| **Next action** | Inspect the existing chat, admin, auth, and room-picker components; identify synchronous UI waits and hover-only controls, then implement the requested feedback and verify in a browser. |
+| **Next action** | Apply `supabase/migrations/0009_admin_sessions_three_hours.sql` to `vbbinzmpnszdayrdfsle` with the Supabase MCP `apply_migration` tool, then verify no active `admin_sessions.expires_at` exceeds `created_at + interval '3 hours'`. The MCP tool was unavailable in this session; do not edit the applied migration afterward. |
 | **Blocked?** | No. |
 | **Last updated** | 2026-08-06 |
 
@@ -1024,13 +1024,43 @@ column-level grant. Test that before trusting anything else.
 **Intent:** Make interactions feel immediate without weakening Server Action guards:
 reduce the admin-session expiry from 7 days to 3 hours; give text/reaction/admin
 controls prompt pending feedback; make message reply/reaction and admin controls
-reachable on touch devices; generate shorter one-word anonymous handles; and show a
-room-loading skeleton while navigation fetches the room in the background. Add an
-explicit normal text send button alongside the existing keyboard submit path.
+reachable on touch devices; generate shorter one-word anonymous handles; and show an
+immediate room-opening state while navigation fetches the room in the background. Add
+an explicit normal text send button alongside the existing keyboard submit path.
 
 **Next concrete action:** Read the existing `components/chat`, `components/admin`,
 `components/room`, `app/actions/admin.ts`, and room-picker code to make the smallest
 compatible changes; retain all server-side authorization and rate-limit checks.
+
+**Implemented and verified locally:**
+- `lib/auth/session.ts` now issues both the database row and httpOnly cookie for **3
+  hours**, and `/sudo` says so. `tests/admin-auth.test.ts` asserts the new lifetime.
+- Added `0009_admin_sessions_three_hours.sql` to shorten already-issued seven-day
+  sessions. A read-only live check found **4 active sessions**, so applying this
+  migration is required before this step can be called fully complete. This execution
+  environment did not expose the required Supabase MCP tool, so it has **not** been
+  applied live here.
+- Text sends clear instantly, show `Sending…`, restore the draft on an expected
+  failure, and now have an explicit **Send** button. Reactions update optimistically
+  and roll back on server failure; no client-side guard replaces the Server Action.
+- Reply, reaction, pin, delete, and ban controls remain hover-revealed on desktop but
+  are visible and touchable below `md`. Admin lock/purge controls now state their
+  pending action.
+- Owner tabs are prefetched and receive lightweight loading skeletons. Room buttons
+  immediately become `Opening room…` while Next fetches the dynamic room. A room
+  `loading.tsx` was deliberately not used: it streamed missing rooms as HTTP 200;
+  the final dev-server smoke test confirms `/c/nope/1/1/a` returns **404**.
+- Handles are compact one-token names such as `NixFox042`, mixing cool, playful,
+  professional, Linux-style, and meme-adjacent syllables while still never using a
+  colour word. The spec and design system were deliberately updated with this change.
+
+**Verification:** focused tests, full suite **144/144**, eslint, `tsc --noEmit`, and
+`bun run build` all pass. `/sudo` rendered `Sessions last 3 hours.` in a dev-server
+smoke test; the direct missing-room status was checked as HTTP 404.
+
+**Next concrete action:** Use the Supabase MCP `apply_migration` tool to apply
+`0009_admin_sessions_three_hours.sql`, run the read-only active-session expiry query,
+then update this entry to done and commit the final status on `feat/ui-speed-mobile`.
 
 ---
 

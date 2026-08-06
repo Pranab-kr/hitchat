@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { getReactions, toggleReaction, type ReactionState } from '@/app/actions/reactions'
 import { useAnonToken } from '@/lib/use-anon-token'
 
@@ -13,6 +13,8 @@ export function useReactions(messages: { id: string; reaction_bump: string }[]) 
   const { token } = useAnonToken()
   const [state, setState] = useState<Record<string, ReactionState>>({})
   const [errors, setErrors] = useState<Record<string, string>>({})
+  const [pending, setPending] = useState<Record<string, boolean>>({})
+  const pendingRef = useRef(new Set<string>())
 
   // The action caps the batch at 100; the stream can grow past that as messages arrive.
   const recent = messages.slice(-100)
@@ -39,7 +41,29 @@ export function useReactions(messages: { id: string; reaction_bump: string }[]) 
 
   const toggle = useCallback(
     async (messageId: string, emoji: string) => {
-      if (!token) return
+      if (!token || pendingRef.current.has(messageId)) return
+      pendingRef.current.add(messageId)
+
+      const before = state[messageId] ?? EMPTY
+      const hadReaction = before.mine.includes(emoji)
+      const optimistic: ReactionState = {
+        counts: {
+          ...before.counts,
+          [emoji]: Math.max(0, (before.counts[emoji] ?? 0) + (hadReaction ? -1 : 1)),
+        },
+        mine: hadReaction
+          ? before.mine.filter((value) => value !== emoji)
+          : [...before.mine, emoji],
+      }
+      setState((prev) => ({ ...prev, [messageId]: optimistic }))
+      setPending((prev) => ({ ...prev, [messageId]: true }))
+      setErrors((prev) => {
+        if (!prev[messageId]) return prev
+        const next = { ...prev }
+        delete next[messageId]
+        return next
+      })
+
       const result = await toggleReaction({ token, messageId, emoji })
       if (result.ok) {
         setState((prev) => ({ ...prev, [messageId]: result.data }))
@@ -50,15 +74,19 @@ export function useReactions(messages: { id: string; reaction_bump: string }[]) 
           return next
         })
       } else {
+        setState((prev) => ({ ...prev, [messageId]: before }))
         setErrors((prev) => ({ ...prev, [messageId]: result.message }))
       }
+      pendingRef.current.delete(messageId)
+      setPending((prev) => ({ ...prev, [messageId]: false }))
     },
-    [token],
+    [state, token],
   )
 
   return {
     reactionsFor: (id: string) => state[id] ?? EMPTY,
     errorFor: (id: string) => errors[id] ?? null,
+    isPendingFor: (id: string) => pending[id] ?? false,
     toggle,
   }
 }

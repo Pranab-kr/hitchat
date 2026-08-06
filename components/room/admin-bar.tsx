@@ -55,7 +55,7 @@ export function AdminBar({ groupId, locked }: { groupId: string; locked: boolean
         onClick={lock}
         className="rounded-input border border-hairline px-2 py-1 font-mono text-[12px] text-graphite transition-colors hover:border-pen hover:text-pen disabled:opacity-40"
       >
-        {locked ? 'unlock room' : 'lock room'}
+        {pending ? (locked ? 'unlocking…' : 'locking…') : locked ? 'unlock room' : 'lock room'}
       </button>
 
       {confirmPurge ? (
@@ -67,7 +67,7 @@ export function AdminBar({ groupId, locked }: { groupId: string; locked: boolean
             onClick={purge}
             className="rounded-input px-2 py-1 text-rule transition-colors hover:bg-rule/10 disabled:opacity-40"
           >
-            clear
+            {pending ? 'clearing…' : 'clear'}
           </button>
           <button
             type="button"

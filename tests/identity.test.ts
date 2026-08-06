@@ -47,9 +47,10 @@ describe('deriveHandle', () => {
     expect(deriveHandle(h)).toEqual(deriveHandle(h))
   })
 
-  it('produces "Adjective Animal NN" format', () => {
+  it('produces one compact username token', () => {
     const { name } = deriveHandle(hashToken('user-one'))
-    expect(name).toMatch(/^[A-Z][a-z]+ [A-Z][a-z]+ \d{2}$/)
+    expect(name).toMatch(/^[A-Z][a-zA-Z]+\d{3}$/)
+    expect(name).not.toContain(' ')
   })
 
   it('returns a hex color', () => {
@@ -78,16 +79,16 @@ describe('deriveHandle', () => {
     }
   })
 
-  // A color-word adjective would contradict the rendered color.
-  it('uses no color words as adjectives', () => {
+  // A color-word handle would contradict the independently rendered color.
+  it('uses no color words in handles', () => {
     const colorWords = [
       'teal', 'amber', 'cobalt', 'rust', 'olive', 'plum', 'coral', 'indigo',
       'sage', 'copper', 'mauve', 'ochre', 'cyan', 'crimson', 'jade', 'violet',
       'magenta', 'fern', 'slate',
     ]
     for (let i = 0; i < 300; i++) {
-      const adjective = deriveHandle(hashToken(`u${i}`)).name.split(' ')[0]
-      expect(colorWords).not.toContain(adjective.toLowerCase())
+      const handle = deriveHandle(hashToken(`u${i}`)).name.toLowerCase()
+      for (const word of colorWords) expect(handle).not.toContain(word)
     }
   })
 

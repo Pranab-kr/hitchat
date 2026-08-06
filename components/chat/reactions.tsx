@@ -15,11 +15,13 @@ export function Reactions({
   messageId,
   state,
   error,
+  pending,
   onToggle,
 }: {
   messageId: string
   state: ReactionState
   error: string | null
+  pending: boolean
   onToggle: (messageId: string, emoji: string) => void
 }) {
   const reduce = useReducedMotion()
@@ -35,9 +37,10 @@ export function Reactions({
             <button
               key={key}
               type="button"
+              disabled={pending}
               onClick={() => onToggle(messageId, key)}
               aria-label={label}
-              className="rounded-[4px] px-1.5 py-0.5 text-[12px] leading-[16px] opacity-0 transition-opacity hover:bg-wash focus-visible:opacity-100 group-hover:opacity-60"
+              className="rounded-[4px] px-1.5 py-0.5 text-[12px] leading-[16px] text-ink transition-opacity hover:bg-wash disabled:opacity-40 md:opacity-0 md:focus-visible:opacity-100 md:group-hover:opacity-100"
             >
               {glyph}
             </button>
@@ -48,13 +51,14 @@ export function Reactions({
           <motion.button
             key={key}
             type="button"
+            disabled={pending}
             onClick={() => onToggle(messageId, key)}
             aria-label={`${label}, ${count}`}
             aria-pressed={active}
             whileTap={reduce ? undefined : { scale: 1.15 }}
             transition={{ type: 'spring', duration: 0.2 }}
             className={cn(
-              'flex items-center gap-1 rounded-[4px] px-1.5 py-0.5 font-mono text-[12px] leading-[16px]',
+              'flex items-center gap-1 rounded-[4px] px-1.5 py-0.5 font-mono text-[12px] leading-[16px] disabled:opacity-40',
               active ? 'bg-pen/12 text-pen' : 'bg-wash text-graphite',
             )}
           >

@@ -29,19 +29,27 @@ export function Composer({
   function submit() {
     if (!token || !body.trim()) return
 
+    // Clear immediately so a successful press has visible feedback before the Server
+    // Action round trip and Realtime insert return. A failure restores the untouched
+    // draft, so a slow network never costs somebody their message.
+    const draft = body
+    const replyToId = replyTo?.id
+    setBody('')
+    setError(null)
+    onClearReply?.()
+
     startTransition(async () => {
       const result = await sendText({
         token,
         groupId,
-        body,
-        replyToId: replyTo?.id,
+        body: draft,
+        replyToId,
       })
       if (result.ok) {
-        setBody('')
-        setError(null)
-        onClearReply?.()
+        return
       } else {
         setError(result.message)
+        setBody((current) => current || draft)
       }
     })
   }
@@ -123,12 +131,28 @@ export function Composer({
 
         <button
           type="button"
+          disabled={pending || !token || !body.trim()}
+          onClick={submit}
+          className="rounded-input bg-pen px-3 py-2 text-[13px] font-medium text-paper transition-opacity hover:opacity-90 disabled:opacity-60"
+        >
+          {pending ? 'Sending…' : 'Send'}
+        </button>
+
+        <button
+          type="button"
+          disabled={pending}
           onClick={() => setCodeMode(true)}
-          className="rounded-input border border-hairline px-3 py-2 font-mono text-[13px] text-graphite transition-colors hover:border-pen hover:text-pen"
+          className="rounded-input border border-hairline px-3 py-2 font-mono text-[13px] text-graphite transition-colors hover:border-pen hover:text-pen disabled:opacity-60"
         >
           {'</> code'}
         </button>
       </div>
+
+      {pending && (
+        <p className="mt-1 font-mono text-[12px] text-graphite" role="status">
+          Sending message…
+        </p>
+      )}
 
       {body.length > 1000 && (
         <p className="mt-1 text-right font-mono text-[12px] text-rule">

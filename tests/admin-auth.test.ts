@@ -208,6 +208,21 @@ describe('session tokens at rest', () => {
     expect(data ?? []).toHaveLength(0)
     expect(await verifySession()).toEqual({ adminId: coAdminId, role: 'co_admin' })
   })
+
+  it('creates sessions that expire in three hours', async () => {
+    const before = Date.now()
+    await createSession(coAdminId)
+    const raw = mocks.cookies.get('hitchat_admin')
+    const { data } = await db
+      .from('admin_sessions')
+      .select('expires_at')
+      .eq('token', sha(raw!))
+      .single()
+
+    const lifetime = new Date(data!.expires_at).getTime() - before
+    expect(lifetime).toBeGreaterThan(3 * 60 * 60 * 1000 - 10_000)
+    expect(lifetime).toBeLessThanOrEqual(3 * 60 * 60 * 1000 + 10_000)
+  })
 })
 
 describe('requireAdmin / requireOwner', () => {
