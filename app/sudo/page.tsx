@@ -26,7 +26,7 @@ export default async function SudoPage() {
       </div>
 
       <p className="mt-4 px-1 font-mono text-[12px] leading-4 tracking-[0.02em] text-graphite">
-        Sessions last 7 days.
+        Sessions last 3 hours.
       </p>
     </main>
   )

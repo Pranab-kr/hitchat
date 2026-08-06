@@ -40,6 +40,7 @@ const tok = (label: string) => `mod-${label}-${RUN}`
 
 let room: SeededRoom
 let adminId: string
+let ownerId: string
 const adminIds: string[] = []
 // Every token that posts or gets banned, so afterAll can sweep bans and rate events
 // even when an assertion fails partway through.
@@ -101,6 +102,19 @@ beforeAll(async () => {
   if (error) throw error
   adminId = data!.id
   adminIds.push(adminId)
+
+  const { data: owner, error: ownerError } = await db
+    .from('admins')
+    .insert({
+      display_name: `Test Owner Mod ${RUN}`,
+      role: 'owner',
+      secret_hash: await bcrypt.hash(`owner-mod-secret-${RUN}`, 10),
+    })
+    .select('id')
+    .single()
+  if (ownerError) throw ownerError
+  ownerId = owner!.id
+  adminIds.push(ownerId)
 })
 
 afterAll(async () => {
@@ -195,6 +209,17 @@ describe('adminDeleteMessage', () => {
     expect((await adminDeleteMessage(id)).ok).toBe(true)
     expect((await messageRow(id)).deleted_at).not.toBeNull()
   })
+
+  it("refuses a co-admin from deleting the owner's SUDO message", async () => {
+    await signIn(ownerId)
+    const id = await post(tok('owner-delete'), 'owner notice')
+
+    await signIn(adminId)
+    const result = await adminDeleteMessage(id)
+    expect(result.ok).toBe(false)
+    if (!result.ok) expect(result.message).toBe("Co-admins can't moderate the owner's messages.")
+    expect((await messageRow(id)).deleted_at).toBeNull()
+  })
 })
 
 describe('togglePin', () => {
@@ -217,6 +242,21 @@ describe('togglePin', () => {
 
     await togglePin(id, true)
     expect((await messageRow(id)).is_pinned).toBe(false)
+  })
+
+  it("refuses a co-admin from pinning or unpinning the owner's SUDO message", async () => {
+    await signIn(ownerId)
+    const id = await post(tok('owner-pin'), 'owner notice')
+
+    await signIn(adminId)
+    expect((await togglePin(id, true)).ok).toBe(false)
+    expect((await messageRow(id)).is_pinned).toBe(false)
+
+    await signIn(ownerId)
+    expect((await togglePin(id, true)).ok).toBe(true)
+    await signIn(adminId)
+    expect((await togglePin(id, false)).ok).toBe(false)
+    expect((await messageRow(id)).is_pinned).toBe(true)
   })
 })
 
@@ -355,6 +395,22 @@ describe('purgeRoom', () => {
       await teardownRoom(other)
     }
   })
+
+  it("lets a co-admin clear other messages but preserves the owner's SUDO message", async () => {
+    await signIn(ownerId)
+    const ownerMessage = await post(tok('owner-purge'), 'keep this')
+    const studentMessage = await postAsStudent(tok('student-purge'), 'clear this')
+    expect(studentMessage.ok).toBe(true)
+    if (!studentMessage.ok) return
+
+    await signIn(adminId)
+    const result = await purgeRoom(room.groupId)
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+
+    expect((await messageRow(ownerMessage)).deleted_at).toBeNull()
+    expect((await messageRow(studentMessage.data.id)).deleted_at).not.toBeNull()
+  })
 })
 
 describe('banAuthor', () => {
@@ -415,12 +471,12 @@ describe('banAuthor', () => {
   })
 
   // Otherwise a co-admin bans the owner's browser by banning any SUDO message.
-  it('refuses to ban an admin', async () => {
-    await signIn(adminId)
+  it("refuses a co-admin from banning the owner's SUDO message", async () => {
+    await signIn(ownerId)
     const token = tok('sudo')
     const id = await post(token, 'admin speaking')
-    await db.from('messages').update({ admin_id: adminId }).eq('id', id)
 
+    await signIn(adminId)
     const result = await banAuthor(id)
     expect(result.ok).toBe(false)
     if (!result.ok) expect(result.code).toBe('invalid')

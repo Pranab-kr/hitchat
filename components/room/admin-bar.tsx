@@ -4,7 +4,15 @@ import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { toggleLock, purgeRoom } from '@/app/actions/moderation'
 
-export function AdminBar({ groupId, locked }: { groupId: string; locked: boolean }) {
+export function AdminBar({
+  groupId,
+  locked,
+  role,
+}: {
+  groupId: string
+  locked: boolean
+  role: 'owner' | 'co_admin'
+}) {
   const router = useRouter()
   const [pending, startTransition] = useTransition()
   const [confirmPurge, setConfirmPurge] = useState(false)
@@ -55,19 +63,19 @@ export function AdminBar({ groupId, locked }: { groupId: string; locked: boolean
         onClick={lock}
         className="rounded-input border border-hairline px-2 py-1 font-mono text-[12px] text-graphite transition-colors hover:border-pen hover:text-pen disabled:opacity-40"
       >
-        {locked ? 'unlock room' : 'lock room'}
+        {pending ? (locked ? 'unlocking…' : 'locking…') : locked ? 'unlock room' : 'lock room'}
       </button>
 
       {confirmPurge ? (
         <span className="flex items-center gap-2 font-mono text-[12px] text-ink">
-          Clear every message here?
+          {role === 'co_admin' ? 'Clear every non-owner message here?' : 'Clear every message here?'}
           <button
             type="button"
             disabled={pending}
             onClick={purge}
             className="rounded-input px-2 py-1 text-rule transition-colors hover:bg-rule/10 disabled:opacity-40"
           >
-            clear
+            {pending ? 'clearing…' : 'clear'}
           </button>
           <button
             type="button"

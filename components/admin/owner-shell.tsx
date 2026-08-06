@@ -31,14 +31,14 @@ export function OwnerShell({
         <ThemeToggle />
       </div>
 
-      <nav className="mb-8 flex gap-4 border-b border-hairline pb-3 font-mono text-[12px] leading-4 tracking-[0.02em]">
-        <Link href="/sudo/structure" className="text-graphite hover:text-pen">
+      <nav className="mb-8 flex flex-wrap gap-x-4 gap-y-1 border-b border-hairline pb-3 font-mono text-[12px] leading-4 tracking-[0.02em]">
+        <Link prefetch href="/sudo/structure" className="py-2 text-graphite hover:text-pen">
           structure
         </Link>
-        <Link href="/sudo/admins" className="text-graphite hover:text-pen">
+        <Link prefetch href="/sudo/admins" className="py-2 text-graphite hover:text-pen">
           admins
         </Link>
-        <Link href="/" className="text-graphite hover:text-pen">
+        <Link prefetch href="/" className="py-2 text-graphite hover:text-pen">
           rooms
         </Link>
       </nav>

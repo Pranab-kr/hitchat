@@ -39,7 +39,7 @@ describe('sendText', () => {
 
     expect(data!.body).toBe('hello lab')
     expect(data!.kind).toBe('text')
-    expect(data!.author_name).toMatch(/^[A-Z][a-z]+ [A-Z][a-z]+ \d{2}$/)
+    expect(data!.author_name).toMatch(/^[A-Z][a-zA-Z]+\d{3}$/)
   })
 
   it('stores the peppered hash, never the raw token', async () => {

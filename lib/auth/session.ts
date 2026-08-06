@@ -4,7 +4,7 @@ import { createHash, randomBytes, timingSafeEqual } from 'node:crypto'
 import { getServiceClient } from '@/lib/supabase/admin'
 
 const COOKIE = 'hitchat_admin'
-const DAYS_7 = 7 * 24 * 60 * 60
+const THREE_HOURS = 3 * 60 * 60
 
 export type AdminRole = 'owner' | 'co_admin'
 export type AdminSession = { adminId: string; role: AdminRole }
@@ -20,7 +20,7 @@ export async function createSession(adminId: string): Promise<void> {
   const { error } = await db.from('admin_sessions').insert({
     token: hashSessionToken(raw),
     admin_id: adminId,
-    expires_at: new Date(Date.now() + DAYS_7 * 1000).toISOString(),
+    expires_at: new Date(Date.now() + THREE_HOURS * 1000).toISOString(),
   })
 
   // Setting the cookie after a failed insert hands out a cookie no session backs,
@@ -34,7 +34,7 @@ export async function createSession(adminId: string): Promise<void> {
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'lax',
     path: '/',
-    maxAge: DAYS_7,
+    maxAge: THREE_HOURS,
   })
 }
 

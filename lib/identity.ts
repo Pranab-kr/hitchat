@@ -1,15 +1,21 @@
 import 'server-only'
 import { createHash } from 'node:crypto'
 
-// No color words: the adjective and color come from different hash slices.
-const ADJECTIVES = [
-  'Quiet', 'Brisk', 'Steady', 'Nimble', 'Bright', 'Keen', 'Swift', 'Bold',
-  'Clever', 'Patient', 'Restless', 'Curious', 'Gentle', 'Sharp', 'Eager', 'Calm',
+// One compact handle token rather than a three-word display name. The two hash-picked
+// syllables cover cool, professional, playful, Linux, and meme-adjacent moods without
+// ever implying a colour (the name and colour use independent hash slices).
+const PREFIXES = [
+  'Aero', 'Axiom', 'Bash', 'Bit', 'Bonk', 'Bug', 'Byte', 'Civic',
+  'Code', 'Dev', 'Doge', 'Echo', 'Flux', 'Hex', 'Kilo', 'Kernel',
+  'Luma', 'Nano', 'Neo', 'Nix', 'Nova', 'Orbit', 'Pixel', 'Praxis',
+  'Prime', 'Stack', 'Tux', 'Vector', 'Vibe', 'Wave', 'Yeet', 'Zen',
 ] as const
 
-const ANIMALS = [
-  'Falcon', 'Otter', 'Heron', 'Lynx', 'Marten', 'Gecko', 'Raven', 'Bison',
-  'Tapir', 'Ibis', 'Shrew', 'Civet', 'Kite', 'Vole', 'Hare', 'Newt',
+const SUFFIXES = [
+  'Bot', 'Byte', 'Cat', 'Core', 'Crow', 'Daemon', 'Forge', 'Fox',
+  'Goblin', 'Hawk', 'Kit', 'Lab', 'Lynx', 'Mint', 'Moth', 'Node',
+  'Ops', 'Otter', 'Panda', 'Ping', 'Root', 'Rune', 'Shift', 'Spark',
+  'Wave', 'Wolf', 'Yak', 'Zero', 'Zip', 'Zorb', 'Loop', 'Nerd',
 ] as const
 
 // design.md § Author colors. Defined in lib/author-color.ts so client components can
@@ -24,13 +30,13 @@ export function hashToken(token: string): string {
 }
 
 export function deriveHandle(hash: string): { name: string; color: string } {
-  const adjective = ADJECTIVES[parseInt(hash.slice(0, 4), 16) % ADJECTIVES.length]
-  const animal = ANIMALS[parseInt(hash.slice(4, 8), 16) % ANIMALS.length]
-  const number = parseInt(hash.slice(8, 12), 16) % 100
+  const prefix = PREFIXES[parseInt(hash.slice(0, 4), 16) % PREFIXES.length]
+  const suffix = SUFFIXES[parseInt(hash.slice(4, 8), 16) % SUFFIXES.length]
+  const number = parseInt(hash.slice(8, 12), 16) % 1000
   const color = AUTHOR_COLORS[parseInt(hash.slice(12, 16), 16) % AUTHOR_COLORS.length]
 
   return {
-    name: `${adjective} ${animal} ${String(number).padStart(2, '0')}`,
+    name: `${prefix}${suffix}${String(number).padStart(3, '0')}`,
     color,
   }
 }

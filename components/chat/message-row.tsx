@@ -18,10 +18,12 @@ export function MessageRow({
   replyTo = null,
   reactions,
   reactionError = null,
+  reactionPending = false,
   onToggleReaction,
   onReply,
   onJumpTo,
   isAdmin = false,
+  canModerate = true,
   onBan,
   highlighted = false,
   children,
@@ -31,10 +33,12 @@ export function MessageRow({
   replyTo?: Message | null
   reactions?: ReactionState
   reactionError?: string | null
+  reactionPending?: boolean
   onToggleReaction?: (messageId: string, emoji: string) => void
   onReply?: (message: Message) => void
   onJumpTo?: (messageId: string) => void
   isAdmin?: boolean
+  canModerate?: boolean
   onBan?: (messageId: string) => void
   highlighted?: boolean
   children?: React.ReactNode
@@ -104,7 +108,7 @@ export function MessageRow({
         </button>
       )}
 
-      <div className="flex items-baseline gap-2">
+      <div className="flex flex-wrap items-baseline gap-2">
         <span
           className="font-mono text-[12px] tracking-[0.02em]"
           style={{ color: authorColorVar(message.author_color) }}
@@ -133,13 +137,13 @@ export function MessageRow({
           <button
             type="button"
             onClick={() => onReply(message)}
-            className="rounded-[4px] px-1.5 py-0.5 font-mono text-[12px] text-graphite opacity-0 transition-opacity hover:bg-wash hover:text-pen focus-visible:opacity-100 group-hover:opacity-60"
+            className="rounded-[4px] px-1.5 py-0.5 font-mono text-[12px] text-graphite transition-opacity hover:bg-wash hover:text-pen md:opacity-0 md:focus-visible:opacity-100 md:group-hover:opacity-100"
           >
             reply
           </button>
         )}
 
-        {isAdmin && (
+        {isAdmin && canModerate && (
           <AdminControls
             messageId={message.id}
             isPinned={message.is_pinned}
@@ -172,6 +176,7 @@ export function MessageRow({
           messageId={message.id}
           state={reactions}
           error={reactionError}
+          pending={reactionPending}
           onToggle={onToggleReaction}
         />
       )}

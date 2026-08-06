@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
-import Link from 'next/link'
 import { getServiceClient } from '@/lib/supabase/admin'
 import { ThemeToggle } from '@/components/theme-toggle'
+import { RoomLink } from '@/components/room/room-link'
 
 // The room tree changes whenever the owner edits it, and the list is tiny. Rendering
 // per request keeps a newly created room from being invisible behind a cached page.
@@ -79,13 +79,12 @@ export default async function HomePage() {
                           [...(batch.groups ?? [])]
                             .sort((a, b) => a.label.localeCompare(b.label))
                             .map((group) => (
-                              <Link
+                              <RoomLink
                                 key={`${batch.number}-${group.label}`}
                                 href={`/c/${dept.slug}/${year.number}/${batch.number}/${group.label.toLowerCase()}`}
-                                className="rounded-input border border-hairline px-3 py-2 font-mono text-[13px] leading-5 text-ink transition-colors hover:border-pen hover:text-pen"
                               >
                                 Batch {batch.number} · {group.label}
-                              </Link>
+                              </RoomLink>
                             )),
                         )}
                     </div>

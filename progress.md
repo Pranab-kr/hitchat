@@ -13,10 +13,10 @@ section for the step you're on. Full protocol in `AGENTS.md`.
 
 | | |
 |---|---|
-| **Phase** | **Implementing complete. All 12 tasks done.** Next work is post-launch (see *Deferred to after launch* in the plan). |
-| **Current step** | **Nothing in flight.** Task 12 built, verified and merged. |
-| **Branch** | `main`. Task 12 merged; `feat/owner-pages` deleted. |
-| **Next action** | No task is queued. The 12-task plan is finished. **Before any public deploy, rotate both secrets — see the rotation steps under "Resume here" below** (`bun run rotate-owner` for the owner secret; roll the service-role key in the Supabase dashboard; do **not** touch `IDENTITY_PEPPER`). Then pick from *Deferred to after launch* at the end of `docs/superpowers/plans/2026-08-04-hitchat-implementation.md` — scroll-back pagination, presence/typing, lab tag filter chips, or the sidebar room tree. |
+| **Phase** | **Post-launch UI responsiveness and moderation hierarchy pass complete.** |
+| **Current step** | Complete on `feat/ui-speed-mobile`; ready to merge to `main` and push. |
+| **Branch** | `feat/ui-speed-mobile` (branched from up-to-date `main`). |
+| **Next action** | Merge this branch into `main`, push `main`, then delete the feature branch. |
 | **Blocked?** | No. |
 | **Last updated** | 2026-08-06 |
 
@@ -79,6 +79,32 @@ unrecoverable by a fresh agent.
 ## Done
 
 Newest first. Each entry: what shipped, what deviated, what the next agent needs.
+
+### 2026-08-06 — UI responsiveness, 3-hour sessions, and owner-safe moderation ✅
+
+**Shipped:** Immediate text-send feedback and a normal Send button; optimistic
+reaction toggles with rollback; touch-visible reply/reaction/pin/delete/ban controls;
+pending states for moderation actions; prefetched owner navigation with loading
+skeletons; instant `Opening room…` feedback that preserves real room 404s; compact
+one-token handles such as `NixFox042`; 3-hour admin sessions; and migration
+`0009_admin_sessions_three_hours.sql` to shorten existing sessions.
+
+**Moderation hierarchy:** Co-admins can moderate student and co-admin messages but
+cannot delete, pin/unpin, ban, or purge owner SUDO messages. The Server Actions enforce
+this independently of UI visibility. Room-wide co-admin purge excludes owner messages
+in the update query. The UI receives owner ids only as a presentation hint. The spec
+was updated to make this hierarchy explicit.
+
+**Database:** Supabase MCP applied `0009_admin_sessions_three_hours` to project
+`vbbinzmpnszdayrdfsle`; a read-only verification returned
+`active_sessions_over_three_hours = 0`.
+
+**Verification:** `tests/moderation.test.ts` 21/21, full suite 147/147, ESLint,
+`tsc --noEmit`, `bun run build`, and `git diff --check` all pass. The moderation tests
+include owner/co-admin delete, pin/unpin, purge, and ban cases.
+
+**Next agent needs to know:** Keep the owner-message guard in every moderation action;
+the client-side `canModerate` prop is not authorization. Do not edit migration 0009.
 
 ### 2026-08-06 — Task 12: owner pages, admin posting, badge contrast ✅
 
@@ -1017,7 +1043,7 @@ column-level grant. Test that before trusting anything else.
 
 ## In progress
 
-*Nothing. Task 12 merged; the 12-task plan is complete.*
+*Nothing. The UI responsiveness, 3-hour session, and owner-safe moderation work is complete; merge and push are the remaining repository operations.*
 
 ---
 

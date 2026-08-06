@@ -33,7 +33,7 @@ export function AdminControls({
         type="button"
         disabled={pending}
         onClick={() => run(() => togglePin(messageId, !isPinned))}
-        className="rounded-[4px] px-1.5 py-0.5 font-mono text-[12px] text-graphite opacity-0 transition-opacity hover:bg-wash hover:text-marigold focus-visible:opacity-100 disabled:opacity-40 group-hover:opacity-100"
+        className="rounded-[4px] px-1.5 py-0.5 font-mono text-[12px] text-graphite transition-opacity hover:bg-wash hover:text-marigold disabled:opacity-40 md:opacity-0 md:focus-visible:opacity-100 md:group-hover:opacity-100"
       >
         {isPinned ? 'unpin' : 'pin'}
       </button>
@@ -42,7 +42,7 @@ export function AdminControls({
         type="button"
         disabled={pending}
         onClick={() => run(() => adminDeleteMessage(messageId))}
-        className="rounded-[4px] px-1.5 py-0.5 font-mono text-[12px] text-graphite opacity-0 transition-opacity hover:bg-wash hover:text-rule focus-visible:opacity-100 disabled:opacity-40 group-hover:opacity-100"
+        className="rounded-[4px] px-1.5 py-0.5 font-mono text-[12px] text-graphite transition-opacity hover:bg-wash hover:text-rule disabled:opacity-40 md:opacity-0 md:focus-visible:opacity-100 md:group-hover:opacity-100"
       >
         delete
       </button>
@@ -53,7 +53,7 @@ export function AdminControls({
         // Confirmation is raised by the room, not by window.confirm: a native dialog is
         // unstyleable and Task 8 established that this app reports failures inline.
         onClick={() => onBan?.(messageId)}
-        className="rounded-[4px] px-1.5 py-0.5 font-mono text-[12px] text-graphite opacity-0 transition-opacity hover:bg-wash hover:text-rule focus-visible:opacity-100 disabled:opacity-40 group-hover:opacity-100"
+        className="rounded-[4px] px-1.5 py-0.5 font-mono text-[12px] text-graphite transition-opacity hover:bg-wash hover:text-rule disabled:opacity-40 md:opacity-0 md:focus-visible:opacity-100 md:group-hover:opacity-100"
       >
         ban
       </button>
