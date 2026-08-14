@@ -190,6 +190,20 @@ describe('postCode', () => {
     if (result.ok) return
     expect(result.code).toBe('invalid')
   })
+
+  it('rejects code over 50000 characters', async () => {
+    const { postCode } = await import('../app/actions/messages')
+    const result = await postCode({
+      token: tok('code-token-3'),
+      groupId,
+      body: 'x'.repeat(50001),
+      lang: 'c',
+    })
+
+    expect(result.ok).toBe(false)
+    if (result.ok) return
+    expect(result.code).toBe('invalid')
+  })
 })
 
 describe('deleteOwnMessage', () => {

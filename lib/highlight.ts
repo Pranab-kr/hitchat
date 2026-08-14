@@ -32,16 +32,32 @@ export async function loadedLanguages(): Promise<string[]> {
   return (await getHighlighter()).getLoadedLanguages()
 }
 
-export async function highlightCode(code: string, lang: string): Promise<string> {  const highlighter = await getHighlighter()
+const CACHE_LIMIT = 200
+const highlightCache = new Map<string, string>()
+
+export async function highlightCode(code: string, lang: string): Promise<string> {
+  const highlighter = await getHighlighter()
 
   // 'plaintext' is a SpecialLanguage — it needs no grammar.
   const loaded = highlighter.getLoadedLanguages()
   const safeLang = lang === 'plaintext' || loaded.includes(lang) ? lang : 'plaintext'
 
-  return highlighter.codeToHtml(code, {
+  const cacheKey = `${safeLang}:${code}`
+  const cached = highlightCache.get(cacheKey)
+  if (cached !== undefined) return cached
+
+  const html = highlighter.codeToHtml(code, {
     lang: safeLang,
     themes: { light: 'hit-light', dark: 'hit-dark' },
     // Variables only. 'light-dark()' is media-query driven and would ignore .dark.
     defaultColor: false,
   })
+
+  if (highlightCache.size >= CACHE_LIMIT) {
+    const oldest = highlightCache.keys().next().value
+    if (oldest !== undefined) highlightCache.delete(oldest)
+  }
+  highlightCache.set(cacheKey, html)
+
+  return html
 }

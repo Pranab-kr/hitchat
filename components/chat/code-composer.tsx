@@ -119,9 +119,9 @@ export function CodeComposer({
           Cancel
         </button>
 
-        {body.length > 20000 && (
+        {body.length > 50000 && (
           <span className="ml-auto font-mono text-[12px] text-rule">
-            {body.length.toLocaleString('en-US')} / 20,000
+            {body.length.toLocaleString('en-US')} / 50,000
           </span>
         )}
       </div>

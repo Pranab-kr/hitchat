@@ -80,6 +80,18 @@ unrecoverable by a fresh agent.
 
 Newest first. Each entry: what shipped, what deviated, what the next agent needs.
 
+### 2026-08-14 — 50k code paste limit, Shiki caching, stream memoization, and identity reset ✅
+
+**Shipped:**
+- Migration `supabase/migrations/0010_code_limit_50k.sql` widening the `body_length` check constraint to 50,000 chars for code posts.
+- Updated `lib/validate.ts` to allow up to 50,000 characters with formatted validation messages.
+- Updated `app/actions/highlight.ts` and `components/chat/code-composer.tsx` character limits and counters to 50,000.
+- In-memory bounded LRU/FIFO highlight caching in `lib/highlight.ts` to eliminate redundant Shiki Oniguruma parsing for large 50KB code blocks.
+- Wrapped `MessageRow` in `React.memo` in `components/chat/message-row.tsx` for optimal stream rendering during live Realtime updates.
+- Added `components/room/identity-reroll.tsx` button in the room header so students on shared lab computers can generate a fresh anonymous identity.
+- Enhanced `clientKey()` in `app/actions/admin.ts` to prioritize trusted proxy IP headers (`cf-connecting-ip`, `x-vercel-ip`, `x-real-ip`).
+- Tests: 148/148 passing across 13 test files, ESLint clean, `tsc --noEmit` clean, and Turbopack production build succeeds.
+
 ### 2026-08-06 — UI responsiveness, 3-hour sessions, and owner-safe moderation ✅
 
 **Shipped:** Immediate text-send feedback and a normal Send button; optimistic

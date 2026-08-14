@@ -13,8 +13,11 @@ import { type ActionResult, ok, err } from '@/lib/result'
 // that ever tried to sign in.
 async function clientKey(): Promise<string> {
   const store = await headers()
+  const cf = store.get('cf-connecting-ip')?.trim()
+  const vercel = store.get('x-vercel-ip')?.trim()
+  const realIp = store.get('x-real-ip')?.trim()
   const forwarded = store.get('x-forwarded-for')?.split(',')[0]?.trim()
-  const ip = forwarded || store.get('x-real-ip')?.trim() || 'unknown'
+  const ip = cf || vercel || realIp || forwarded || 'unknown'
   return hashToken(`admin-login:${ip}`)
 }
 

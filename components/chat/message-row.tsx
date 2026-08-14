@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { memo, useEffect, useState } from 'react'
 import { motion, useReducedMotion } from 'motion/react'
 import { ageOpacity } from '@/lib/age'
 import { authorColorVar } from '@/lib/author-color'
@@ -12,7 +12,7 @@ import { AdminControls } from './admin-controls'
 import type { Message } from '@/lib/types'
 import type { ReactionState } from '@/app/actions/reactions'
 
-export function MessageRow({
+export const MessageRow = memo(function MessageRow({
   message,
   codeHtml: initialCodeHtml = null,
   replyTo = null,
@@ -182,4 +182,4 @@ export function MessageRow({
       )}
     </motion.div>
   )
-}
+})

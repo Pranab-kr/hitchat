@@ -24,8 +24,8 @@ export function validateCode(input: {
   labTag?: string
 }): string | null {
   if (!input.body.trim()) return 'Paste some code first.'
-  if (input.body.length > 20000) {
-    return `Code is 20,000 characters max. This is ${n(input.body.length)}.`
+  if (input.body.length > 50000) {
+    return `Code is 50,000 characters max. This is ${n(input.body.length)}.`
   }
   if (!ALLOWED_LANGS.includes(input.lang as (typeof ALLOWED_LANGS)[number])) {
     return 'Pick a language from the list.'

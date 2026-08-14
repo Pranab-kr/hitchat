@@ -29,9 +29,9 @@ describe('validateCode', () => {
     expect(validateCode({ body: '  ', lang: 'c' })).toBe('Paste some code first.')
   })
 
-  it('rejects code over 20000 chars and names the real numbers', () => {
-    const msg = validateCode({ body: 'x'.repeat(20001), lang: 'c' })
-    expect(msg).toBe('Code is 20,000 characters max. This is 20,001.')
+  it('rejects code over 50000 chars and names the real numbers', () => {
+    const msg = validateCode({ body: 'x'.repeat(50001), lang: 'c' })
+    expect(msg).toBe('Code is 50,000 characters max. This is 50,001.')
   })
 
   it('rejects a language outside the allowed set', () => {
@@ -68,7 +68,7 @@ describe('validateCode', () => {
   })
 
   it('accepts the exact boundary lengths', () => {
-    expect(validateCode({ body: 'x'.repeat(20000), lang: 'c' })).toBeNull()
+    expect(validateCode({ body: 'x'.repeat(50000), lang: 'c' })).toBeNull()
     expect(validateCode({ body: 'x', lang: 'c', title: 'y'.repeat(80) })).toBeNull()
     expect(validateCode({ body: 'x', lang: 'c', labTag: 'z'.repeat(24) })).toBeNull()
   })

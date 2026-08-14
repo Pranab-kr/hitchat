@@ -6,6 +6,7 @@ import { verifySession } from '@/lib/auth/session'
 import { MessageList } from '@/components/chat/message-list'
 import { AdminBar } from '@/components/room/admin-bar'
 import { OnlineCount } from '@/components/room/online-count'
+import { IdentityReroll } from '@/components/room/identity-reroll'
 import type { Message } from '@/lib/types'
 
 export const dynamic = 'force-dynamic'
@@ -77,7 +78,10 @@ export default async function RoomPage({ params }: { params: Promise<RoomParams>
         <h1 className="font-display text-[32px] leading-[36px] font-semibold tracking-[-0.02em] text-ink">
           {room.label}
         </h1>
-        <OnlineCount groupId={room.id} />
+        <div className="flex items-center gap-3">
+          <IdentityReroll />
+          <OnlineCount groupId={room.id} />
+        </div>
       </header>
 
       {isAdmin && (
