@@ -13,12 +13,12 @@ section for the step you're on. Full protocol in `AGENTS.md`.
 
 | | |
 |---|---|
-| **Phase** | **Online user count in room header — complete.** |
-| **Current step** | Complete on `feat/online-count`; merged to `main`. |
-| **Branch** | `main`. `feat/online-count` was merged and deleted after verification. |
-| **Next action** | No task is queued. Before public deploy, rotate the leaked service-role key and owner secret as described below; do not rotate `IDENTITY_PEPPER`. |
+| **Phase** | **50k code paste limit & performance enhancements — in progress.** |
+| **Current step** | In progress on `feat/code-limit-and-perf`. |
+| **Branch** | `feat/code-limit-and-perf`. |
+| **Next action** | Apply migration 0010, update validate.ts, renderCode, code-composer, tests, and add highlight caching and memoization. |
 | **Blocked?** | No. |
-| **Last updated** | 2026-08-06 |
+| **Last updated** | 2026-08-14 |
 
 **Environment:** `.env.local` is complete — Supabase URL, publishable key,
 `SUPABASE_SERVICE_ROLE_KEY`, a generated `IDENTITY_PEPPER`, and a generated
