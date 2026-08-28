@@ -1,4 +1,5 @@
 import { notFound } from 'next/navigation'
+import Link from 'next/link'
 import { getServiceClient } from '@/lib/supabase/admin'
 import { MESSAGE_COLUMNS } from '@/lib/columns'
 import { highlightCode } from '@/lib/highlight'
@@ -76,7 +77,15 @@ export default async function RoomPage({ params }: { params: Promise<RoomParams>
     <div className="flex h-dvh flex-col">
       <header className="flex items-end justify-between border-b border-hairline px-4 py-3">
         <h1 className="font-display text-[32px] leading-[36px] font-semibold tracking-[-0.02em] text-ink">
-          {room.label}
+          {/* The room title doubles as the home link — back to the room picker. */}
+          <Link
+            href="/"
+            prefetch
+            title="Back to the room picker"
+            className="rounded-[4px] transition-colors hover:text-pen"
+          >
+            {room.label}
+          </Link>
         </h1>
         <div className="flex items-center gap-3">
           <IdentityReroll />

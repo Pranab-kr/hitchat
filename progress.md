@@ -13,12 +13,16 @@ section for the step you're on. Full protocol in `AGENTS.md`.
 
 | | |
 |---|---|
-| **Phase** | **50k code paste limit & performance enhancements — in progress.** |
-| **Current step** | In progress on `feat/code-limit-and-perf`. |
-| **Branch** | `feat/code-limit-and-perf`. |
-| **Next action** | Apply migration 0010, update validate.ts, renderCode, code-composer, tests, and add highlight caching and memoization. |
+| **Phase** | **Room navigation + code-card bottom collapse — in progress.** |
+| **Current step** | In progress on `feat/room-home-nav-and-bottom-collapse`. |
+| **Branch** | `feat/room-home-nav-and-bottom-collapse`. |
+| **Next action** | Browser-verify the code-card **bottom** collapse: post a >15-line code message, expand it, scroll to the bottom, click the foot `⌃ collapse` — it must close and scroll the summary back into view. Then decide on merge to `main` (currently committed on the branch, not merged). |
 | **Blocked?** | No. |
-| **Last updated** | 2026-08-14 |
+| **Last updated** | 2026-08-28 |
+
+**Note:** the previous "Resume here" claimed `feat/code-limit-and-perf` was in progress.
+That work is complete and merged (`d91511b`, recorded under Done 2026-08-14). This block
+was stale; reconciled against git on 2026-08-28.
 
 **Environment:** `.env.local` is complete — Supabase URL, publishable key,
 `SUPABASE_SERVICE_ROLE_KEY`, a generated `IDENTITY_PEPPER`, and a generated
@@ -1055,7 +1059,36 @@ column-level grant. Test that before trusting anything else.
 
 ## In progress
 
-*Nothing. The UI responsiveness, 3-hour session, and owner-safe moderation work is complete and merged to `main`.*
+**`feat/room-home-nav-and-bottom-collapse` — started 2026-08-28.** Two small UI asks
+from the owner:
+
+1. **A home navigation control in the chat room** — when a chat is open there was no way
+   back to the room picker except the browser back button. Adding a `← home` link to the
+   room header.
+2. **A bottom collapse control on long code cards** — a `>15` line code post collapses
+   from a control at the top only. When the code is long and the reader has scrolled to
+   the bottom, they had to scroll back to the top to collapse it. Adding a small collapse
+   control at the bottom of the expanded body too.
+
+Next action: implement both, then verify (build + browser).
+
+**Status 2026-08-28 — implemented, static verification green, committed on the branch:**
+- `app/c/[dept]/[year]/[batch]/[group]/page.tsx` — the room **title itself is the home
+  link**: the `<h1>` room label is wrapped in a `next/link` to `/` (prefetch,
+  `hover:text-pen`). (Owner changed the ask on 2026-08-28 from a separate `← home` button
+  to using the room logo/title for navigation — the standalone button was removed.) Right
+  side (`IdentityReroll` + `OnlineCount`) unchanged.
+- `components/chat/code-card.tsx` — the long-code `<details>` now holds a `useRef` and a
+  foot `⌃ collapse` `<button>` after the body. Native `<details>` hides it while closed,
+  so it appears only when expanded; on click it sets `el.open = false` and
+  `el.scrollIntoView({ block: 'nearest' })`. Short cards (≤15 lines) are unchanged.
+- Verified: `tsc --noEmit` clean, `eslint` clean, `bun run build` succeeds, full suite
+  **148/148** (one transient `admin-auth` "JWT issued at future" clock-skew flake on the
+  first post-install run; passed on immediate re-run and is unrelated to these
+  presentation-only files — those files are not imported by that suite).
+- **Not yet done:** live browser click-through of the bottom collapse, and merge to
+  `main`. `node_modules` was absent at session start and was restored with `bun install`
+  (matched `bun.lock`, no tracked lockfile change).
 
 ---
 
