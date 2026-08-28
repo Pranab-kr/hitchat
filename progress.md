@@ -13,12 +13,16 @@ section for the step you're on. Full protocol in `AGENTS.md`.
 
 | | |
 |---|---|
-| **Phase** | **50k code paste limit & performance enhancements — in progress.** |
-| **Current step** | In progress on `feat/code-limit-and-perf`. |
-| **Branch** | `feat/code-limit-and-perf`. |
-| **Next action** | Apply migration 0010, update validate.ts, renderCode, code-composer, tests, and add highlight caching and memoization. |
+| **Phase** | **Room navigation + code-card bottom collapse — in progress.** |
+| **Current step** | In progress on `feat/room-home-nav-and-bottom-collapse`. |
+| **Branch** | `feat/room-home-nav-and-bottom-collapse`. |
+| **Next action** | Add a `← home` link to the room header in `app/c/[dept]/[year]/[batch]/[group]/page.tsx`, and a bottom collapse control inside the long-code `<details>` in `components/chat/code-card.tsx`. Then `tsc --noEmit`, `eslint`, `bun run build`, and a browser check. |
 | **Blocked?** | No. |
-| **Last updated** | 2026-08-14 |
+| **Last updated** | 2026-08-28 |
+
+**Note:** the previous "Resume here" claimed `feat/code-limit-and-perf` was in progress.
+That work is complete and merged (`d91511b`, recorded under Done 2026-08-14). This block
+was stale; reconciled against git on 2026-08-28.
 
 **Environment:** `.env.local` is complete — Supabase URL, publishable key,
 `SUPABASE_SERVICE_ROLE_KEY`, a generated `IDENTITY_PEPPER`, and a generated
@@ -1055,7 +1059,18 @@ column-level grant. Test that before trusting anything else.
 
 ## In progress
 
-*Nothing. The UI responsiveness, 3-hour session, and owner-safe moderation work is complete and merged to `main`.*
+**`feat/room-home-nav-and-bottom-collapse` — started 2026-08-28.** Two small UI asks
+from the owner:
+
+1. **A home navigation control in the chat room** — when a chat is open there was no way
+   back to the room picker except the browser back button. Adding a `← home` link to the
+   room header.
+2. **A bottom collapse control on long code cards** — a `>15` line code post collapses
+   from a control at the top only. When the code is long and the reader has scrolled to
+   the bottom, they had to scroll back to the top to collapse it. Adding a small collapse
+   control at the bottom of the expanded body too.
+
+Next action: implement both, then verify (build + browser).
 
 ---
 
