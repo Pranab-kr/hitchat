@@ -13,10 +13,10 @@ section for the step you're on. Full protocol in `AGENTS.md`.
 
 | | |
 |---|---|
-| **Phase** | **Room navigation + code-card bottom collapse — in progress.** |
-| **Current step** | In progress on `feat/room-home-nav-and-bottom-collapse`. |
-| **Branch** | `feat/room-home-nav-and-bottom-collapse`. |
-| **Next action** | Browser-verify the code-card **bottom** collapse: post a >15-line code message, expand it, scroll to the bottom, click the foot `⌃ collapse` — it must close and scroll the summary back into view. Then decide on merge to `main` (currently committed on the branch, not merged). |
+| **Phase** | **Idle — room-title home link + code-card bottom collapse shipped and pushed.** |
+| **Current step** | Nothing in flight. |
+| **Branch** | `main` (feature branch merged and deleted). |
+| **Next action** | None pending. Optional: live browser click-through of the code-card bottom collapse (owner chose to skip it on 2026-08-28). |
 | **Blocked?** | No. |
 | **Last updated** | 2026-08-28 |
 
@@ -83,6 +83,33 @@ unrecoverable by a fresh agent.
 ## Done
 
 Newest first. Each entry: what shipped, what deviated, what the next agent needs.
+
+### 2026-08-28 — Room-title home link + code-card bottom collapse ✅
+
+**Shipped (merged `c11069d`, pushed to `origin/main`):**
+- `app/c/[dept]/[year]/[batch]/[group]/page.tsx` — the `<h1>` room label is now a
+  `next/link` to `/` (prefetch, `hover:text-pen`), so the room title doubles as the way
+  back to the room picker. The owner first asked for a separate `← home` button; after
+  seeing it, they asked to use the room logo/title itself instead, so the standalone
+  button was removed before merge.
+- `components/chat/code-card.tsx` — long code cards (>15 lines) gained a **second**
+  collapse control at the foot of the expanded body. It lives inside the `<details>`, so
+  native behavior hides it while collapsed and shows it only when expanded; clicking it
+  sets `detailsRef.current.open = false` and `scrollIntoView({ block: 'nearest' })` so
+  the shrunk card is pulled back into view. The top summary toggle is unchanged; short
+  cards render the body directly as before.
+
+**Verified:** `tsc --noEmit`, `eslint`, `bun run build` all clean; full suite **148/148**.
+`node_modules` was missing at session start (restored via `bun install`, matched
+`bun.lock`). A single `tests/admin-auth.test.ts` "JWT issued at future" failure appeared
+on the first post-install run and passed on immediate re-run — a live-DB/clock-skew flake,
+not caused by these presentation-only files.
+
+**Not done:** the owner chose to **skip** the live browser click-through of the bottom
+collapse. The behavior is standard native `<details>` DOM manipulation, but it has not
+been exercised in a real browser. If it ever misbehaves, that unverified interaction is
+the first place to look.
+
 
 ### 2026-08-14 — 50k code paste limit, Shiki caching, stream memoization, and identity reset ✅
 
@@ -1059,36 +1086,8 @@ column-level grant. Test that before trusting anything else.
 
 ## In progress
 
-**`feat/room-home-nav-and-bottom-collapse` — started 2026-08-28.** Two small UI asks
-from the owner:
-
-1. **A home navigation control in the chat room** — when a chat is open there was no way
-   back to the room picker except the browser back button. Adding a `← home` link to the
-   room header.
-2. **A bottom collapse control on long code cards** — a `>15` line code post collapses
-   from a control at the top only. When the code is long and the reader has scrolled to
-   the bottom, they had to scroll back to the top to collapse it. Adding a small collapse
-   control at the bottom of the expanded body too.
-
-Next action: implement both, then verify (build + browser).
-
-**Status 2026-08-28 — implemented, static verification green, committed on the branch:**
-- `app/c/[dept]/[year]/[batch]/[group]/page.tsx` — the room **title itself is the home
-  link**: the `<h1>` room label is wrapped in a `next/link` to `/` (prefetch,
-  `hover:text-pen`). (Owner changed the ask on 2026-08-28 from a separate `← home` button
-  to using the room logo/title for navigation — the standalone button was removed.) Right
-  side (`IdentityReroll` + `OnlineCount`) unchanged.
-- `components/chat/code-card.tsx` — the long-code `<details>` now holds a `useRef` and a
-  foot `⌃ collapse` `<button>` after the body. Native `<details>` hides it while closed,
-  so it appears only when expanded; on click it sets `el.open = false` and
-  `el.scrollIntoView({ block: 'nearest' })`. Short cards (≤15 lines) are unchanged.
-- Verified: `tsc --noEmit` clean, `eslint` clean, `bun run build` succeeds, full suite
-  **148/148** (one transient `admin-auth` "JWT issued at future" clock-skew flake on the
-  first post-install run; passed on immediate re-run and is unrelated to these
-  presentation-only files — those files are not imported by that suite).
-- **Not yet done:** live browser click-through of the bottom collapse, and merge to
-  `main`. `node_modules` was absent at session start and was restored with `bun install`
-  (matched `bun.lock`, no tracked lockfile change).
+*Nothing. The room-title home link and code-card bottom-collapse work is merged to
+`main` and pushed (`c11069d`, 2026-08-28).*
 
 ---
 
