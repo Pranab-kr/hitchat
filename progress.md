@@ -16,7 +16,7 @@ section for the step you're on. Full protocol in `AGENTS.md`.
 | **Phase** | **Room navigation + code-card bottom collapse — in progress.** |
 | **Current step** | In progress on `feat/room-home-nav-and-bottom-collapse`. |
 | **Branch** | `feat/room-home-nav-and-bottom-collapse`. |
-| **Next action** | Add a `← home` link to the room header in `app/c/[dept]/[year]/[batch]/[group]/page.tsx`, and a bottom collapse control inside the long-code `<details>` in `components/chat/code-card.tsx`. Then `tsc --noEmit`, `eslint`, `bun run build`, and a browser check. |
+| **Next action** | Browser-verify the code-card **bottom** collapse: post a >15-line code message, expand it, scroll to the bottom, click the foot `⌃ collapse` — it must close and scroll the summary back into view. Then decide on merge to `main` (currently committed on the branch, not merged). |
 | **Blocked?** | No. |
 | **Last updated** | 2026-08-28 |
 
@@ -1071,6 +1071,23 @@ from the owner:
    control at the bottom of the expanded body too.
 
 Next action: implement both, then verify (build + browser).
+
+**Status 2026-08-28 — implemented, static verification green, committed on the branch:**
+- `app/c/[dept]/[year]/[batch]/[group]/page.tsx` — header left side is now a stacked
+  `← home` `next/link` (prefetch, graphite→pen hover, matches `IdentityReroll`/owner-shell
+  link style) above the room title. Right side (`IdentityReroll` + `OnlineCount`)
+  unchanged.
+- `components/chat/code-card.tsx` — the long-code `<details>` now holds a `useRef` and a
+  foot `⌃ collapse` `<button>` after the body. Native `<details>` hides it while closed,
+  so it appears only when expanded; on click it sets `el.open = false` and
+  `el.scrollIntoView({ block: 'nearest' })`. Short cards (≤15 lines) are unchanged.
+- Verified: `tsc --noEmit` clean, `eslint` clean, `bun run build` succeeds, full suite
+  **148/148** (one transient `admin-auth` "JWT issued at future" clock-skew flake on the
+  first post-install run; passed on immediate re-run and is unrelated to these
+  presentation-only files — those files are not imported by that suite).
+- **Not yet done:** live browser click-through of the bottom collapse, and merge to
+  `main`. `node_modules` was absent at session start and was restored with `bun install`
+  (matched `bun.lock`, no tracked lockfile change).
 
 ---
 
