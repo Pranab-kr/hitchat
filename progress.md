@@ -1073,10 +1073,11 @@ from the owner:
 Next action: implement both, then verify (build + browser).
 
 **Status 2026-08-28 — implemented, static verification green, committed on the branch:**
-- `app/c/[dept]/[year]/[batch]/[group]/page.tsx` — header left side is now a stacked
-  `← home` `next/link` (prefetch, graphite→pen hover, matches `IdentityReroll`/owner-shell
-  link style) above the room title. Right side (`IdentityReroll` + `OnlineCount`)
-  unchanged.
+- `app/c/[dept]/[year]/[batch]/[group]/page.tsx` — the room **title itself is the home
+  link**: the `<h1>` room label is wrapped in a `next/link` to `/` (prefetch,
+  `hover:text-pen`). (Owner changed the ask on 2026-08-28 from a separate `← home` button
+  to using the room logo/title for navigation — the standalone button was removed.) Right
+  side (`IdentityReroll` + `OnlineCount`) unchanged.
 - `components/chat/code-card.tsx` — the long-code `<details>` now holds a `useRef` and a
   foot `⌃ collapse` `<button>` after the body. Native `<details>` hides it while closed,
   so it appears only when expanded; on click it sets `el.open = false` and
