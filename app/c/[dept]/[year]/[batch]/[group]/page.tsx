@@ -1,4 +1,5 @@
 import { notFound } from 'next/navigation'
+import Link from 'next/link'
 import { getServiceClient } from '@/lib/supabase/admin'
 import { MESSAGE_COLUMNS } from '@/lib/columns'
 import { highlightCode } from '@/lib/highlight'
@@ -75,9 +76,19 @@ export default async function RoomPage({ params }: { params: Promise<RoomParams>
   return (
     <div className="flex h-dvh flex-col">
       <header className="flex items-end justify-between border-b border-hairline px-4 py-3">
-        <h1 className="font-display text-[32px] leading-[36px] font-semibold tracking-[-0.02em] text-ink">
-          {room.label}
-        </h1>
+        <div className="flex flex-col gap-0.5">
+          <Link
+            href="/"
+            prefetch
+            title="Back to the room picker"
+            className="w-fit rounded-[4px] font-mono text-[12px] tracking-[0.02em] text-graphite transition-colors hover:text-pen"
+          >
+            ← home
+          </Link>
+          <h1 className="font-display text-[32px] leading-[36px] font-semibold tracking-[-0.02em] text-ink">
+            {room.label}
+          </h1>
+        </div>
         <div className="flex items-center gap-3">
           <IdentityReroll />
           <OnlineCount groupId={room.id} />

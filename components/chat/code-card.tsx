@@ -1,5 +1,6 @@
 'use client'
 
+import { useRef } from 'react'
 import { CopyButton } from './copy-button'
 
 // Presentational only: the caller supplies already-highlighted HTML — from the server on
@@ -19,6 +20,7 @@ export function CodeCard({
 }) {
   const lineCount = code.split('\n').length
   const isLong = lineCount > 15
+  const detailsRef = useRef<HTMLDetailsElement>(null)
 
   const body = (
     <div
@@ -50,12 +52,29 @@ export function CodeCard({
         </div>
 
         {isLong ? (
-          <details className="group">
+          <details ref={detailsRef} className="group">
             <summary className="cursor-pointer list-none px-4 py-2 font-mono text-[12px] text-graphite transition-colors hover:text-pen [&::-webkit-details-marker]:hidden">
               <span className="group-open:hidden">⌄ show {lineCount} lines</span>
               <span className="hidden group-open:inline">⌃ collapse</span>
             </summary>
             {body}
+            {/* A second collapse control at the foot of a long block: after scrolling to
+                the bottom, the reader can close it without scrolling back to the summary.
+                Native <details> hides this while closed, so it only shows when expanded. */}
+            <button
+              type="button"
+              onClick={() => {
+                const el = detailsRef.current
+                if (!el) return
+                el.open = false
+                // The card just shrank and its summary may be above the viewport; bring
+                // it back into view so the reader isn't stranded mid-stream.
+                el.scrollIntoView({ block: 'nearest' })
+              }}
+              className="block w-full cursor-pointer border-t border-hairline px-4 py-2 text-left font-mono text-[12px] text-graphite transition-colors hover:text-pen"
+            >
+              ⌃ collapse
+            </button>
           </details>
         ) : (
           body
