@@ -13,10 +13,10 @@ section for the step you're on. Full protocol in `AGENTS.md`.
 
 | | |
 |---|---|
-| **Phase** | **Idle — room-title home link + code-card bottom collapse shipped and pushed.** |
-| **Current step** | Nothing in flight. |
-| **Branch** | `main` (feature branch merged and deleted). |
-| **Next action** | None pending. Optional: live browser click-through of the code-card bottom collapse (owner chose to skip it on 2026-08-28). |
+| **Phase** | **In progress — audit fixes for the chat message flow on branch `feat/audit-fixes-message-flow`. NOT merged (owner will review).** |
+| **Current step** | Apply the `/impeccable audit` findings (P1/P2/P3) to the message flow. |
+| **Branch** | `feat/audit-fixes-message-flow` (from `main` @ `3f77f56`; do not merge until the owner says so). |
+| **Next action** | Implement the fixes: theme-aware fade floor + contrast test (P1), composer labels + touch targets (P2), ban-dialog semantics + reconnect status + reduced-motion scroll + stream cap + theme cross-fade (P3). |
 | **Blocked?** | No. |
 | **Last updated** | 2026-08-28 |
 
