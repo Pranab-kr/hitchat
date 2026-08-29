@@ -10,7 +10,7 @@ export function IdentityReroll() {
       type="button"
       onClick={reroll}
       title="Generate a new anonymous identity on this device"
-      className="rounded-[4px] px-1.5 py-0.5 font-mono text-[12px] tracking-[0.02em] text-graphite transition-colors hover:bg-wash hover:text-pen"
+      className="touch-target rounded-[4px] px-1.5 py-0.5 font-mono text-[12px] tracking-[0.02em] text-graphite transition-colors hover:bg-wash hover:text-pen"
     >
       new identity
     </button>

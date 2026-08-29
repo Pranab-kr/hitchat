@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useRef, useState, useTransition } from 'react'
+import { useReducedMotion } from 'motion/react'
 import { useRealtimeMessages } from '@/lib/use-realtime-messages'
 import { useReactions } from '@/lib/use-reactions'
 import { useNow } from '@/lib/use-now'
@@ -37,18 +38,30 @@ export function MessageList({
   const [banTarget, setBanTarget] = useState<string | null>(null)
   const [banError, setBanError] = useState<string | null>(null)
   const [banPending, startBan] = useTransition()
+  const banButtonRef = useRef<HTMLButtonElement>(null)
+  const reduce = useReducedMotion()
 
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [messages.length])
+    bottomRef.current?.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth' })
+  }, [messages.length, reduce])
 
-  const jumpTo = useCallback((messageId: string) => {
-    document.getElementById(`m-${messageId}`)?.scrollIntoView({
-      behavior: 'smooth',
-      block: 'center',
-    })
-    setJumpedTo(messageId)
-  }, [])
+  // The ban confirm is an inline bar, not a modal dialog — so it gets a region, not
+  // alertdialog (whose focus-management promises it cannot keep), and focus lands on
+  // the confirm button so a keyboard user does not have to hunt for it.
+  useEffect(() => {
+    if (banTarget) banButtonRef.current?.focus()
+  }, [banTarget])
+
+  const jumpTo = useCallback(
+    (messageId: string) => {
+      document.getElementById(`m-${messageId}`)?.scrollIntoView({
+        behavior: reduce ? 'auto' : 'smooth',
+        block: 'center',
+      })
+      setJumpedTo(messageId)
+    },
+    [reduce],
+  )
 
   useEffect(() => {
     if (!jumpedTo) return
@@ -90,15 +103,16 @@ export function MessageList({
       {banTarget && (
         <div
           className="flex flex-wrap items-center gap-2 border-b border-hairline bg-wash px-4 py-2 font-mono text-[12px] text-ink"
-          role="alertdialog"
+          role="region"
           aria-label="Confirm ban"
         >
           <span>Ban this person for 24 hours?</span>
           <button
+            ref={banButtonRef}
             type="button"
             disabled={banPending}
             onClick={confirmBan}
-            className="rounded-input px-2 py-1 text-rule transition-colors hover:bg-rule/10 disabled:opacity-40"
+            className="touch-target rounded-input px-2 py-1 text-rule transition-colors hover:bg-rule/10 disabled:opacity-40"
           >
             ban
           </button>
@@ -109,7 +123,7 @@ export function MessageList({
               setBanTarget(null)
               setBanError(null)
             }}
-            className="rounded-input px-2 py-1 text-graphite transition-colors hover:text-ink disabled:opacity-40"
+            className="touch-target rounded-input px-2 py-1 text-graphite transition-colors hover:text-ink disabled:opacity-40"
           >
             cancel
           </button>
@@ -123,7 +137,7 @@ export function MessageList({
 
       <div className="flex-1 overflow-y-auto">
         {!connected && (
-          <div className="sticky top-0 bg-wash px-4 py-1 font-mono text-[12px] text-graphite">
+          <div className="sticky top-0 bg-wash px-4 py-1 font-mono text-[12px] text-graphite" role="status">
             Reconnecting…
           </div>
         )}

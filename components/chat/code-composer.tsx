@@ -65,25 +65,28 @@ export function CodeComposer({
         </p>
       )}
 
-      <div className="mb-2 flex gap-2">
+      <div className="mb-2 flex flex-wrap gap-2">
         <input
           value={labTag}
           onChange={(e) => setLabTag(e.target.value)}
+          aria-label="Lab tag"
           placeholder="Lab 4"
-          className="w-24 rounded-input border border-hairline bg-surface px-3 py-2 font-mono text-[13px] text-ink placeholder:text-graphite"
+          className="touch-target w-24 rounded-input border border-hairline bg-surface px-3 py-2 font-mono text-[13px] text-ink placeholder:text-graphite"
         />
 
         <input
           value={title}
           onChange={(e) => setTitle(e.target.value)}
+          aria-label="Title"
           placeholder="What this does"
-          className="flex-1 rounded-input border border-hairline bg-surface px-3 py-2 text-[13px] text-ink placeholder:text-graphite"
+          className="touch-target flex-1 rounded-input border border-hairline bg-surface px-3 py-2 text-[13px] text-ink placeholder:text-graphite"
         />
 
         <select
           value={lang}
           onChange={(e) => setLang(e.target.value)}
-          className="rounded-input border border-hairline bg-surface px-3 py-2 font-mono text-[13px] text-ink"
+          aria-label="Language"
+          className="touch-target rounded-input border border-hairline bg-surface px-3 py-2 font-mono text-[13px] text-ink"
         >
           {ALLOWED_LANGS.map((l) => (
             <option key={l} value={l}>
@@ -96,6 +99,7 @@ export function CodeComposer({
       <textarea
         value={body}
         onChange={(e) => setBody(e.target.value)}
+        aria-label="Code"
         placeholder="Paste your code"
         rows={8}
         className="w-full rounded-input border border-hairline bg-code-bg px-3 py-2 font-mono text-[13px] leading-[21px] text-ink placeholder:text-graphite"
@@ -106,7 +110,7 @@ export function CodeComposer({
           type="button"
           onClick={submit}
           disabled={pending}
-          className="rounded-input bg-pen px-4 py-2 text-[13px] font-medium text-paper disabled:opacity-60"
+          className="touch-target rounded-input bg-pen px-4 py-2 text-[13px] font-medium text-paper disabled:opacity-60"
         >
           {pending ? 'Posting…' : 'Post code'}
         </button>
@@ -114,7 +118,7 @@ export function CodeComposer({
         <button
           type="button"
           onClick={onClose}
-          className="rounded-input px-4 py-2 text-[13px] text-graphite transition-colors hover:text-ink"
+          className="touch-target rounded-input px-4 py-2 text-[13px] text-graphite transition-colors hover:text-ink"
         >
           Cancel
         </button>

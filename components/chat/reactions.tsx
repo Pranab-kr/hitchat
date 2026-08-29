@@ -40,7 +40,7 @@ export function Reactions({
               disabled={pending}
               onClick={() => onToggle(messageId, key)}
               aria-label={label}
-              className="rounded-[4px] px-1.5 py-0.5 text-[12px] leading-[16px] text-ink transition-opacity hover:bg-wash disabled:opacity-40 md:opacity-0 md:focus-visible:opacity-100 md:group-hover:opacity-100"
+              className="touch-target rounded-[4px] px-1.5 py-0.5 text-[12px] leading-[16px] text-ink transition-opacity hover:bg-wash disabled:opacity-40 [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:focus-visible:opacity-100 [@media(hover:hover)]:group-hover:opacity-100"
             >
               {glyph}
             </button>
@@ -58,7 +58,7 @@ export function Reactions({
             whileTap={reduce ? undefined : { scale: 1.15 }}
             transition={{ type: 'spring', duration: 0.2 }}
             className={cn(
-              'flex items-center gap-1 rounded-[4px] px-1.5 py-0.5 font-mono text-[12px] leading-[16px] disabled:opacity-40',
+              'touch-target flex items-center gap-1 rounded-[4px] px-1.5 py-0.5 font-mono text-[12px] leading-[16px] disabled:opacity-40',
               active ? 'bg-pen/12 text-pen' : 'bg-wash text-graphite',
             )}
           >

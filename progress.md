@@ -13,10 +13,10 @@ section for the step you're on. Full protocol in `AGENTS.md`.
 
 | | |
 |---|---|
-| **Phase** | **In progress — audit fixes for the chat message flow on branch `feat/audit-fixes-message-flow`. NOT merged (owner will review).** |
-| **Current step** | Apply the `/impeccable audit` findings (P1/P2/P3) to the message flow. |
-| **Branch** | `feat/audit-fixes-message-flow` (from `main` @ `3f77f56`; do not merge until the owner says so). |
-| **Next action** | Implement the fixes: theme-aware fade floor + contrast test (P1), composer labels + touch targets (P2), ban-dialog semantics + reconnect status + reduced-motion scroll + stream cap + theme cross-fade (P3). |
+| **Phase** | **Done — audit fixes for the chat message flow built and verified on branch `feat/audit-fixes-message-flow`. NOT merged (owner will review and say when).** |
+| **Current step** | Nothing in flight until the owner reviews the branch. |
+| **Branch** | `feat/audit-fixes-message-flow` (from `main` @ `3f77f56`; do not merge or delete until the owner says so). |
+| **Next action** | Owner: review the branch. After approval: merge to `main`, delete the branch, and re-run `/impeccable audit` to re-score (expect a11y to move 2 → 3+, total ≥ 18). |
 | **Blocked?** | No. |
 | **Last updated** | 2026-08-28 |
 
@@ -83,6 +83,59 @@ unrecoverable by a fresh agent.
 ## Done
 
 Newest first. Each entry: what shipped, what deviated, what the next agent needs.
+
+### 2026-08-30 — Chat message-flow audit fixes ✅ (branch `feat/audit-fixes-message-flow`, NOT merged)
+
+Ran `/impeccable audit` on the user chat message flow (17/20) and fixed every finding on a
+branch. Owner will review and trigger the merge; do not merge or delete the branch early.
+
+**What shipped:**
+- **P1 — fade floor now theme-aware.** `lib/age.ts`: 6-8h floor is `0.55` in dark, `0.65`
+  in light. Light `ink` @ 0.55 over `paper` measured **3.66:1** (failed WCAG AA); 0.65
+  measures **4.99:1**. Dark 0.55 stays (5.14:1). `message-row.tsx` passes
+  `resolvedTheme === 'dark'` via `useTheme`.
+- **P1 — real contrast guard.** `tests/age.test.ts` now computes WCAG luminance/contrast
+  and asserts every fade step clears 4.5:1 in BOTH themes, plus a margin test (light
+  floor > 4.8). A future floor regress to 0.55 in light now fails the suite.
+- **P2 — accessible names.** `composer.tsx` input (`aria-label="Message"`),
+  `code-composer.tsx` lab tag / title / language / code fields.
+- **P2 — touch targets.** New `.touch-target` class in `globals.css` — `min 44x44px`
+  under `@media (pointer: coarse)` only. Applied to reply, reaction, pin/delete/ban,
+  copy, identity-reroll, composer, ban-confirm controls. Verified compiled into the
+  build. The hover-reveal was also re-gated from `md:` to `[@media(hover:hover)]`,
+  fixing large-touchscreen controls being stuck invisible (iPad ≥768px).
+- **P3 — ban confirm.** `role="alertdialog"` → `role="region"` (the bar is not a modal
+  and made focus promises it couldn't keep); focus moves to the confirm button on open.
+- **P3 — reconnect banner** gets `role="status"`.
+- **P3 — reduced motion.** `message-list.tsx` smooth scrolls and `message-row.tsx` enter
+  fade go instant under `prefers-reduced-motion`.
+- **P3 — stream cap.** `lib/use-realtime-messages.ts` trims to the newest 500 rows.
+- **P3 — theme cross-fade restored.** Removed `disableTransitionOnChange` from
+  `app/theme-provider.tsx` (next-themes default ~0.3s html transition; design.md
+  specifies 250ms — close enough, documented).
+- **P3 — composer rows** `flex-wrap` so buttons drop below the input at ≤360px instead
+  of squeezing it.
+
+**Deviations (deliberate, recorded):**
+- **design.md amended** ("Aesthetic risk: fade with age", 2026-08-30): the 6-8h floor is
+  now theme-dependent, with the measured ratios cited — same precedent as the 2026-08-05
+  SUDO badge amendment. The 55% floor claim was verified-by-comment-only before; it was
+  wrong in light mode and nothing caught it. This is exactly the "green suite is not
+  enough" failure AGENTS.md warns about — now pinned by a real contrast test.
+- Ban confirm stayed an inline bar (region + focus) rather than a full `<dialog>` — no
+  new dialog infrastructure for a rare action.
+- Stream capped at 500, not 100: capping at the server's 100 would visibly drop the top
+  of a live stream when the 101st message arrives.
+- Composer touch min-width 44px on the `flex-1` input is harmless (it's wider than 44px
+  on any usable screen).
+
+**Verification:** 152/152 tests (one `rls.test.ts` insert flaked once against the live DB,
+passed on re-run — unrelated to this work), `tsc --noEmit` clean, `eslint` clean on all
+changed files (repo-wide warnings are all in `.claude/skills/impeccable/scripts`, pre-existing),
+`bun run build` passes, detector unchanged (1 finding — the SUDO badge side-tab, a documented
+design.md prescription). No colors/fonts added.
+
+**Next action:** owner reviews `feat/audit-fixes-message-flow`, then merge to `main`.
 
 ### 2026-08-28 — Room-title home link + code-card bottom collapse ✅
 
