@@ -2,6 +2,7 @@
 
 import { memo, useEffect, useState } from 'react'
 import { motion, useReducedMotion } from 'motion/react'
+import { useTheme } from 'next-themes'
 import { ageOpacity } from '@/lib/age'
 import { authorColorVar } from '@/lib/author-color'
 import { useMounted } from '@/lib/use-mounted'
@@ -45,6 +46,7 @@ export const MessageRow = memo(function MessageRow({
 }) {
   const reduce = useReducedMotion()
   const mounted = useMounted()
+  const { resolvedTheme } = useTheme()
   const [codeHtml, setCodeHtml] = useState(initialCodeHtml)
 
   const isCode = message.kind === 'code' && !message.deleted_at
@@ -82,14 +84,14 @@ export const MessageRow = memo(function MessageRow({
       // permanently invisible if it never does.
       initial={mounted ? (reduce ? { opacity: 0 } : { opacity: 0, y: 8 }) : false}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.18, ease: 'easeOut' }}
+      transition={reduce ? { duration: 0 } : { duration: 0.18, ease: 'easeOut' }}
       className={`group px-4 py-1 transition-colors ${highlighted ? 'bg-pen/8' : ''}`}
     >
       {message.reply_to_id && (
         <button
           type="button"
           onClick={() => onJumpTo?.(message.reply_to_id!)}
-          className="mb-1 flex max-w-full items-center gap-2 border-l-2 border-hairline pl-2 text-left font-mono text-[12px] text-graphite transition-colors hover:text-pen"
+          className="touch-target mb-1 flex max-w-full items-center gap-2 border-l-2 border-hairline pl-2 text-left font-mono text-[12px] text-graphite transition-colors hover:text-pen"
         >
           {replyTo ? (
             <>
@@ -137,7 +139,7 @@ export const MessageRow = memo(function MessageRow({
           <button
             type="button"
             onClick={() => onReply(message)}
-            className="rounded-[4px] px-1.5 py-0.5 font-mono text-[12px] text-graphite transition-opacity hover:bg-wash hover:text-pen md:opacity-0 md:focus-visible:opacity-100 md:group-hover:opacity-100"
+            className="touch-target rounded-[4px] px-1.5 py-0.5 font-mono text-[12px] text-graphite transition-opacity hover:bg-wash hover:text-pen [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:focus-visible:opacity-100 [@media(hover:hover)]:group-hover:opacity-100"
           >
             reply
           </button>
@@ -165,7 +167,7 @@ export const MessageRow = memo(function MessageRow({
       ) : (
         <div
           className="text-[15px] leading-[24px] break-words whitespace-pre-wrap text-ink"
-          style={{ opacity: ageOpacity(message.created_at) }}
+          style={{ opacity: ageOpacity(message.created_at, Date.now(), resolvedTheme === 'dark') }}
         >
           {children ?? message.body}
         </div>

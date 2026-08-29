@@ -8,6 +8,12 @@ import type { Message } from '@/lib/types'
 // INSERT and UPDATE only — never DELETE. Realtime cannot filter DELETE and does not
 // apply RLS to it, so the bulk expiry purge would broadcast bare primary keys to every
 // client in every room.
+//
+// The stream starts at the server's 100-message cap and grows by one per INSERT. An
+// 8-hour session with heavy traffic would otherwise keep every row in memory forever;
+// 500 is far past any live lab stream but bounds the pathological case. Dropping the
+// tail only ever removes messages older than anything the server would have loaded.
+const MAX_MESSAGES = 500
 export function useRealtimeMessages(groupId: string, initial: Message[]) {
   const [messages, setMessages] = useState<Message[]>(initial)
   const [connected, setConnected] = useState(true)
@@ -43,9 +49,11 @@ export function useRealtimeMessages(groupId: string, initial: Message[]) {
         },
         (payload) => {
           const next = payload.new as Message
-          setMessages((prev) =>
-            prev.some((m) => m.id === next.id) ? prev : [...prev, next],
-          )
+          setMessages((prev) => {
+            if (prev.some((m) => m.id === next.id)) return prev
+            const merged = [...prev, next]
+            return merged.length > MAX_MESSAGES ? merged.slice(-MAX_MESSAGES) : merged
+          })
         },
       )
       .on(

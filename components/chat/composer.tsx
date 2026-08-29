@@ -107,7 +107,9 @@ export function Composer({
         </p>
       )}
 
-      <div className="flex gap-2">
+      {/* flex-wrap: at very narrow widths the send/code buttons drop below the input
+          instead of squeezing it to nothing. */}
+      <div className="flex flex-wrap gap-2">
         {/* No maxLength: silent truncation at 1000 would make the over-length message
             from validateText unreachable, and pasted code loses its tail without a word. */}
         <input
@@ -124,16 +126,17 @@ export function Composer({
               submit()
             }
           }}
+          aria-label="Message"
           placeholder={replyTo ? 'Reply' : 'Message'}
           disabled={pending}
-          className="flex-1 rounded-input border border-hairline bg-surface px-3 py-2 text-[15px] text-ink placeholder:text-graphite"
+          className="touch-target flex-1 rounded-input border border-hairline bg-surface px-3 py-2 text-[15px] text-ink placeholder:text-graphite"
         />
 
         <button
           type="button"
           disabled={pending || !token || !body.trim()}
           onClick={submit}
-          className="rounded-input bg-pen px-3 py-2 text-[13px] font-medium text-paper transition-opacity hover:opacity-90 disabled:opacity-60"
+          className="touch-target rounded-input bg-pen px-3 py-2 text-[13px] font-medium text-paper transition-opacity hover:opacity-90 disabled:opacity-60"
         >
           {pending ? 'Sending…' : 'Send'}
         </button>
@@ -142,7 +145,7 @@ export function Composer({
           type="button"
           disabled={pending}
           onClick={() => setCodeMode(true)}
-          className="rounded-input border border-hairline px-3 py-2 font-mono text-[13px] text-graphite transition-colors hover:border-pen hover:text-pen disabled:opacity-60"
+          className="touch-target rounded-input border border-hairline px-3 py-2 font-mono text-[13px] text-graphite transition-colors hover:border-pen hover:text-pen disabled:opacity-60"
         >
           {'</> code'}
         </button>

@@ -99,6 +99,16 @@
   outline-offset: 2px;
 }
 
+/* Touch devices only: inline action controls get a thumb-sized hit area without
+   inflating the desktop row height. Deliberately outside @layer base so a stray
+   utility cannot shrink the floor back below the 44px recommendation. */
+@media (pointer: coarse) {
+  .touch-target {
+    min-height: 44px;
+    min-width: 44px;
+  }
+}
+
 /* Shiki dual-theme: emit variables only, drive with the .dark class.
    defaultColor:'light-dark()' is media-query-driven and would ignore our class. */
 .shiki,

@@ -40,7 +40,7 @@ export function CopyButton({ text }: { text: string }) {
     <button
       type="button"
       onClick={copy}
-      className="flex shrink-0 items-center gap-1 font-mono text-[12px] text-graphite transition-colors hover:text-pen"
+      className="touch-target flex shrink-0 items-center gap-1 font-mono text-[12px] text-graphite transition-colors hover:text-pen"
     >
       {copied ? <span aria-hidden>✓</span> : <CopyIcon />}
       {copied ? 'copied' : 'copy'}

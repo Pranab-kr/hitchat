@@ -235,14 +235,19 @@ would break the whole conceit.
 | 0–2h | `ink` (full) |
 | 2–4h | 85% toward `graphite` |
 | 4–6h | 70% |
-| 6–8h | 55% — the floor |
+| 6–8h | 55% — the floor (dark) / **65% — the floor (light)** |
 
 Like pencil fading on paper. The product's central promise becomes visible in the
 material rather than needing a countdown widget in every row.
 
 **Constraints:**
-- The 55% floor is a **hard contrast floor** — the oldest message must still clear
-  WCAG AA against `paper`. Verify with a real contrast check, do not eyeball it.
+- The floor is a **hard contrast floor** — the oldest message must still clear WCAG AA
+  (4.5:1) against the page background. *Amended 2026-08-30:* the same opacity cannot do
+  that in both themes. `ink` at 55% over light `paper` measures **3.66:1** (fails),
+  while `chalk` at 55% over dark `desk` measures **5.14:1** (passes). So the 6–8h step
+  is theme-dependent: **0.65 in light (4.99:1)** keeps the designed 0.55 depth in dark,
+  where the darker background buys the contrast. Measured, not eyeballed — the ratios
+  are pinned in `tests/age.test.ts`.
 - **Code bodies never fade.** Someone copying a 6-hour-old answer needs to read it
   perfectly. Only the surrounding chrome and text messages age.
 - Recomputed on a 5-minute interval, not per render.
