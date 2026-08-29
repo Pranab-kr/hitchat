@@ -13,10 +13,10 @@ section for the step you're on. Full protocol in `AGENTS.md`.
 
 | | |
 |---|---|
-| **Phase** | **Done — audit fixes for the chat message flow built and verified on branch `feat/audit-fixes-message-flow`. NOT merged (owner will review and say when).** |
-| **Current step** | Nothing in flight until the owner reviews the branch. |
-| **Branch** | `feat/audit-fixes-message-flow` (from `main` @ `3f77f56`; do not merge or delete until the owner says so). |
-| **Next action** | Owner: review the branch. After approval: merge to `main`, delete the branch, and re-run `/impeccable audit` to re-score (expect a11y to move 2 → 3+, total ≥ 18). |
+| **Phase** | **Idle — chat message-flow audit fixes merged and pushed to `origin/main`.** |
+| **Current step** | Nothing in flight. |
+| **Branch** | `main`. |
+| **Next action** | None pending. Optional: live browser click-through of the message-flow fixes (touch-target sizing, hover-reveal on a coarse pointer, theme cross-fade) and a `/impeccable audit` re-run on `main` to lock the 19/20. |
 | **Blocked?** | No. |
 | **Last updated** | 2026-08-28 |
 
@@ -84,10 +84,11 @@ unrecoverable by a fresh agent.
 
 Newest first. Each entry: what shipped, what deviated, what the next agent needs.
 
-### 2026-08-30 — Chat message-flow audit fixes ✅ (branch `feat/audit-fixes-message-flow`, NOT merged)
+### 2026-08-30 — Chat message-flow audit fixes ✅ (merged to `main`, pushed to `origin/main`)
 
-Ran `/impeccable audit` on the user chat message flow (17/20) and fixed every finding on a
-branch. Owner will review and trigger the merge; do not merge or delete the branch early.
+Ran `/impeccable audit` on the user chat message flow (17/20), fixed every finding on
+`feat/audit-fixes-message-flow`, and merged (`845edce` + merge commit). Re-audit scored
+19/20. The branch was NOT merged until the owner said so on 2026-08-30.
 
 **What shipped:**
 - **P1 — fade floor now theme-aware.** `lib/age.ts`: 6-8h floor is `0.55` in dark, `0.65`
@@ -135,7 +136,8 @@ changed files (repo-wide warnings are all in `.claude/skills/impeccable/scripts`
 `bun run build` passes, detector unchanged (1 finding — the SUDO badge side-tab, a documented
 design.md prescription). No colors/fonts added.
 
-**Next action:** owner reviews `feat/audit-fixes-message-flow`, then merge to `main`.
+**Next action:** merged to `main` and pushed 2026-08-30; optional live click-through of
+the touch/hover/motion fixes and an `/impeccable audit` re-run on `main`.
 
 ### 2026-08-28 — Room-title home link + code-card bottom collapse ✅
 
