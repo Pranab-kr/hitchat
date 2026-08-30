@@ -1,12 +1,15 @@
 'use client'
 
-import { memo, useEffect, useState } from 'react'
+import { memo, useEffect, useState, useTransition } from 'react'
 import { motion, useReducedMotion } from 'motion/react'
 import { useTheme } from 'next-themes'
 import { ageOpacity } from '@/lib/age'
 import { authorColorVar } from '@/lib/author-color'
 import { useMounted } from '@/lib/use-mounted'
+import { useAnonToken } from '@/lib/use-anon-token'
+import { withinSelfDeleteWindow } from '@/lib/self-delete'
 import { renderCode } from '@/app/actions/highlight'
+import { deleteOwnMessage } from '@/app/actions/messages'
 import { CodeCard } from './code-card'
 import { Reactions } from './reactions'
 import { AdminControls } from './admin-controls'
@@ -15,6 +18,7 @@ import type { ReactionState } from '@/app/actions/reactions'
 
 export const MessageRow = memo(function MessageRow({
   message,
+  now,
   codeHtml: initialCodeHtml = null,
   replyTo = null,
   reactions,
@@ -24,12 +28,14 @@ export const MessageRow = memo(function MessageRow({
   onReply,
   onJumpTo,
   isAdmin = false,
+  isOwn = false,
   canModerate = true,
   onBan,
   highlighted = false,
   children,
 }: {
   message: Message
+  now: number
   codeHtml?: string | null
   replyTo?: Message | null
   reactions?: ReactionState
@@ -39,6 +45,7 @@ export const MessageRow = memo(function MessageRow({
   onReply?: (message: Message) => void
   onJumpTo?: (messageId: string) => void
   isAdmin?: boolean
+  isOwn?: boolean
   canModerate?: boolean
   onBan?: (messageId: string) => void
   highlighted?: boolean
@@ -47,7 +54,10 @@ export const MessageRow = memo(function MessageRow({
   const reduce = useReducedMotion()
   const mounted = useMounted()
   const { resolvedTheme } = useTheme()
+  const { token } = useAnonToken()
   const [codeHtml, setCodeHtml] = useState(initialCodeHtml)
+  const [deleteError, setDeleteError] = useState<string | null>(null)
+  const [deletePending, startDelete] = useTransition()
 
   const isCode = message.kind === 'code' && !message.deleted_at
   const needsHighlight = isCode && codeHtml === null
@@ -65,6 +75,14 @@ export const MessageRow = memo(function MessageRow({
     }
   }, [needsHighlight, message.body, message.code_lang])
 
+  function handleSelfDelete() {
+    if (!token) return
+    startDelete(async () => {
+      const result = await deleteOwnMessage({ token, messageId: message.id })
+      setDeleteError(result.ok ? null : result.message)
+    })
+  }
+
   if (message.deleted_at) {
     return (
       <div className="px-4 py-1 font-mono text-[12px] text-graphite">message deleted</div>
@@ -75,6 +93,11 @@ export const MessageRow = memo(function MessageRow({
     hour: 'numeric',
     minute: '2-digit',
   })
+
+  // The retract is the author's, so it is hidden for moderators who already have the
+  // admin delete — two identical "delete" controls on one row is noise. The server
+  // re-verifies ownership and the 5-minute window on every call regardless.
+  const canSelfDelete = isOwn && !(isAdmin && canModerate) && withinSelfDeleteWindow(message.created_at, now)
 
   return (
     <motion.div
@@ -145,6 +168,23 @@ export const MessageRow = memo(function MessageRow({
           </button>
         )}
 
+        {canSelfDelete && (
+          <button
+            type="button"
+            disabled={deletePending}
+            onClick={handleSelfDelete}
+            className="touch-target rounded-[4px] px-1.5 py-0.5 font-mono text-[12px] text-graphite transition-opacity hover:bg-wash hover:text-rule disabled:opacity-40 [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:focus-visible:opacity-100 [@media(hover:hover)]:group-hover:opacity-100"
+          >
+            delete
+          </button>
+        )}
+
+        {deleteError && (
+          <span className="font-mono text-[12px] text-rule" role="alert">
+            {deleteError}
+          </span>
+        )}
+
         {isAdmin && canModerate && (
           <AdminControls
             messageId={message.id}
@@ -167,7 +207,7 @@ export const MessageRow = memo(function MessageRow({
       ) : (
         <div
           className="text-[15px] leading-[24px] break-words whitespace-pre-wrap text-ink"
-          style={{ opacity: ageOpacity(message.created_at, Date.now(), resolvedTheme === 'dark') }}
+          style={{ opacity: ageOpacity(message.created_at, now, resolvedTheme === 'dark') }}
         >
           {children ?? message.body}
         </div>

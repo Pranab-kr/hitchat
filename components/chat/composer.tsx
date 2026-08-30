@@ -3,6 +3,7 @@
 import { useState, useTransition } from 'react'
 import { sendText } from '@/app/actions/messages'
 import { useAnonToken } from '@/lib/use-anon-token'
+import { useComposerGate } from '@/lib/use-composer-gate'
 import { authorColorVar } from '@/lib/author-color'
 import { CodeComposer } from './code-composer'
 import type { Message } from '@/lib/types'
@@ -21,13 +22,14 @@ export function Composer({
   onClearReply?: () => void
 }) {
   const { token } = useAnonToken()
+  const { bannedMessage, remaining, noteRateLimited } = useComposerGate(token)
   const [body, setBody] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [codeMode, setCodeMode] = useState(false)
   const [pending, startTransition] = useTransition()
 
   function submit() {
-    if (!token || !body.trim()) return
+    if (!token || !body.trim() || remaining > 0) return
 
     // Clear immediately so a successful press has visible feedback before the Server
     // Action round trip and Realtime insert return. A failure restores the untouched
@@ -47,11 +49,26 @@ export function Composer({
       })
       if (result.ok) {
         return
+      }
+      if (result.code === 'rate_limited' && result.retryAfter) {
+        // The countdown is the message; a plain error line would tell the user what
+        // the ticking seconds already show.
+        noteRateLimited(result.retryAfter)
       } else {
         setError(result.message)
-        setBody((current) => current || draft)
       }
+      setBody((current) => current || draft)
     })
+  }
+
+  // Banned is a per-identity state and outranks the room lock: a banned student stays
+  // blocked in an unlocked room. The server re-verifies on every write regardless.
+  if (bannedMessage) {
+    return (
+      <div className="border-t border-hairline px-4 py-3 text-[15px] text-graphite">
+        {bannedMessage}
+      </div>
+    )
   }
 
   // Admins are exempt from the lock (spec: "read-only for students; admins can still
@@ -134,7 +151,7 @@ export function Composer({
 
         <button
           type="button"
-          disabled={pending || !token || !body.trim()}
+          disabled={pending || !token || !body.trim() || remaining > 0}
           onClick={submit}
           className="touch-target rounded-input bg-pen px-3 py-2 text-[13px] font-medium text-paper transition-opacity hover:opacity-90 disabled:opacity-60"
         >
@@ -154,6 +171,12 @@ export function Composer({
       {pending && (
         <p className="mt-1 font-mono text-[12px] text-graphite" role="status">
           Sending message…
+        </p>
+      )}
+
+      {remaining > 0 && (
+        <p className="mt-1 font-mono text-[12px] text-graphite" role="status">
+          You&rsquo;re posting too fast. Wait {remaining}s.
         </p>
       )}
 

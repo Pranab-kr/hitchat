@@ -4,7 +4,9 @@ import { useCallback, useEffect, useRef, useState, useTransition } from 'react'
 import { useReducedMotion } from 'motion/react'
 import { useRealtimeMessages } from '@/lib/use-realtime-messages'
 import { useReactions } from '@/lib/use-reactions'
+import { useOwnMessages } from '@/lib/use-own-messages'
 import { useNow } from '@/lib/use-now'
+import { isNearBottom } from '@/lib/scroll'
 import { MessageRow } from './message-row'
 import { Composer } from './composer'
 import { PinnedStrip } from '@/components/room/pinned-strip'
@@ -32,7 +34,9 @@ export function MessageList({
 }) {
   const { messages, connected } = useRealtimeMessages(groupId, initial)
   const { reactionsFor, errorFor, isPendingFor, toggle } = useReactions(messages)
+  const { isOwn } = useOwnMessages(messages)
   const bottomRef = useRef<HTMLDivElement>(null)
+  const scrollRef = useRef<HTMLDivElement>(null)
   const [replyTo, setReplyTo] = useState<Message | null>(null)
   const [labFilter, setLabFilter] = useState<string | null>(null)
   const [jumpedTo, setJumpedTo] = useState<string | null>(null)
@@ -42,9 +46,45 @@ export function MessageList({
   const banButtonRef = useRef<HTMLButtonElement>(null)
   const reduce = useReducedMotion()
 
+  // Auto-scroll follows the newest message ONLY while the reader is already at the
+  // bottom. The moment they scroll up into history, incoming posts stop yanking them
+  // down and instead raise the "N new" pill. A ref keeps the scroll handler and the
+  // insertion effect agreeing without a re-render between them.
+  const stickToBottom = useRef(true)
+  const prevLength = useRef(messages.length)
+  const [newCount, setNewCount] = useState(0)
+
+  // Land at the bottom on open, instantly — no rise-and-fade over a full page of
+  // history on first paint.
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth' })
+    bottomRef.current?.scrollIntoView({ behavior: 'auto' })
+  }, [])
+
+  useEffect(() => {
+    const prev = prevLength.current
+    prevLength.current = messages.length
+    const added = messages.length - prev
+    if (added <= 0) return
+
+    if (stickToBottom.current) {
+      bottomRef.current?.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth' })
+    } else {
+      setNewCount((c) => c + added)
+    }
   }, [messages.length, reduce])
+
+  function handleScroll() {
+    const el = scrollRef.current
+    if (!el) return
+    stickToBottom.current = isNearBottom(el)
+    if (stickToBottom.current) setNewCount(0)
+  }
+
+  function jumpToLatest() {
+    stickToBottom.current = true
+    setNewCount(0)
+    bottomRef.current?.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth' })
+  }
 
   // The ban confirm is an inline bar, not a modal dialog — so it gets a region, not
   // alertdialog (whose focus-management promises it cannot keep), and focus lands on
@@ -144,60 +184,86 @@ export function MessageList({
         </div>
       )}
 
-      <div className="flex-1 overflow-y-auto">
-        {!connected && (
-          <div className="sticky top-0 bg-wash px-4 py-1 font-mono text-[12px] text-graphite" role="status">
-            Reconnecting…
-          </div>
-        )}
-
-        {visible.length === 0 ? (
-          activeLab ? (
-            <div className="px-4 py-8 text-[15px] leading-6 text-graphite">
-              <p>No {activeLab} posts in the last 8 hours.</p>
-              <button
-                type="button"
-                onClick={() => setLabFilter(null)}
-                className="mt-2 rounded-input font-mono text-[12px] text-pen transition-colors hover:underline"
-              >
-                Show all messages
-              </button>
+      <div className="relative flex min-h-0 flex-1 overflow-hidden">
+        <div ref={scrollRef} onScroll={handleScroll} className="h-full overflow-y-auto">
+          {!connected && (
+            <div className="sticky top-0 bg-wash px-4 py-1 font-mono text-[12px] text-graphite" role="status">
+              Reconnecting…
             </div>
-          ) : (
-            <p className="px-4 py-8 text-[15px] text-graphite">
-              Nothing here yet. Paste your lab code and someone will thank you.
-            </p>
-          )
-        ) : (
-          visible.map((message) => (
-            // UI visibility is only a convenience. Server Actions enforce this same
-            // owner-message boundary independently for every request.
-            <MessageRow
-              key={message.id}
-              message={message}
-              codeHtml={initialCodeHtml[message.id] ?? null}
-              replyTo={
-                message.reply_to_id ? (byId.get(message.reply_to_id) ?? null) : null
-              }
-              reactions={reactionsFor(message.id)}
-              reactionError={errorFor(message.id)}
-              reactionPending={isPendingFor(message.id)}
-              onToggleReaction={toggle}
-              onReply={locked && !isAdmin ? undefined : setReplyTo}
-              onJumpTo={jumpTo}
-              isAdmin={isAdmin}
-              canModerate={
-                adminRole === 'owner' ||
-                !message.admin_id ||
-                !ownerAdminIds.includes(message.admin_id)
-              }
-              onBan={setBanTarget}
-              highlighted={jumpedTo === message.id}
-            />
-          ))
-        )}
+          )}
 
-        <div ref={bottomRef} />
+          {visible.length === 0 ? (
+            activeLab ? (
+              <div className="px-4 py-8 text-[15px] leading-6 text-graphite">
+                <p>No {activeLab} posts in the last 8 hours.</p>
+                <button
+                  type="button"
+                  onClick={() => setLabFilter(null)}
+                  className="mt-2 rounded-input font-mono text-[12px] text-pen transition-colors hover:underline"
+                >
+                  Show all messages
+                </button>
+              </div>
+            ) : (
+              <p className="px-4 py-8 text-[15px] text-graphite">
+                Nothing here yet. Paste your lab code and someone will thank you.
+              </p>
+            )
+          ) : (
+            visible.map((message) => (
+              // UI visibility is only a convenience. Server Actions enforce this same
+              // owner-message boundary independently for every request.
+              <MessageRow
+                key={message.id}
+                message={message}
+                now={now}
+                codeHtml={initialCodeHtml[message.id] ?? null}
+                replyTo={
+                  message.reply_to_id ? (byId.get(message.reply_to_id) ?? null) : null
+                }
+                reactions={reactionsFor(message.id)}
+                reactionError={errorFor(message.id)}
+                reactionPending={isPendingFor(message.id)}
+                onToggleReaction={toggle}
+                onReply={locked && !isAdmin ? undefined : setReplyTo}
+                onJumpTo={jumpTo}
+                isAdmin={isAdmin}
+                isOwn={isOwn(message.id)}
+                canModerate={
+                  adminRole === 'owner' ||
+                  !message.admin_id ||
+                  !ownerAdminIds.includes(message.admin_id)
+                }
+                onBan={setBanTarget}
+                highlighted={jumpedTo === message.id}
+              />
+            ))
+          )}
+
+          <div ref={bottomRef} />
+        </div>
+
+        {newCount > 0 && (
+          <button
+            type="button"
+            onClick={jumpToLatest}
+            aria-label={`Jump to latest (${newCount} new ${newCount === 1 ? 'message' : 'messages'})`}
+            title="Jump to the latest messages"
+            className="touch-target absolute bottom-3 left-1/2 flex -translate-x-1/2 items-center gap-1.5 rounded-full border border-hairline bg-surface px-3 py-1.5 font-mono text-[12px] leading-4 text-pen shadow-sm transition-colors hover:bg-wash"
+          >
+            <span>{newCount} new</span>
+            <svg viewBox="0 0 12 12" width="12" height="12" aria-hidden className="text-pen">
+              <path
+                d="M3 4.5 L6 7.5 L9 4.5"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+          </button>
+        )}
       </div>
 
       <Composer

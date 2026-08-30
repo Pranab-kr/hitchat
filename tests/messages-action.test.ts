@@ -148,6 +148,28 @@ describe('sendText', () => {
     expect(codes[5]).toBe('rate_limited')
     // Six sequential posts, each ~4 round-trips to ap-south-1, do not fit the 5s default.
   }, 30_000)
+
+  it('reports how long to wait when rate limited, not a blind 10', async () => {
+    const { sendText } = await import('../app/actions/messages')
+    const { hashToken } = await import('../lib/identity')
+    const hash = hashToken(tok('flood-retry'))
+    await db.from('rate_events').delete().eq('author_token_hash', hash)
+
+    let limited: { ok: false; retryAfter?: number } | null = null
+    for (let i = 0; i < 6; i++) {
+      const r = await sendText({ token: tok('flood-retry'), groupId, body: `msg ${i}` })
+      if (!r.ok && r.code === 'rate_limited') limited = r
+    }
+
+    await db.from('rate_events').delete().eq('author_token_hash', hash)
+
+    expect(limited).not.toBeNull()
+    expect(limited!.retryAfter).toBeGreaterThan(0)
+    // The text window is 10s and the blocking events were just inserted, so the honest
+    // wait is strictly under the old blind-10 — this is what proves retryAfter is
+    // computed from the window, not a constant.
+    expect(limited!.retryAfter!).toBeLessThan(10)
+  }, 30_000)
 })
 
 describe('postCode', () => {

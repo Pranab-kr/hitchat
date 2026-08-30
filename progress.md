@@ -13,10 +13,10 @@ section for the step you're on. Full protocol in `AGENTS.md`.
 
 | | |
 |---|---|
-| **Phase** | **In progress — stream control hardening (`feat/harden-stream-control`).** |
-| **Current step** | `/impeccable harden` on the message room: (1) gate auto-scroll on near-bottom + a "N new ↓" pill; (2) expose the own-message self-delete that `deleteOwnMessage` already provides; (3) surface banned/rate-limited state before Send and consume the `retryAfter` value; (4) persist the code-composer draft across app-switch. |
-| **Branch** | `feat/harden-stream-control` — not yet committed. `main` is ahead of `origin/main` by 4 commits, not pushed (owner asked to hold the push). |
-| **Next action** | Build the four items in `components/chat/message-list.tsx`, `message-row.tsx`, `composer.tsx`, `code-composer.tsx`, `lib/guards.ts` + a new `app/actions/me.ts`, then verify (suite, tsc, eslint, build, break-the-guard) before merging to `main`. |
+| **Phase** | **Idle — stream-control hardening merged to `main` (local only, NOT pushed to `origin`).** |
+| **Current step** | Nothing in flight. `feat/harden-stream-control` is merged to `main`; the branch has been deleted. |
+| **Branch** | `main` — **ahead of `origin/main` by 5 commits, not pushed** (owner asked to hold the push). |
+| **Next action** | None pending. When ready to publish: `git push origin main` — but **rotate secrets first** (see below), since the repo is public and both leaked during the build. Optional follow-ups from the two prior phases (human browser click-through of the room frame + this hardening; `/impeccable init`). |
 | **Blocked?** | No. |
 | **Last updated** | 2026-08-30 |
 
@@ -235,6 +235,100 @@ unrecoverable by a fresh agent.
 ## Done
 
 Newest first. Each entry: what shipped, what deviated, what the next agent needs.
+
+### 2026-08-30 — Stream-control hardening ✅ (merged to `main`, not pushed)
+
+`/impeccable harden` on the message room — clears the two P1s the audit flagged (auto-scroll
+stealing control, self-delete invisible) plus the Riley (rate-limit/ban surfaced only after
+Send, `retryAfter` thrown away) and Casey (unsent code paste lost on app-switch) edge cases.
+
+**What shipped:**
+- **Auto-scroll is gated on "already near bottom" + a "N new ↓" pill**
+  (`components/chat/message-list.tsx`). A ref tracks stick-to-bottom (via the scroll
+  handler, using the new `isNearBottom` helper in `lib/scroll.ts`, 120px offset); when the
+  reader is up in history, inserts increment a pill instead of yanking the stream. Clicking
+  the pill scrolls to bottom and resets the count. This also fixes the audit's Riley note —
+  jump-to-pinned/reply is no longer undone by the next incoming message.
+- **Own-message self-delete is now reachable.** `deleteOwnMessage`
+  (`app/actions/messages.ts:121-161`) existed and was tested but had zero UI call sites.
+  New server action `getOwnMessageIds` in `app/actions/me.ts` echoes which of a batch of
+  message ids belong to the caller's token (the client cannot compute its own peppered
+  hash — same ownership-echo pattern as `getReactions`). New hook
+  `lib/use-own-messages.ts` mirrors `useReactions` and refetches on identity reroll.
+  `MessageRow` shows a `delete` control on own messages inside the 5-minute window
+  (`lib/self-delete.ts`), hidden for moderators who already get the admin delete, and calls
+  `deleteOwnMessage` directly; the soft-delete broadcasts an UPDATE and the row becomes
+  "message deleted".
+- **Banned/rate-limited state surfaces before Send, and `retryAfter` is consumed.**
+  New server action `getPostingStatus` (`app/actions/me.ts`) returns the current ban
+  message (a pure read, so it is safe to poll); new hook `lib/use-composer-gate.ts` polls
+  it on mount and every 60s — a banned user sees the notice instead of the composer.
+  `assertRateOk` in `lib/guards.ts` now computes the *real* seconds until the rate window
+  clears (oldest in-window `rate_events` row + window − now) instead of the blind `10`, and
+  the composers count that down live ("Wait Ns", Send disabled, draft preserved).
+- **The code-composer draft survives an app-switch** (`components/chat/code-composer.tsx`).
+  The unsent paste lives in localStorage (`hitchat:code-draft`) via a
+  `useSyncExternalStore` store (raw-string snapshot + `useMemo`, mirroring `use-anon-token`),
+  cleared only on a successful post.
+
+**Deviations / decisions, as built:**
+- **The fade-with-age now actually ticks.** `MessageRow` previously read `Date.now()` in its
+  render body, so the fade only updated on unrelated re-renders — a silent deviation the
+  audit logged. It now takes the `now` prop MessageList already had from `useNow()`, so fade
+  (and the self-delete window) recompute on the 30s tick per design.md.
+- **`currentBanMessage` extracted from `assertNotBanned` in `lib/guards.ts`.** The composer
+  gate and the write path now read the same query, so they cannot disagree.
+- **`retryAfter` for 'code'/'reaction'/'admin_login' is now honest too** — the window map
+  (10/60/60/60) lives in guards.ts and must track `check_rate_limit` in the migrations.
+- **Draft is cleared only on success; Cancel keeps it.** Recovery beats a rare stale-paste
+  surprise, matching the text composer's draft-preservation philosophy.
+- **`withinSelfDeleteWindow` uses `<=`** to match the server's `ageMs > 5min` refusal exactly
+  (the control never disappears a moment before the action would accept the retract).
+- The soft-deleted row intentionally drops its `id` (existing MessageRow behavior) — the
+  test asserts on "message deleted" text, not the id.
+- A temporary Playwright harness (in `/tmp/opencode/hitchat-browser`, not committed) seeded
+  a `browse-*` room which was deleted afterwards; the `it` rooms and the owner's data were
+  not touched. A handful of rate_events for the harness's throwaway token linger until the
+  `purge-expired` cron (0003) clears them.
+
+**Verified — a green suite is not enough (AGENTS.md):**
+- Full suite **179/179** (164 baseline + 15 new: `me-actions` 5, `self-delete` 4, `scroll` 5,
+  plus a `retryAfter` assertion in `messages-action`), `tsc --noEmit` clean, `eslint` clean on
+  every changed file (repo-wide warnings are all in `.claude`/`.agents` skill scripts,
+  pre-existing), `bun run build` passes. No colors or fonts added.
+- **Real browser (Chromium, headless) — 20 checks, all passing.** Drove the actual dev
+  server against the live DB: a foreign message shows no self-delete while an own fresh
+  message does and clicking it blanks the row; 14 inserts while at the bottom raise no pill,
+  scrolled-up inserts neither yank the scroll (scrollTop 0→0) nor show until the "2 new"
+  pill appears, clicking it lands at the bottom; a 6th rapid post shows a live "Wait 6s"
+  countdown that ticks down with Send disabled and the draft preserved; a banned token sees
+  the notice instead of the composer; the code draft (body, lab tag, title, language)
+  survives a reload and clears after a successful post.
+- **The drive-through found two real bugs the suite could not:** (1) the countdown's first
+  render computed `remaining` against a stale `now` snapshot, opening at "Wait 22s" for an
+  8s window — fixed by resetting `now` inside `noteRateLimited`; (2) `useSyncExternalStore`
+  got an object snapshot from `readDraft()`, which is referentially unstable, so every
+  keystroke triggered an infinite re-render loop and crashed the page with
+  "Maximum update depth exceeded" — fixed by snapshotting the raw string and deriving the
+  object with `useMemo`.
+- **Guards proven by mutation** (each reverted after failing exactly its test): deleting
+  `.eq('author_token_hash', hash)` from `getOwnMessageIds` fails the ownership test; the
+  self-delete boundary flipped `<` fails the boundary test; `isNearBottom` flipped `<=` fails
+  the exact-120px case; `assertRateOk` reverted to the blind `10` fails the new retryAfter
+  test.
+
+**Next agent needs to know:**
+- **The public `'use server'` surface grew by two actions** (`getOwnMessageIds`,
+  `getPostingStatus` in `app/actions/me.ts`). Both are read-only echoes of the caller's own
+  state — the ownership hash never leaves the server.
+- `useComposerGate`'s 60s ban poll is one cheap SELECT per open composer; two composers can
+  be mounted briefly while the code composer is open (both poll), which is harmless.
+- The `retryAfter` value is now data, not a constant — do not "simplify" it back to 10, or
+  the countdown test fails.
+- `getOwnMessageIds` caps at 100 ids like `getReactions`; the stream never exceeds that.
+- Unmerged: `main` still ahead of `origin/main` by 5 commits (the 3-commit room frame + the
+  merge + this one), all held per the owner's instruction. Rotate both secrets before any
+  push (see Resume here).
 
 ### 2026-08-30 — Chat message-flow audit fixes ✅ (merged to `main`, pushed to `origin/main`)
 
