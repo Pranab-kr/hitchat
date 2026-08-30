@@ -322,9 +322,13 @@ it scrolls to and highlights the original. If the original has expired, the prev
 reads "original message expired".
 
 ### Reactions
-Fixed set of four: `works` (✓), `buggy` (⚠), `fire` (🔥), `eyes` (👀). One per person
-per emoji, toggleable, counts shown inline. Fixed set avoids an emoji picker and keeps
-signal high.
+Fixed set of four: `works`, `buggy`, `fire`, `eyes`. One per person per mark, toggleable,
+counts shown inline. Fixed set avoids an emoji picker and keeps signal high. The marks
+are **drawn SVG in `currentColor`** (check, warning triangle, flame, eye) rather than
+unicode/emoji — the six-token palette allows no uncontrolled color in the room, and
+they render in the same stroked family as the app's other icons. *(Amended 2026-08-30 —
+the set was originally written as `✓ ⚠ 🔥 👀`; the drawn marks replace the two color
+emoji to keep reactions on-palette.)*
 
 ### Lab tag filter
 The room header shows chips built from `lab_tag` values currently present in the room:

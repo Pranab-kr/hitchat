@@ -21,19 +21,44 @@ function CopyIcon() {
   )
 }
 
+// The failed copy carries its warning as an exclamation in `rule` — a drawn mark, so
+// the danger cue survives on the code-card surface (rule is a UI surface at 3.0 floor).
+// The word stays `graphite`, which clears 4.5:1; rule-as-text on the code card measures
+// ~3.9:1 in light and fails, so the color never carries the message alone.
+function AlertMark() {
+  return (
+    <svg
+      viewBox="0 0 16 16"
+      className="size-[12px] text-rule"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      aria-hidden
+    >
+      <path d="M8 3v6.5" />
+      <path d="M8 12v.1" />
+    </svg>
+  )
+}
+
+type CopyState = 'idle' | 'copied' | 'failed'
+
 export function CopyButton({ text }: { text: string }) {
-  const [copied, setCopied] = useState(false)
+  const [state, setState] = useState<CopyState>('idle')
 
   async function copy() {
     try {
       await navigator.clipboard.writeText(text)
     } catch {
-      // Insecure context or a denied permission. Nothing useful to say; leave the
-      // label alone rather than claiming a copy that did not happen.
+      // Insecure context or a denied permission. The button now says why it failed
+      // instead of standing there dead — same 1.5s confirm rhythm as the success.
+      setState('failed')
+      setTimeout(() => setState('idle'), 1500)
       return
     }
-    setCopied(true)
-    setTimeout(() => setCopied(false), 1500)
+    setState('copied')
+    setTimeout(() => setState('idle'), 1500)
   }
 
   return (
@@ -42,8 +67,8 @@ export function CopyButton({ text }: { text: string }) {
       onClick={copy}
       className="touch-target flex shrink-0 items-center gap-1 font-mono text-[12px] text-graphite transition-colors hover:text-pen"
     >
-      {copied ? <span aria-hidden>✓</span> : <CopyIcon />}
-      {copied ? 'copied' : 'copy'}
+      {state === 'copied' ? <span aria-hidden>✓</span> : state === 'failed' ? <AlertMark /> : <CopyIcon />}
+      {state === 'copied' ? 'copied' : state === 'failed' ? "couldn't copy" : 'copy'}
     </button>
   )
 }

@@ -229,7 +229,9 @@ The one element this interface is remembered by.
 - The **margin head** carries the code title, the lab tag, the language chip, and the
   copy button.
 - Bodies over 15 lines **collapse** with a "show N more lines" control.
-- Copy button confirms in place: `⧉ copy` → `✓ copied`, reverting after 1.5s.
+- Copy button confirms in place: `copy` → `✓ copied` — or `couldn't copy` in `rule`
+  when the browser refuses the clipboard — reverting after 1.5s. A refused copy is
+  never silent; a button that did nothing would read as dead.
 
 **Nothing else in the interface uses a vertical rule.** That exclusivity is the whole
 point — scrolling a busy room, code is identifiable in peripheral vision.
@@ -265,7 +267,11 @@ material rather than needing a countdown widget in every row.
   are pinned in `tests/age.test.ts`.
 - **Code bodies never fade.** Someone copying a 6-hour-old answer needs to read it
   perfectly. Only the surrounding chrome and text messages age.
-- Recomputed on a 5-minute interval, not per render.
+- Recomputed on a shared 30-second tick, not per render. *Amended 2026-08-30:* this
+  originally read "on a 5-minute interval" but the implementation ticks with `useNow`,
+  the same clock that hides an expired message and retires the 5-minute self-delete
+  window. The fade bands are two hours wide, so the tick is imperceptible either way;
+  a second, slower timer would exist only to match the old sentence.
 
 If this reads as "broken" rather than "aging" in practice, it comes out. Keep it
 isolated behind one utility so removal is a one-line change.
@@ -306,11 +312,16 @@ people use during a lab session, not a landing page.
   marigold-on-marigold label, including the pinned strip. No new color was introduced.
 - **Empty room:** an invitation, not an apology — "Nothing here yet. Paste your lab
   code and someone will thank you." Set in Figtree at Body, `graphite`.
-- **Reaction bar:** every glyph carries its visible word label — `✓ works`, `⚠ buggy`,
-  `🔥 nice`, `👀 looking` — with the count appending when present (`✓ works 3`). The
-  label is part of the control, never aria-only: the meaning must survive a touch
-  screen and a screen reader, not just a hover. (Amended 2026-08-30 — the glyphs were
-  previously explained only in a hover/aria label, which the in-room P2 audit flagged.)
+- **Reaction bar:** a fixed set of four marks — `works`, `buggy`, `nice`, `looking` —
+  each a **drawn SVG in `currentColor`**, one stroked family with the copy and chevron
+  icons, carrying a visible word label (`works` over a drawn check, `buggy` over a
+  warning triangle, `nice` over a drawn flame, `looking` over a drawn eye), with the
+  count appending when present (`works 3`). No emoji: the strict six-token palette
+  allows no uncontrolled color in the room, and a flame or an eye in the room's own
+  ink reads as belonging to it. The label is part of the control, never aria-only: the
+  meaning must survive a touch screen and a screen reader, not just a hover. *(Amended
+  2026-08-30 — the set previously mixed tokened `✓ ⚠` with full-color `🔥 👀`; the P2
+  audit flagged the off-palette color.)*
 - **New identity:** a two-line header control — the `new identity` label over the
   caption `fresh anonymous name`. The effect is stated on the control itself, in the
   visible and accessible tree on every device. (Amended 2026-08-30 — same P2 gap.)

@@ -44,4 +44,13 @@ describe('Reactions', () => {
       'true',
     )
   })
+
+  it('draws every mark as an SVG in currentColor, never an emoji', () => {
+    const { container } = render(
+      <Reactions messageId="m1" state={empty} error={null} pending={false} onToggle={() => {}} />,
+    )
+
+    expect(container.querySelectorAll('button svg[aria-hidden="true"]')).toHaveLength(4)
+    expect(container.innerHTML).not.toMatch(/\p{Extended_Pictographic}/u)
+  })
 })

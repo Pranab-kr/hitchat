@@ -13,10 +13,10 @@ section for the step you're on. Full protocol in `AGENTS.md`.
 
 | | |
 |---|---|
-| **Phase** | **In progress — `/impeccable polish` on the four critique minor observations.** Reaction emoji → drawn SVG marks, `AdminControls` fallback string, silent copy failure, and the 5-min/30s fade-interval doc deviation. |
-| **Current step** | Building on `feat/polish-minor-observations`. See the plan section below. |
-| **Branch** | `feat/polish-minor-observations` (from `main`; `main` is ahead of `origin/main` by 14 commits, held per the owner's instruction). |
-| **Next action** | Merge to `main` after browser verification; record under Done. |
+| **Phase** | **Idle — `/impeccable polish` minor observations done. Merged to `main` (local only, NOT pushed to `origin`).** |
+| **Current step** | Nothing in flight. `feat/polish-minor-observations` merged to `main`; branch deleted. |
+| **Branch** | `main` — **ahead of `origin/main` by 17 commits, not pushed** (owner asked to hold the push). |
+| **Next action** | None pending. When ready to publish: `git push origin main` — but **rotate secrets first** (see below), since the repo is public and both leaked during the build. |
 | **Blocked?** | No. |
 | **Last updated** | 2026-08-30 |
 
@@ -27,34 +27,80 @@ Its optional follow-ups (live click-through of the touch/hover/motion fixes, an
 
 ---
 
-## Polish — the four critique minor observations (in progress)
+## Shipped — polish: the four critique minor observations ✅ (merged to `main`, not pushed)
 
-`/impeccable polish` on the message room. All four items are the critique's Minor
-Observations (`.impeccable/critique/2026-08-30T03-59-41Z__app-c-dept-year-batch-group-page-tsx.md:88-92`).
+`/impeccable polish` on the message room. Closes all four Minor Observations from the
+critique (`.impeccable/critique/2026-08-30T03-59-41Z__app-c-dept-year-batch-group-page-tsx.md:88-92`).
 
-1. **Reaction marks (`reactions.tsx`)** — the set mixes tokened glyphs (`✓ ⚠` in
-   `currentColor`) with full-color emoji (`🔥 👀`), uncontrolled color against the
-   six-token palette. Replace **all four** with drawn SVGs in `currentColor`, one
-   stroked family with the app's other icons (copy/chevron/close, 1.5px stroke). The
-   labels (works/buggy/nice/looking) and the fixed set are unchanged.
-2. **`AdminControls` fallback** — `run()` gains a per-action fallback so even the
-   impossible "no message returned" path reads precise ("Couldn't pin that. Try again."),
-   matching the copy the actions already return.
-3. **Silent copy failure (`copy-button.tsx`)** — on a clipboard rejection the button
-   now shows `couldn't copy` in `rule` and reverts after 1.5s, the same confirm rhythm
-   as `✓ copied`. The button can no longer stand there dead in an insecure context.
-4. **Fade-interval doc deviation** — `design.md` claims a 5-minute recompute; the code
-   ticks on the shared 30s `useNow` that also hides expired messages and retires the
-   self-delete window. Amending design.md to state the real interval and why (a second,
-   slower clock would exist only for an imperceptible difference across 2-hour bands).
+**What shipped (files):**
+- **`components/chat/reactions.tsx`** — the set no longer mixes tokened glyphs with
+  full-color emoji. **All four marks are now drawn SVGs in `currentColor`**, one
+  stroked 1.5px family with the copy/chevron/close icons: check (`works`), warning
+  triangle (`buggy`), flame (`nice`), eye pair (`looking`). Labels, keys, counts, and
+  aria are unchanged. The emoji were uncontrolled color against the six-token palette
+  and the craft floor bans emoji as an icon system.
+- **`components/chat/admin-controls.tsx`** — `run()` takes a per-action fallback, so
+  even the impossible "action returned no message" path reads precise
+  ("Couldn't pin that. Try again.") instead of "That did not work."
+- **`components/chat/copy-button.tsx`** — a refused clipboard copy now shows a drawn
+  `!` alert mark in `rule` plus the word `couldn't copy`, reverting after 1.5s like the
+  success confirm. The button can no longer stand there dead in an insecure context.
+- **`design.md` amended** — (a) the fade constraint now states the real 30-second
+  shared `useNow` tick and why (the old "5-minute interval" sentence was the deviation
+  the critique flagged); (b) the copy button documents the `couldn't copy` state;
+  (c) the reaction bar documents drawn marks, not emoji.
+- **Spec amended** (AGENTS.md: never silently diverge) — the reactions line now reads
+  `works / buggy / fire / eyes` rendered as drawn SVG in `currentColor`.
+- **New tests** `tests/copy-button.test.tsx` (3), `tests/admin-controls.test.tsx` (3),
+  plus an SVG-not-emoji assertion in `tests/reactions.test.tsx`.
 
-**Decisions:**
-- `design.md` and the spec's reactions line are updated deliberately (AGENTS.md: never
-  silently diverge), same dated-amendment precedent as SUDO/fade-floor/record-line.
-- The failure label stays `text-rule` (the app's error color, used by every error span)
-  even though it measures ~3.9:1 in light — the same accepted treatment as the existing
-  `deleteError`/ban-error spans; the word carries the meaning. Measured and recorded.
+**Decisions / deviations, as built (do NOT re-litigate):**
+- **The copy failure is NOT `rule`-colored text.** The repo's own precedent (SUDO badge,
+  PINNED label) is that failing text gets fixed, not shipped: `rule` text on the code
+  card measures **3.94:1** in light (below 4.5). Instead the **word stays `graphite`
+  (5.06:1 light, 5.09:1 dark)** and the **drawn `!` mark is `rule` (3.94:1, above the
+  3.0 non-text floor)** — the SUDO recipe pattern: color as a graphic cue at the 3.0
+  floor, meaning carried by readable text. Measured from rendered pixels in both themes.
+- The flame/eye marks follow standard teardrop/almond constructions; this agent has no
+  image input, so they were verified geometrically (12px, distinct, no emoji) and by
+  browser checks, not eyeballed. If they read wrong at a glance, they're isolated in
+  `reactions.tsx`'s four mark components.
+- The reactions' labels (`nice`/`looking`) are unchanged — the earlier decision (labels
+  carry the meaning, keys are `fire`/`eyes`) stands.
+- `AdminControls`' fallback is exercised by unit test only; driving it from a real
+  browser would need an owner login for a string that every real action already
+  overrides with its own precise message. The 3 tests mock the actions.
+- The fade tick is a **doc-only** fix: a 30s tick is genuinely better (it shares the
+  clock that hides expired messages and retires the 5-minute self-delete window), so
+  the code stayed and design.md was corrected.
 - No new colors, no new fonts, no new motion.
+
+**Verified — a green suite is not enough (AGENTS.md):**
+- Full suite **204/204** (197 baseline + 7 new). `tsc --noEmit` clean, `eslint` clean
+  on every changed file, `bun run build` passes, detector **0 findings** on the changed
+  files.
+- **Guards proven by mutation:** removing the reaction `aria-hidden` svg (or reverting
+  to a text glyph) fails the new SVG-not-emoji assertion; the copy-failure test fails
+  if the catch returns silently; the admin-controls test fails if the fallback reverts
+  to the vague string.
+- **Real browser (Chromium) — 14/14 checks** against a seeded room: all four reaction
+  buttons draw distinct 12px SVG marks with zero `Extended_Pictographic` characters in
+  the rows; word labels still ride the marks; a refused clipboard (stubbed rejection)
+  shows `couldn't copy` with the rule `!` and a readable graphite word at 5.06:1
+  (light) / 5.09:1 (dark), the icon at 3.94:1 / 4.93:1 — then reverts to `copy`; a
+  successful copy still confirms `copied`. Screenshots at
+  `/tmp/opencode/hitchat-browser/polish-{light,dark,mobile}.png` (harness not
+  committed; seed room deleted, DB verified back to the owner's `it` department only).
+- The live `it` room and its real messages were untouched.
+
+**Next agent needs to know:**
+- The reaction marks are the second drawn-SVG family in the app (author marks are the
+  first) — keep them stroked and on-palette; do not reintroduce emoji.
+- `CopyButton` now has three states (`idle`/`copied`/`failed`); the `failed` state's
+  alert mark is a deliberate `text-rule`-on-surface exception, consistent with the
+  SUDO/PINNED recipe, and pinned by the contrast test in the browser harness.
+- Unmerged: `main` is ahead of `origin/main` by 17 commits, all held per the owner's
+  instruction. Rotate both secrets before any push (see Resume here).
 
 ---
 
