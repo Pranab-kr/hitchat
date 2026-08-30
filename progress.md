@@ -13,10 +13,10 @@ section for the step you're on. Full protocol in `AGENTS.md`.
 
 | | |
 |---|---|
-| **Phase** | **Idle — reaction emoji, code overflow, and ban-reroll hardening verified.** |
-| **Current step** | `feat/reactions-code-ban-hardening` is complete and ready to merge into local `main`. |
-| **Branch** | `feat/reactions-code-ban-hardening` — `main` remains **ahead of `origin/main` by 17 commits, not pushed** (owner asked to hold the push). |
-| **Next action** | Run `git checkout main && git merge --no-ff feat/reactions-code-ban-hardening`, then delete the feature branch; do not push until both leaked secrets are rotated. |
+| **Phase** | **Idle — reaction emoji, code overflow, and ban-reroll hardening done. Merged to `main` (local only, NOT pushed).** |
+| **Current step** | Nothing in flight. `feat/reactions-code-ban-hardening` was verified, merged to `main`, and deleted. |
+| **Branch** | `main` — **ahead of `origin/main` by 20 commits, not pushed** (owner asked to hold the push). |
+| **Next action** | None pending. Before publishing, rotate the leaked service-role key and owner secret as described below, then run `git push origin main`. |
 | **Blocked?** | No. |
 | **Last updated** | 2026-08-30 |
 
@@ -106,9 +106,8 @@ critique (`.impeccable/critique/2026-08-30T03-59-41Z__app-c-dept-year-batch-grou
 
 ## Shipped — reaction emoji, code overflow, and ban-reroll hardening ✅
 
-Built on `feat/reactions-code-ban-hardening` in response to the room screenshots.
-The branch has been verified and is ready to merge locally; it does not change the
-live database.
+Built on `feat/reactions-code-ban-hardening` in response to the room screenshots and
+merged to local `main`; it does not change the live database.
 
 **What shipped:**
 - **`components/chat/reactions.tsx`** — reaction controls now show only familiar native
@@ -1646,8 +1645,8 @@ column-level grant. Test that before trusting anything else.
 
 ## In progress
 
-*Nothing. The room-title home link and code-card bottom-collapse work is merged to
-`main` and pushed (`c11069d`, 2026-08-28).*
+*Nothing. The latest reaction, layout, and ban-reroll hardening is merged to local
+`main`; publishing remains held until secret rotation.*
 
 ---
 
