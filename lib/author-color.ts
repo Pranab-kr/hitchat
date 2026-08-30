@@ -24,3 +24,11 @@ export function authorColorVar(stored: string): string {
   const i = INDEX.get(stored.trim().toLowerCase())
   return i ? `var(--author-${i})` : 'var(--ink)'
 }
+
+// The zero-based slot for a stored color (0..7). The glyphs in AuthorMark index into
+// this, so each author gets a shape AND a color from the same stored hex — the shape
+// still identifies them when the color cannot be seen.
+export function authorIndex(stored: string): number {
+  const i = INDEX.get(stored.trim().toLowerCase())
+  return i ? i - 1 : 0
+}

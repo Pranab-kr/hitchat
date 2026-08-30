@@ -10,6 +10,7 @@ import { useAnonToken } from '@/lib/use-anon-token'
 import { withinSelfDeleteWindow } from '@/lib/self-delete'
 import { renderCode } from '@/app/actions/highlight'
 import { deleteOwnMessage } from '@/app/actions/messages'
+import { AuthorMark } from './author-mark'
 import { CodeCard } from './code-card'
 import { Reactions } from './reactions'
 import { AdminControls } from './admin-controls'
@@ -120,6 +121,7 @@ export const MessageRow = memo(function MessageRow({
             <>
               {/* Never the stored hex: author_color is the light column and all eight
                   fail WCAG AA on the dark background. */}
+              <AuthorMark color={replyTo.author_color} className="shrink-0 self-center" />
               <span style={{ color: authorColorVar(replyTo.author_color) }}>
                 {replyTo.author_name}
               </span>
@@ -134,6 +136,10 @@ export const MessageRow = memo(function MessageRow({
       )}
 
       <div className="flex flex-wrap items-baseline gap-2">
+        {/* A shape plus a color tells speakers apart; the shape alone carries identity
+            for a reader who cannot see the color. Same mark in the reply preview and
+            the pinned strip, so an author reads the same everywhere. */}
+        <AuthorMark color={message.author_color} className="shrink-0 self-center" />
         <span
           className="font-mono text-[12px] tracking-[0.02em]"
           style={{ color: authorColorVar(message.author_color) }}

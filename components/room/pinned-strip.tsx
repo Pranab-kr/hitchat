@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { authorColorVar } from '@/lib/author-color'
+import { AuthorMark } from '@/components/chat/author-mark'
 import type { Message } from '@/lib/types'
 
 // marigold appears here and on the SUDO badge only. design.md line 107.
@@ -28,7 +29,7 @@ export function PinnedStrip({
         type="button"
         onClick={() => setOpen((v) => !v)}
         aria-expanded={open}
-        className="flex w-full items-center gap-2 text-left"
+        className="touch-target flex w-full items-center gap-2 text-left"
       >
         <span className="shrink-0 font-mono text-[11px] tracking-[0.08em] text-ink">
           PINNED
@@ -48,9 +49,10 @@ export function PinnedStrip({
               key={m.id}
               type="button"
               onClick={() => onJumpTo?.(m.id)}
-              className="flex w-full items-baseline gap-2 rounded-[4px] px-1 py-0.5 text-left transition-colors hover:bg-wash"
+              className="touch-target flex w-full items-baseline gap-2 rounded-[4px] px-1 py-0.5 text-left transition-colors hover:bg-wash"
             >
               {/* Never the stored hex: it is the light column and fails AA on dark. */}
+              <AuthorMark color={m.author_color} className="shrink-0 self-center" />
               <span
                 className="shrink-0 font-mono text-[12px]"
                 style={{ color: authorColorVar(m.author_color) }}
