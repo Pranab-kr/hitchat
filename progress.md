@@ -13,10 +13,10 @@ section for the step you're on. Full protocol in `AGENTS.md`.
 
 | | |
 |---|---|
-| **Phase** | **Built & verified on `feat/room-frame` — the room frame (260px sidebar + two-row header + lab chips). Committed to the branch; NOT merged.** |
-| **Current step** | Complete and verified in a real browser. Awaiting the owner's go-ahead to merge `feat/room-frame` → `main` (the owner has gated merges since the audit-fixes phase, so this does not self-merge). |
-| **Branch** | `feat/room-frame` (branched from `main`). |
-| **Next action** | Owner decides merge. To merge: `git checkout main && git merge --no-ff feat/room-frame && git branch -d feat/room-frame` (then push if desired). Optional first: a manual click-through in a browser you control (the automated Playwright pass below already covered desktop + mobile). Do NOT merge without that go-ahead. |
+| **Phase** | **Idle — room frame merged to `main` (local only, NOT pushed to `origin`).** |
+| **Current step** | Nothing in flight. The room frame (260px sidebar + two-row header + lab chips) is merged to `main` as merge commit `7b558dd`; `feat/room-frame` has been deleted. |
+| **Branch** | `main` — **ahead of `origin/main` by 3 commits, not pushed** (owner asked to hold the push). |
+| **Next action** | None pending. When ready to publish: `git push origin main` — but **rotate secrets first** (see below), since the repo is public and both leaked during the build. Optional: `/impeccable init` to create `PRODUCT.md`; a human browser click-through of the frame. |
 | **Blocked?** | No. |
 | **Last updated** | 2026-08-30 |
 
@@ -27,13 +27,13 @@ Its optional follow-ups (live click-through of the touch/hover/motion fixes, an
 
 ---
 
-## Shipped & verified on `feat/room-frame` (NOT merged) — the room frame ✅
+## Shipped — the room frame ✅ (merged to `main`, not pushed)
 
-**Status:** built, committed to `feat/room-frame`, verified in a real browser (Chromium,
-desktop + mobile). **Not merged to `main`** — awaiting the owner's go-ahead. Full suite
-**164/164**, `tsc` clean, `eslint` clean, `bun run build` passes, detector **0 findings**.
-The design brief that drove it follows; it matches what shipped, with the as-built
-deviations and the verification results recorded at the end of this section.
+**Status:** built, merged to `main` (`7b558dd`, local only — **not pushed to `origin`**),
+verified in a real browser (Chromium, desktop + mobile). Full suite **164/164**, `tsc`
+clean, `eslint` clean, `bun run build` passes, detector **0 findings**. The design brief
+that drove it follows; it matches what shipped, with the as-built deviations and the
+verification results recorded at the end of this section.
 
 **What shipped (files):**
 - **New `lib/rooms.ts`** — client-safe room-hierarchy types + `ordinal`. (See deviation
