@@ -13,10 +13,10 @@ section for the step you're on. Full protocol in `AGENTS.md`.
 
 | | |
 |---|---|
-| **Phase** | **Idle — `/impeccable polish` minor observations done. Merged to `main` (local only, NOT pushed to `origin`).** |
-| **Current step** | Nothing in flight. `feat/polish-minor-observations` merged to `main`; branch deleted. |
-| **Branch** | `main` — **ahead of `origin/main` by 17 commits, not pushed** (owner asked to hold the push). |
-| **Next action** | None pending. When ready to publish: `git push origin main` — but **rotate secrets first** (see below), since the repo is public and both leaked during the build. |
+| **Phase** | **In progress — reaction controls, code-layout resilience, and ban identity hardening.** |
+| **Current step** | `feat/reactions-code-ban-hardening`: inspect the room message/reaction/composer/identity paths, add regression coverage, implement the three fixes, then verify in a real browser. |
+| **Branch** | `feat/reactions-code-ban-hardening` — branched from local `main`; `main` remains **ahead of `origin/main` by 17 commits, not pushed** (owner asked to hold the push). |
+| **Next action** | Inspect `components/chat/reactions.tsx`, `message-row.tsx`, `code-card.tsx`, `message-list.tsx`, `components/room/identity-reroll.tsx`, `app/actions/moderation.ts`, and `lib/use-anon-token.ts`; map the screenshot failures to existing behavior before editing. |
 | **Blocked?** | No. |
 | **Last updated** | 2026-08-30 |
 
