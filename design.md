@@ -176,7 +176,7 @@ Desktop-first. Two columns.
 │  ▸ B1    │  │1│ #include <stdio.h>           │    │
 │          │  │2│ int main(){                  │    │
 │ ─────    │  └─┴──────────────────────────────┘    │
-│ ◐ theme  │   ✓ 4  ⚠ 1                             │
+│ ◐ theme  │   ✓ works 4  ⚠ buggy 1                  │
 │          ├────────────────────────────────────────┤
 │          │  [ message ]              [ </> code ] │
 └──────────┴────────────────────────────────────────┘
@@ -186,6 +186,11 @@ Desktop-first. Two columns.
   marked by a `pen` dot. Theme toggle pinned to the bottom.
 - **Header** two rows: room title (Bricolage) with presence count on the right; lab
   filter chips below. Pinned strip inserts between them when a pinned message exists.
+- **Record line** the dated top of the sheet: a dismissible hairline strip below the
+  chips — the date in Plex Mono, then "this sheet erases itself 8 hours after each
+  message", then a drawn-SVG dismiss. The 8-hour promise is stated in the room, and
+  only once: dismissal persists per device. The date is the viewing date — framing,
+  not a claim. (Amended 2026-08-30 — in-room onboarding for the P2 mechanics gap.)
 - **Stream** max-width 720px, left-aligned within the column. Not centered — chat that
   centers itself reads as a marketing page.
 - **Composer** fixed to the bottom of the stream column. Text input with a `</> code`
@@ -301,6 +306,14 @@ people use during a lab session, not a landing page.
   marigold-on-marigold label, including the pinned strip. No new color was introduced.
 - **Empty room:** an invitation, not an apology — "Nothing here yet. Paste your lab
   code and someone will thank you." Set in Figtree at Body, `graphite`.
+- **Reaction bar:** every glyph carries its visible word label — `✓ works`, `⚠ buggy`,
+  `🔥 nice`, `👀 looking` — with the count appending when present (`✓ works 3`). The
+  label is part of the control, never aria-only: the meaning must survive a touch
+  screen and a screen reader, not just a hover. (Amended 2026-08-30 — the glyphs were
+  previously explained only in a hover/aria label, which the in-room P2 audit flagged.)
+- **New identity:** a two-line header control — the `new identity` label over the
+  caption `fresh anonymous name`. The effect is stated on the control itself, in the
+  visible and accessible tree on every device. (Amended 2026-08-30 — same P2 gap.)
 
 ---
 

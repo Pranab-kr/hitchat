@@ -4,11 +4,14 @@ import { motion, useReducedMotion } from 'motion/react'
 import { cn } from '@/lib/utils'
 import type { ReactionState } from '@/app/actions/reactions'
 
+// The label is visible, never aria-only: a student who cannot hover (or cannot hear)
+// must still learn what each glyph means. It matches the app's lowercase control voice
+// and the accessible name, so screen readers announce exactly what is on screen.
 const SET = [
-  { key: 'works', glyph: '✓', label: 'Works' },
-  { key: 'buggy', glyph: '⚠', label: 'Buggy' },
-  { key: 'fire', glyph: '🔥', label: 'Nice' },
-  { key: 'eyes', glyph: '👀', label: 'Looking' },
+  { key: 'works', glyph: '✓', label: 'works' },
+  { key: 'buggy', glyph: '⚠', label: 'buggy' },
+  { key: 'fire', glyph: '🔥', label: 'nice' },
+  { key: 'eyes', glyph: '👀', label: 'looking' },
 ] as const
 
 export function Reactions({
@@ -27,7 +30,7 @@ export function Reactions({
   const reduce = useReducedMotion()
 
   return (
-    <div className="mt-1 flex items-center gap-1">
+    <div className="mt-1 flex flex-wrap items-center gap-1">
       {SET.map(({ key, glyph, label }) => {
         const count = state.counts[key] ?? 0
         const active = state.mine.includes(key)
@@ -40,9 +43,10 @@ export function Reactions({
               disabled={pending}
               onClick={() => onToggle(messageId, key)}
               aria-label={label}
-              className="touch-target rounded-[4px] px-1.5 py-0.5 text-[12px] leading-[16px] text-ink transition-opacity hover:bg-wash disabled:opacity-40 [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:focus-visible:opacity-100 [@media(hover:hover)]:group-hover:opacity-100"
+              className="touch-target flex items-center gap-1 rounded-[4px] px-1.5 py-0.5 text-[12px] leading-[16px] text-ink transition-opacity hover:bg-wash disabled:opacity-40 [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:focus-visible:opacity-100 [@media(hover:hover)]:group-hover:opacity-100"
             >
-              {glyph}
+              <span>{glyph}</span>
+              <span>{label}</span>
             </button>
           )
         }
@@ -63,6 +67,7 @@ export function Reactions({
             )}
           >
             <span>{glyph}</span>
+            <span>{label}</span>
             <span>{count}</span>
           </motion.button>
         )

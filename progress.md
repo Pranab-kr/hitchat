@@ -13,9 +13,9 @@ section for the step you're on. Full protocol in `AGENTS.md`.
 
 | | |
 |---|---|
-| **Phase** | **Idle — P1 stream a11y + Sam flags done. Merged to `main` (local only, NOT pushed to `origin`).** |
-| **Current step** | Nothing in flight. `feat/a11y-stream-author-cues` merged to `main`; branch deleted. |
-| **Branch** | `main` — **ahead of `origin/main` by 9 commits, not pushed** (owner asked to hold the push). |
+| **Phase** | **Idle — P2 in-room onboarding done. Merged to `main` (local only, NOT pushed to `origin`).** |
+| **Current step** | Nothing in flight. `feat/in-room-onboard` merged to `main`; branch deleted. |
+| **Branch** | `main` — **ahead of `origin/main` by 12 commits, not pushed** (owner asked to hold the push). |
 | **Next action** | None pending. When ready to publish: `git push origin main` — but **rotate secrets first** (see below), since the repo is public and both leaked during the build. |
 | **Blocked?** | No. |
 | **Last updated** | 2026-08-30 |
@@ -24,6 +24,87 @@ section for the step you're on. Full protocol in `AGENTS.md`.
 `main` and pushed to `origin/main` on 2026-08-30 (`845edce` + merge, recorded under Done).
 Its optional follow-ups (live click-through of the touch/hover/motion fixes, an
 `/impeccable audit` re-run on `main`) are unstarted and **not** blocking this step.
+
+---
+
+## Shipped — in-room mechanics onboarding ✅ (merged to `main`, not pushed)
+
+`/impeccable onboard` on the message room. Clears the critique P2
+(`.impeccable/critique/2026-08-30T03-59-41Z__app-c-dept-year-batch-group-page-tsx.md:71`):
+the 8-hour self-destruct, the reaction glyphs, and "new identity" were each explained
+only on the home page or in a hover `title` — invisible to touch and SR for a
+deep-linked student. Built as the critique prescribed, in the record-sheet world.
+
+**What shipped (files):**
+- **New `components/room/record-line.tsx`** — the dismissible record-sheet line. Renders
+  `30 Aug 2026 · this sheet erases itself 8 hours after each message` in Plex Mono at
+  `graphite`, hairline-bottomed like the chips row, with a drawn-SVG dismiss. Mounted in
+  `MessageList` after `LabFilter` (the dated top of the sheet body). Dismissal persists
+  per device via `localStorage` (`hitchat:record-line-dismissed`, `useSyncExternalStore`
+  mirroring `use-anon-token`/code-draft), so it never re-teaches room after room.
+- **`components/chat/reactions.tsx`** — every reaction button now carries its **visible
+  word label** (`✓ works`, `⚠ buggy`, `🔥 nice`, `👀 looking`); the count appends when
+  present (`✓ works 3`). The label replaced the aria-only meaning; `aria-label` matches
+  the visible name; the bar gained `flex-wrap` for narrow screens.
+- **`components/room/identity-reroll.tsx`** — the control is now two stacked mono lines:
+  `new identity` over the caption `fresh anonymous name`. The effect lives in the
+  visible and accessible tree on every device; the fuller "on this device" detail stays
+  in `title` for hover devices.
+- **New tests** `tests/record-line.test.tsx` (4) and `tests/reactions.test.tsx` (3).
+- **`design.md` amended** — record line + reaction-bar labels + the two-line reroll join
+  the committed world (dated 2026-08-30, same precedent as the SUDO/fade-floor
+  amendments). The header sketch's `✓ 4 ⚠ 1` now reads `✓ works 4 ⚠ buggy 1`.
+
+**Decisions / deviations, as built (do NOT re-litigate):**
+- **The record line sits AFTER the chips row** — the chips are header row 2 per
+  design.md, so the pinned-strip-between-rows invariant is untouched; the line is the
+  top of the sheet body, directly above the stream.
+- **Dismissal is per device, not per room** — onboard.md's "don't show the same
+  onboarding twice" beats re-teaching every room. The date is the *viewing* date,
+  completing the "dated at the top" conceit; it is framing, not a claim.
+- **Reaction labels are permanent, not a one-time legend** — "visible labels for the
+  glyphs" reads as making the meaning part of the control. The labels are the existing
+  semantic ones (`nice`/`looking`), not the spec's glyph names (`fire`/`eyes`).
+- **The reaction glyphs themselves are untouched** — the emoji mix is a separate
+  critique *minor observation*, not this P2; only labels were added.
+- **The reroll caption drops "on this device"** — needed to fit the header on mobile
+  (measured 304px within 390px); `title` still carries the full sentence.
+- **No new colors, no new fonts, no new motion** — the dismiss is a plain hide, so
+  design.md's four-motion table is unchanged. `text-[11px]` has a prior precedent
+  (SUDO badge, drawer label).
+- The dismiss button is `size-6` (24px) with `touch-target` — 44px on coarse pointers.
+  The strip measures 33px desktop / 53px mobile, matching the chips row's weight.
+
+**Verified — a green suite is not enough (AGENTS.md):**
+- Full suite **197/197** (190 baseline + 4 record-line + 3 reactions). `tsc --noEmit`
+  clean, `eslint` clean on every changed file, `bun run build` passes.
+- **Guards proven by mutation** (each reverted after failing exactly its tests):
+  deleting the `dismissed` guard fails the 2 record-line persistence tests; deleting the
+  label `<span>` fails exactly the reaction-label test.
+- **Real browser (Chromium) — 19/19 checks** against a seeded `onb-*` room: the record
+  line renders with a date, note, and dismiss; it sits below the lab chips and above the
+  stream; every reaction glyph shows its word label, counts ride the label (`works ×2`,
+  `nice 1`), and labels reach full opacity on hover; the reroll shows "new identity"
+  over "fresh anonymous name"; the record-line note measures **5.33:1** (graphite on
+  paper); dismissing removes the line, writes `hitchat:record-line-dismissed`, and a
+  reload keeps it dismissed while a second browser context (fresh device) sees it
+  again; on a 390px touch device the line wraps with no horizontal scroll, the dismiss
+  clears 44px, and the reaction labels are visible at rest (no hover needed).
+- Screenshots at `/tmp/opencode/hitchat-browser/onboard-{light,dark,mobile}.png`
+  (harness not committed; the `onb-*` department and all probe rows deleted after).
+- The live `it` room was untouched; its one real message ("hii", expires 2026-08-30T14:05Z)
+  is still there.
+
+**Next agent needs to know:**
+- `RecordLine` uses the `useSyncExternalStore` raw-string snapshot pattern — a returning
+  visitor who already dismissed it sees the line for one frame before hydration removes
+  it. That is the accepted cost of a server-rendered note; do not "fix" it by gating on
+  `useMounted` (that would hide it from no-JS entirely).
+- The reaction accessible names changed case (`Works` → `works`) to match the now-visible
+  text — WCAG 2.5.3. Tests pin the lowercase labels; don't re-capitalize.
+- Unmerged: `main` is ahead of `origin/main` by 12 commits (this pass 2 + prior handoff
+  docs 1 + room frame 3 + a11y 3 + stream-control 3), all held per the owner's
+  instruction. Rotate both secrets before any push (see Resume here).
 
 ---
 
