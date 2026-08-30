@@ -13,10 +13,10 @@ section for the step you're on. Full protocol in `AGENTS.md`.
 
 | | |
 |---|---|
-| **Phase** | **Idle — P1 stream a11y + Sam flags done. Merged to `main` (local only, NOT pushed to `origin`).** |
-| **Current step** | Nothing in flight. `feat/a11y-stream-author-cues` merged to `main`; branch deleted. |
-| **Branch** | `main` — **ahead of `origin/main` by 9 commits, not pushed** (owner asked to hold the push). |
-| **Next action** | None pending. When ready to publish: `git push origin main` — but **rotate secrets first** (see below), since the repo is public and both leaked during the build. |
+| **Phase** | **In progress — P2 in-room onboarding (`/impeccable onboard`).** Dismissible record-sheet line (8-hour self-destruct) + visible labels for the reaction glyphs and "new identity". Clears the critique P2 at `.impeccable/critique/2026-08-30T03-59-41Z__app-c-dept-year-batch-group-page-tsx.md:71`. |
+| **Current step** | Building on `feat/in-room-onboard`. RecordLine component, reaction labels, reroll caption, then verify in a real browser. |
+| **Branch** | `feat/in-room-onboard` (from `main`; `main` is ahead of `origin/main` by 10 commits, held per the owner's instruction). |
+| **Next action** | See the plan under "In-room mechanics onboarding — P2" below; merge to `main` and record verification there. |
 | **Blocked?** | No. |
 | **Last updated** | 2026-08-30 |
 
@@ -24,6 +24,49 @@ section for the step you're on. Full protocol in `AGENTS.md`.
 `main` and pushed to `origin/main` on 2026-08-30 (`845edce` + merge, recorded under Done).
 Its optional follow-ups (live click-through of the touch/hover/motion fixes, an
 `/impeccable audit` re-run on `main`) are unstarted and **not** blocking this step.
+
+---
+
+## In-room mechanics onboarding — P2 (in progress)
+
+Clears the critique P2: the 8-hour self-destruct, the reaction glyphs, and "new identity"
+are each explained only on the home page or in a hover `title` — invisible to touch and
+SR for a deep-linked student. The fix is the critique's own prescription, implemented in
+the record-sheet world:
+
+1. **`components/room/record-line.tsx` (new)** — a dismissible record-sheet line at the
+   top of the stream (mounted in `MessageList` after `LabFilter`, i.e. the dated top of
+   the sheet body). Reads `30 Aug 2026 · this sheet erases itself 8 hours after each
+   message` in Plex Mono at `graphite`, hairline-bottomed like the chips row, with a
+   drawn-SVG dismiss control. Dismissal persists per device via `localStorage`
+   (`hitchat:record-line-dismissed`, `useSyncExternalStore` mirroring
+   `use-anon-token`/code-draft), so it never re-shows after a dismissal.
+2. **`components/chat/reactions.tsx`** — every reaction button gains a **visible word
+   label** (`✓ works`, `⚠ buggy`, `🔥 nice`, `👀 looking`); the count still appends
+   (`✓ works 3`). The label replaces the aria-only meaning; `aria-label` matches the
+   visible name. No new colors/fonts.
+3. **`components/room/identity-reroll.tsx`** — the control becomes two stacked mono
+   lines: `new identity` (the interactive label) over `fresh anonymous name` (the
+   caption that was previously only in `title`). The meaning is now in the visible and
+   accessible tree on every device.
+4. **`design.md` amended** — record-line recipe + the labeled reaction bar join the
+   committed world (same precedent as the SUDO/fade-floor amendments).
+
+**Decisions (do not re-litigate):**
+- The record line sits **after** the chips row (the chips are header row 2 per
+  design.md; the line is the top of the sheet body), so the pinned-strip-between-rows
+  invariant in design.md is untouched.
+- Dismissal is **per device, not per room** — onboard.md's "don't show the same
+  onboarding twice" beats re-teaching every room. The date is the *viewing* date,
+  completing the "dated at the top" conceit; it is a framing device, not a claim.
+- The reaction glyphs themselves are untouched (the emoji mix is a separate critique
+  *minor observation*, not this P2); only labels are added.
+- No new colors, no new fonts, no motion beyond what already exists. The dismiss is a
+  plain hide (no animation), so the four-motion table in design.md is unchanged.
+
+**Sequence:** record-line → reactions → reroll → mount → tests → verify (real browser:
+show on first visit, dismiss persists across reload, reaction labels render, reroll
+caption renders) → record deviations → merge to `main`.
 
 ---
 
