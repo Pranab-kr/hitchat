@@ -13,10 +13,10 @@ section for the step you're on. Full protocol in `AGENTS.md`.
 
 | | |
 |---|---|
-| **Phase** | **Idle — room frame merged to `main` (local only, NOT pushed to `origin`).** |
-| **Current step** | Nothing in flight. The room frame (260px sidebar + two-row header + lab chips) is merged to `main` as merge commit `7b558dd`; `feat/room-frame` has been deleted. |
-| **Branch** | `main` — **ahead of `origin/main` by 3 commits, not pushed** (owner asked to hold the push). |
-| **Next action** | None pending. When ready to publish: `git push origin main` — but **rotate secrets first** (see below), since the repo is public and both leaked during the build. Optional: `/impeccable init` to create `PRODUCT.md`; a human browser click-through of the frame. |
+| **Phase** | **In progress — stream control hardening (`feat/harden-stream-control`).** |
+| **Current step** | `/impeccable harden` on the message room: (1) gate auto-scroll on near-bottom + a "N new ↓" pill; (2) expose the own-message self-delete that `deleteOwnMessage` already provides; (3) surface banned/rate-limited state before Send and consume the `retryAfter` value; (4) persist the code-composer draft across app-switch. |
+| **Branch** | `feat/harden-stream-control` — not yet committed. `main` is ahead of `origin/main` by 4 commits, not pushed (owner asked to hold the push). |
+| **Next action** | Build the four items in `components/chat/message-list.tsx`, `message-row.tsx`, `composer.tsx`, `code-composer.tsx`, `lib/guards.ts` + a new `app/actions/me.ts`, then verify (suite, tsc, eslint, build, break-the-guard) before merging to `main`. |
 | **Blocked?** | No. |
 | **Last updated** | 2026-08-30 |
 
