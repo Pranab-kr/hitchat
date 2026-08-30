@@ -197,63 +197,65 @@ export function MessageList({
           onScroll={handleScroll}
           role="log"
           aria-live="polite"
-          className="h-full min-w-0 overflow-y-auto"
+          className="h-full min-w-0 w-full overflow-y-auto"
         >
-          {!connected && (
-            <div className="sticky top-0 bg-wash px-4 py-1 font-mono text-[12px] text-graphite" role="status">
-              Reconnecting…
-            </div>
-          )}
-
-          {visible.length === 0 ? (
-            activeLab ? (
-              <div className="px-4 py-8 text-[15px] leading-6 text-graphite">
-                <p>No {activeLab} posts in the last 8 hours.</p>
-                <button
-                  type="button"
-                  onClick={() => setLabFilter(null)}
-                  className="mt-2 rounded-input font-mono text-[12px] text-pen transition-colors hover:underline"
-                >
-                  Show all messages
-                </button>
+          <div className="w-full max-w-[720px]">
+            {!connected && (
+              <div className="sticky top-0 bg-wash px-4 py-1 font-mono text-[12px] text-graphite" role="status">
+                Reconnecting…
               </div>
-            ) : (
-              <p className="px-4 py-8 text-[15px] text-graphite">
-                Nothing here yet. Paste your lab code and someone will thank you.
-              </p>
-            )
-          ) : (
-            visible.map((message) => (
-              // UI visibility is only a convenience. Server Actions enforce this same
-              // owner-message boundary independently for every request.
-              <MessageRow
-                key={message.id}
-                message={message}
-                now={now}
-                codeHtml={initialCodeHtml[message.id] ?? null}
-                replyTo={
-                  message.reply_to_id ? (byId.get(message.reply_to_id) ?? null) : null
-                }
-                reactions={reactionsFor(message.id)}
-                reactionError={errorFor(message.id)}
-                reactionPending={isPendingFor(message.id)}
-                onToggleReaction={toggle}
-                onReply={locked && !isAdmin ? undefined : setReplyTo}
-                onJumpTo={jumpTo}
-                isAdmin={isAdmin}
-                isOwn={isOwn(message.id)}
-                canModerate={
-                  adminRole === 'owner' ||
-                  !message.admin_id ||
-                  !ownerAdminIds.includes(message.admin_id)
-                }
-                onBan={setBanTarget}
-                highlighted={jumpedTo === message.id}
-              />
-            ))
-          )}
+            )}
 
-          <div ref={bottomRef} />
+            {visible.length === 0 ? (
+              activeLab ? (
+                <div className="px-4 py-8 text-[15px] leading-6 text-graphite">
+                  <p>No {activeLab} posts in the last 8 hours.</p>
+                  <button
+                    type="button"
+                    onClick={() => setLabFilter(null)}
+                    className="mt-2 rounded-input font-mono text-[12px] text-pen transition-colors hover:underline"
+                  >
+                    Show all messages
+                  </button>
+                </div>
+              ) : (
+                <p className="px-4 py-8 text-[15px] text-graphite">
+                  Nothing here yet. Paste your lab code and someone will thank you.
+                </p>
+              )
+            ) : (
+              visible.map((message) => (
+                // UI visibility is only a convenience. Server Actions enforce this same
+                // owner-message boundary independently for every request.
+                <MessageRow
+                  key={message.id}
+                  message={message}
+                  now={now}
+                  codeHtml={initialCodeHtml[message.id] ?? null}
+                  replyTo={
+                    message.reply_to_id ? (byId.get(message.reply_to_id) ?? null) : null
+                  }
+                  reactions={reactionsFor(message.id)}
+                  reactionError={errorFor(message.id)}
+                  reactionPending={isPendingFor(message.id)}
+                  onToggleReaction={toggle}
+                  onReply={locked && !isAdmin ? undefined : setReplyTo}
+                  onJumpTo={jumpTo}
+                  isAdmin={isAdmin}
+                  isOwn={isOwn(message.id)}
+                  canModerate={
+                    adminRole === 'owner' ||
+                    !message.admin_id ||
+                    !ownerAdminIds.includes(message.admin_id)
+                  }
+                  onBan={setBanTarget}
+                  highlighted={jumpedTo === message.id}
+                />
+              ))
+            )}
+
+            <div ref={bottomRef} />
+          </div>
         </div>
 
         {newCount > 0 && (
