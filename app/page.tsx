@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
-import { getServiceClient } from '@/lib/supabase/admin'
+import { getRoomTree } from '@/lib/room-tree'
+import { ordinal } from '@/lib/rooms'
 import { ThemeToggle } from '@/components/theme-toggle'
 import { RoomLink } from '@/components/room/room-link'
 
@@ -12,30 +13,10 @@ export const metadata: Metadata = {
   description: 'Anonymous lab chat. Everything vanishes in 8 hours.',
 }
 
-const ORDINALS = ['', '1st', '2nd', '3rd', '4th', '5th']
-const ordinal = (n: number) => ORDINALS[n] ?? `${n}th`
-
-type GroupRow = { label: string }
-type BatchRow = { number: number; groups: GroupRow[] }
-type YearRow = { number: number; batches: BatchRow[] }
-type DeptRow = { id: string; name: string; slug: string; years: YearRow[] }
-
 export default async function HomePage() {
-  const db = getServiceClient()
-  const { data } = await db
-    .from('departments')
-    .select('id, name, slug, years(number, batches(number, groups(label)))')
-    .order('sort_order')
-
-  // PostgREST types nested selects loosely; the shape is asserted once here rather than
-  // with an `any` cast at each use site.
-  const departments = (data ?? []) as unknown as DeptRow[]
-
-  // A department with no rooms under it yet is noise on a picker — the owner sees it on
-  // /sudo/structure, where it can be acted on.
-  const populated = departments.filter((d) =>
-    (d.years ?? []).some((y) => (y.batches ?? []).some((b) => (b.groups ?? []).length > 0)),
-  )
+  // Shared with the in-room sidebar (lib/room-tree.ts): already pruned to populated
+  // rooms and fully sorted, so this page just renders it.
+  const departments = await getRoomTree()
 
   return (
     <main className="mx-auto max-w-2xl px-6 py-12">
@@ -51,45 +32,38 @@ export default async function HomePage() {
         <ThemeToggle />
       </div>
 
-      {populated.length === 0 ? (
+      {departments.length === 0 ? (
         <p className="text-[15px] leading-6 text-graphite">
           No rooms yet. An admin needs to create one first.
         </p>
       ) : (
         <div className="space-y-8">
-          {populated.map((dept) => (
+          {departments.map((dept) => (
             <section key={dept.id}>
               <h2 className="mb-3 text-[20px] leading-7 font-semibold text-ink">
                 {dept.name}
               </h2>
 
-              {[...(dept.years ?? [])]
-                .sort((a, b) => a.number - b.number)
-                .filter((y) => (y.batches ?? []).some((b) => (b.groups ?? []).length > 0))
-                .map((year) => (
-                  <div key={year.number} className="mb-4 last:mb-0">
-                    <h3 className="mb-2 font-mono text-[12px] leading-4 tracking-[0.08em] text-graphite uppercase">
-                      {ordinal(year.number)} year
-                    </h3>
+              {dept.years.map((year) => (
+                <div key={year.number} className="mb-4 last:mb-0">
+                  <h3 className="mb-2 font-mono text-[12px] leading-4 tracking-[0.08em] text-graphite uppercase">
+                    {ordinal(year.number)} year
+                  </h3>
 
-                    <div className="flex flex-wrap gap-2">
-                      {[...(year.batches ?? [])]
-                        .sort((a, b) => a.number - b.number)
-                        .flatMap((batch) =>
-                          [...(batch.groups ?? [])]
-                            .sort((a, b) => a.label.localeCompare(b.label))
-                            .map((group) => (
-                              <RoomLink
-                                key={`${batch.number}-${group.label}`}
-                                href={`/c/${dept.slug}/${year.number}/${batch.number}/${group.label.toLowerCase()}`}
-                              >
-                                Batch {batch.number} · {group.label}
-                              </RoomLink>
-                            )),
-                        )}
-                    </div>
+                  <div className="flex flex-wrap gap-2">
+                    {year.batches.flatMap((batch) =>
+                      batch.groups.map((group) => (
+                        <RoomLink
+                          key={`${batch.number}-${group.label}`}
+                          href={`/c/${dept.slug}/${year.number}/${batch.number}/${group.label.toLowerCase()}`}
+                        >
+                          Batch {batch.number} · {group.label}
+                        </RoomLink>
+                      )),
+                    )}
                   </div>
-                ))}
+                </div>
+              ))}
             </section>
           ))}
         </div>

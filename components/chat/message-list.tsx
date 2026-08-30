@@ -8,7 +8,9 @@ import { useNow } from '@/lib/use-now'
 import { MessageRow } from './message-row'
 import { Composer } from './composer'
 import { PinnedStrip } from '@/components/room/pinned-strip'
+import { LabFilter } from '@/components/room/lab-filter'
 import { banAuthor } from '@/app/actions/moderation'
+import { distinctLabTags, matchesLab } from '@/lib/labs'
 import type { Message } from '@/lib/types'
 
 export function MessageList({
@@ -16,7 +18,6 @@ export function MessageList({
   locked,
   initial,
   initialCodeHtml,
-  labFilter,
   isAdmin = false,
   adminRole = null,
   ownerAdminIds = [],
@@ -25,7 +26,6 @@ export function MessageList({
   locked: boolean
   initial: Message[]
   initialCodeHtml: Record<string, string>
-  labFilter: string | null
   isAdmin?: boolean
   adminRole?: 'owner' | 'co_admin' | null
   ownerAdminIds?: string[]
@@ -34,6 +34,7 @@ export function MessageList({
   const { reactionsFor, errorFor, isPendingFor, toggle } = useReactions(messages)
   const bottomRef = useRef<HTMLDivElement>(null)
   const [replyTo, setReplyTo] = useState<Message | null>(null)
+  const [labFilter, setLabFilter] = useState<string | null>(null)
   const [jumpedTo, setJumpedTo] = useState<string | null>(null)
   const [banTarget, setBanTarget] = useState<string | null>(null)
   const [banError, setBanError] = useState<string | null>(null)
@@ -70,18 +71,24 @@ export function MessageList({
   }, [jumpedTo])
 
   const now = useNow()
-  const visible = messages
-    // Expiry is hidden client-side; the purge job removes the row later.
-    .filter((m) => new Date(m.expires_at).getTime() > now)
-    .filter((m) => !labFilter || m.lab_tag === labFilter)
+  // Expiry is hidden client-side; the purge job removes the row later.
+  const notExpired = messages.filter((m) => new Date(m.expires_at).getTime() > now)
 
-  // A reply target that expired or was deleted leaves the preview reading
-  // "original message expired" rather than silently dropping the quote.
-  const byId = new Map(visible.map((m) => [m.id, m]))
+  // Chips are derived live from the tags present. If the active tag's last message ages
+  // out, fall back to All rather than stranding a phantom selection over an empty view.
+  const labTags = distinctLabTags(notExpired)
+  const activeLab = labFilter && labTags.includes(labFilter) ? labFilter : null
+
+  const visible = notExpired.filter((m) => matchesLab(m, activeLab))
+
+  // Reply previews and the pinned strip resolve against the whole room, never the
+  // filtered view: a reply to a text message must still preview under a lab filter, and
+  // an admin's pin must stay visible while a student filters the stream.
+  const byId = new Map(notExpired.map((m) => [m.id, m]))
 
   // Derived from the live stream, never from a server prop: pin and unpin arrive as an
   // UPDATE over Realtime, so a strip seeded from props could never change.
-  const pinned = visible.filter((m) => m.is_pinned && !m.deleted_at)
+  const pinned = notExpired.filter((m) => m.is_pinned && !m.deleted_at)
 
   function confirmBan() {
     if (!banTarget) return
@@ -99,6 +106,8 @@ export function MessageList({
   return (
     <>
       <PinnedStrip pinned={pinned} onJumpTo={jumpTo} />
+
+      <LabFilter tags={labTags} active={activeLab} onChange={setLabFilter} />
 
       {banTarget && (
         <div
@@ -143,9 +152,22 @@ export function MessageList({
         )}
 
         {visible.length === 0 ? (
-          <p className="px-4 py-8 text-[15px] text-graphite">
-            Nothing here yet. Paste your lab code and someone will thank you.
-          </p>
+          activeLab ? (
+            <div className="px-4 py-8 text-[15px] leading-6 text-graphite">
+              <p>No {activeLab} posts in the last 8 hours.</p>
+              <button
+                type="button"
+                onClick={() => setLabFilter(null)}
+                className="mt-2 rounded-input font-mono text-[12px] text-pen transition-colors hover:underline"
+              >
+                Show all messages
+              </button>
+            </div>
+          ) : (
+            <p className="px-4 py-8 text-[15px] text-graphite">
+              Nothing here yet. Paste your lab code and someone will thank you.
+            </p>
+          )
         ) : (
           visible.map((message) => (
             // UI visibility is only a convenience. Server Actions enforce this same
