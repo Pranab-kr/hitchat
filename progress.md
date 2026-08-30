@@ -13,10 +13,10 @@ section for the step you're on. Full protocol in `AGENTS.md`.
 
 | | |
 |---|---|
-| **Phase** | **In progress — P1 stream a11y + the Sam flags: live-region stream, non-color author cue, pinned-strip touch floors.** |
-| **Current step** | `feat/a11y-stream-author-cues` — see the "In progress" section below. |
-| **Branch** | `feat/a11y-stream-author-cues` (from `main`; `main` is **ahead of `origin/main` by 7 commits, not pushed**). |
-| **Next action** | Add `role="log"` + `aria-live="polite"` to the stream container in `components/chat/message-list.tsx` (the `overflow-y-auto` scroll div). |
+| **Phase** | **Idle — P1 stream a11y + Sam flags done. Merged to `main` (local only, NOT pushed to `origin`).** |
+| **Current step** | Nothing in flight. `feat/a11y-stream-author-cues` merged to `main`; branch deleted. |
+| **Branch** | `main` — **ahead of `origin/main` by 9 commits, not pushed** (owner asked to hold the push). |
+| **Next action** | None pending. When ready to publish: `git push origin main` — but **rotate secrets first** (see below), since the repo is public and both leaked during the build. |
 | **Blocked?** | No. |
 | **Last updated** | 2026-08-30 |
 
@@ -232,34 +232,70 @@ unrecoverable by a fresh agent.
 
 ---
 
-## In progress — 2026-08-30 · P1 stream a11y + the Sam flags ✅
+## Done
 
-`/impeccable audit — accessibility` on the message room. Three findings, all
-actionable, all P1/flagged: **fix before merge.** Branch `feat/a11y-stream-author-cues`.
+### 2026-08-30 — P1 stream a11y + the Sam flags ✅ (merged to `main`, not pushed)
 
-**Findings:**
-1. **P1 — the stream is not a live region.** A screen reader gets no announcement when
-   new messages arrive. Fix: `role="log"` + `aria-live="polite"` on the stream scroll
-   container in `components/chat/message-list.tsx` (the `overflow-y-auto` div).
-2. **P1/Sam — author identity is color-only.** The handle, the reply-preview author,
-   and the pinned-strip author are all distinguished by `author_color` alone — useless
-   to a color-blind reader. Fix: a deterministic **non-color mark** beside the color.
-   Since `messages.author_color` is the stored light hex, and `lib/author-color.ts`
-   already maps hex → index 1–8, derive one of 8 SVG glyphs from that index (the color
-   slice is hash-derived, so the glyph is stable per author). Rendered as `currentColor`
-   beside the name in the row, the reply preview, and the pinned strip.
-3. **P1/Sam — pinned-strip jump rows have no touch floor.** Each jump row is
-   `px-1 py-0.5` (~24px tall) — under the 44px coarse-pointer recommendation, and the
-   PINNED toggle is only ~36px. Fix: apply the existing `.touch-target` class (the
-   `@media (pointer: coarse)` floor in `app/globals.css`) to the jump rows and the
-   toggle, closing the gap the 2026-08-30 touch sweep left.
+`/impeccable audit — accessibility` on the message room. Three P1 findings, all fixed
+on `feat/a11y-stream-author-cues` and merged to `main`. Clears the P1 stream a11y and
+the Sam flags.
 
-**The "Sam flags"** are the named P1 items 2–3 (plus the stream live region), raised
-against the 2026-08-30 merge; fixing all three clears them and the P1 stream a11y.
+**What shipped:**
+- **The stream is a live region.** `components/chat/message-list.tsx` — the scroll
+  container is now `role="log"` + `aria-live="polite"`, so a screen reader announces
+  newly arrived messages instead of the stream being silent. (role="log" already
+  implies polite; the explicit attribute keeps the intent legible, per the request.)
+- **Author identity is color **and** shape.** New `components/chat/author-mark.tsx` —
+  one drawn SVG glyph per author slot (circle / square / triangle / diamond / plus /
+  hexagon / ring / spark), rendered in the slot's `currentColor`. `lib/author-color.ts`
+  gained `authorIndex()` (stored light hex → slot 0–7), so the glyph is derived from
+  the same hash-derived value as the color and is stable per author. The mark renders
+  beside the handle, in the reply preview, and on the pinned-strip jump rows — the
+  same author reads the same everywhere. Color-blind readers now have a non-color cue;
+  `aria-hidden` on the glyph keeps the name as the only announced content.
+- **Touch floors on the pinned strip.** `components/room/pinned-strip.tsx` — the jump
+  rows and the PINNED toggle now carry `.touch-target` (the existing 44×44 coarse-
+  pointer floor in `app/globals.css`), closing the gap the 2026-08-30 touch sweep left.
+
+**Deviations / decisions, as built:**
+- **The glyph is keyed off the color index, not a new hash slice.** The client only
+  ever receives `messages.author_color` (never the raw token/hash), so the stored hex
+  is the only deterministic identity available. Indexing the 8 glyphs by the same index
+  the color uses guarantees shape↔color always travel together (a shape never appears
+  in a different color), which keeps the stream readable rather than a lottery.
+- **The PINNED toggle got the touch floor too** — it is a thumb-sized control by the
+  same argument as the jump rows; leaving it out would re-open the same flag.
+- **design.md amended** ("identity is color **and** shape", 2026-08-30): the palette's
+  "one job" section now records that each slot carries a glyph — same precedent as the
+  SUDO badge and fade-floor amendments. No new color or font anywhere.
+- The reply-preview `border-l-2` finding the detector still reports is **pre-existing**
+  (the reply margin-rule, documented); nothing new was added.
+
+**Verified — a green suite is not enough (AGENTS.md):**
+- Full suite **190/190** (179 baseline + 11 new: `author-color` 3, `author-mark` 3,
+  `pinned-strip` 4, `message-list` 1). `tsc --noEmit` clean, `eslint` clean on every
+  changed file, `bun run build` passes, detector reports **no new findings**.
+- **Real browser (Chromium) — 13/13 checks, all passing** against a seeded `a11y-*`
+  room: the stream container carries `role="log"` + `aria-live="polite"`; every message
+  row renders an author glyph, different authors get different glyphs, the same author
+  gets the identical glyph on every row (and in the reply preview); pinned jump rows +
+  the toggle carry `touch-target` and measure **44×44px computed on a coarse-pointer
+  device**; a jump row receives keyboard focus. A geometry probe confirmed each glyph
+  renders at 10×10 with a distinct bounding box in the correct theme color and no
+  horizontal stream overflow.
+- Harness lives in `/tmp/opencode/hitchat-browser` (not committed); the three seeded
+  `a11y-*` departments and all probe rows were deleted afterwards and the DB verified
+  back to the owner's single hand-created department. Dev server shut down.
+
+**Next agent needs to know:**
+- `authorIndex` and `authorColorVar` share the same hex→slot map; keep them in step if
+  the palette ever grows or shrinks (the `author-color` test pins both).
+- The author glyphs are the one place eight distinct *shapes* live; do not widen them
+  into other UI (the color palette's exclusivity rule applies to the shapes too).
 
 ---
 
-## Done
+
 
 Newest first. Each entry: what shipped, what deviated, what the next agent needs.
 

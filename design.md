@@ -58,6 +58,16 @@ are not a general-purpose accent set, and reaching for one to decorate a button 
 border defeats the point — the moment these appear outside a handle, a colored name
 stops meaning "a specific person".
 
+*Amended 2026-08-30 — identity is color **and** shape.* Color alone stops working for a
+color-blind reader, so each slot also carries a drawn SVG glyph (circle, square,
+triangle, diamond, plus, hexagon, ring, spark) rendered in the slot's color. The glyph
+is derived from the same stored hex as the color, so one author reads the same
+everywhere — beside the handle, in the reply preview, and in the pinned strip. The two
+cues always travel together; a shape never appears with a different color. `lib/
+author-color.ts` resolves the hex to its slot (`authorIndex`) and the glyphs live in
+`components/chat/author-mark.tsx`. Same precedent as the SUDO badge and fade-floor
+amendments: a real accessibility gap fixed without a new color or font.
+
 | # | Name | Light | Dark |
 |---|---|---|---|
 | 1 | rust | `#873C1D` | `#E49F81` |
