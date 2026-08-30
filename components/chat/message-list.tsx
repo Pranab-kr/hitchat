@@ -11,6 +11,7 @@ import { MessageRow } from './message-row'
 import { Composer } from './composer'
 import { PinnedStrip } from '@/components/room/pinned-strip'
 import { LabFilter } from '@/components/room/lab-filter'
+import { RecordLine } from '@/components/room/record-line'
 import { banAuthor } from '@/app/actions/moderation'
 import { distinctLabTags, matchesLab } from '@/lib/labs'
 import type { Message } from '@/lib/types'
@@ -148,6 +149,9 @@ export function MessageList({
       <PinnedStrip pinned={pinned} onJumpTo={jumpTo} />
 
       <LabFilter tags={labTags} active={activeLab} onChange={setLabFilter} />
+
+      {/* The dated top of the record sheet, right where the sheet's content begins. */}
+      <RecordLine />
 
       {banTarget && (
         <div
