@@ -13,16 +13,121 @@ section for the step you're on. Full protocol in `AGENTS.md`.
 
 | | |
 |---|---|
-| **Phase** | **Idle — chat message-flow audit fixes merged and pushed to `origin/main`.** |
-| **Current step** | Nothing in flight. |
-| **Branch** | `main`. |
-| **Next action** | None pending. Optional: live browser click-through of the message-flow fixes (touch-target sizing, hover-reveal on a coarse pointer, theme cross-fade) and a `/impeccable audit` re-run on `main` to lock the 19/20. |
+| **Phase** | **In progress — `feat/room-frame`: the room frame (260px sidebar + two-row header + lab chips).** |
+| **Current step** | Building the room frame per the confirmed `shape` brief below. **Nothing is built yet** — this entry was written before the build (AGENTS.md step 3). No app code has changed on this branch; only this file. |
+| **Branch** | `feat/room-frame` (branched from `main`; `main` was up to date with `origin/main`, so the loop's `git pull` was a proven no-op and was skipped). |
+| **Next action** | Plan step 1: create `lib/room-tree.ts` exporting `getRoomTree()` — the typed, filtered-to-populated, sorted `departments → years → batches → groups` fetch currently inlined in `app/page.tsx:24-38` (plus the `ORDINALS`/`ordinal` helper at `app/page.tsx:15-16`). Then refactor `app/page.tsx` to consume it with **no visible change** to the picker, and verify the picker renders identically before moving on. |
 | **Blocked?** | No. |
-| **Last updated** | 2026-08-28 |
+| **Last updated** | 2026-08-30 |
 
-**Note:** the previous "Resume here" claimed `feat/code-limit-and-perf` was in progress.
-That work is complete and merged (`d91511b`, recorded under Done 2026-08-14). This block
-was stale; reconciled against git on 2026-08-28.
+**Prior phase (done, merged):** chat message-flow audit fixes scored 19/20, merged to
+`main` and pushed to `origin/main` on 2026-08-30 (`845edce` + merge, recorded under Done).
+Its optional follow-ups (live click-through of the touch/hover/motion fixes, an
+`/impeccable audit` re-run on `main`) are unstarted and **not** blocking this step.
+
+---
+
+## In-progress plan — `feat/room-frame` (shape brief, confirmed with the owner 2026-08-30)
+
+**What & why.** Build the room's persistent frame, in three regions that design.md
+§Layout already specs but the code never built. Closes P1 (no sense of place), the
+design-specificity gap (a one-row header that under-uses the record-sheet metaphor), and
+the unused `lab_tag` column — all at once. Mode: Operate.
+
+1. **Sidebar — the notebook index (260px, desktop-fixed).** Hairline right border. Tree
+   mirrors the `/` picker hierarchy **exactly** — `Dept → Nth year (mono subheader) →
+   Batch → Group` — so the picker and the in-room index feel like one object. Current
+   room marked by a `pen` dot + subtle `wash`; its ancestors expanded by default, other
+   nodes collapsed. Long names truncate with a `title`. Sidebar scrolls independently;
+   **theme toggle pinned to the footer** (design.md — today it lives only on `/`).
+2. **Two-row record-sheet header.** Row 1 is a **stacked title**: a Plex Mono breadcrumb
+   path `CSE · 3rd year · Batch 2` (built from `departments.name` / `years.number` /
+   `batches.number` — the data fetched and **discarded** today at
+   `app/c/[dept]/[year]/[batch]/[group]/page.tsx:31-37`) sitting **above** the 32px
+   Bricolage group label. `IdentityReroll` + `OnlineCount` on the right. Row 2 is the lab
+   chips. Pinned strip inserts **between** the rows when a pin exists (design.md).
+3. **Lab-filter chips — the tab labels.** Understated **dot-separated toggles**
+   (`All · Lab 3 · Lab 4`), active in `pen`, per design.md's own header sketch — **not**
+   stock filled pills. Single-select (`radiogroup`).
+
+**Owner decisions (confirmed 2026-08-30 — do NOT re-litigate):**
+- **Sidebar scope:** in-room persistent index only; the `/` picker (`app/page.tsx`) stays
+  as-is. The frame does NOT subsume the picker.
+- **Breadcrumb title:** the **group** stays the single 32px Bricolage title **and the home
+  link** (preserve today's `Link href="/"` behavior); `dept · year · batch` ride above it
+  as a Plex Mono path. NOT per-segment links; NOT the whole breadcrumb in Bricolage.
+- **Mobile drawer is IN scope this pass** (not deferred).
+
+**Spec-settled (asserted from spec §"Lab tag filter", lines 329-332 — spec and code
+already agree, so per AGENTS.md it is not re-opened):** the chip set is derived **live**
+from distinct `lab_tag` values present in loaded messages; selecting one filters to that
+lab's **code posts** (text messages have no `lab_tag` and are **hidden by design** while a
+lab is active); **purely client-side**. This is exactly the predicate already at
+`components/chat/message-list.tsx:76` — the only thing missing is a UI to set it.
+
+**Architecture consequence — respect it, do not "fix" it.** The two header rows straddle
+the server/client boundary on purpose. Row 1 (breadcrumb + presence) stays
+**server-rendered** in the room `page.tsx`. Row 2 (chips) must be **client +
+message-derived** because the spec requires them "purely client-side over loaded
+messages" — so it renders inside `MessageList`, **after `PinnedStrip`** (which is what
+puts the pinned strip between the two rows, per design.md). Do NOT fetch messages
+server-side to build chips, and do NOT lift the breadcrumb into a client shell to unify
+the rows; sticky positioning + the shared hairline read them as one masthead.
+
+**Sequence (one branch, internal steps):**
+1. `lib/room-tree.ts` → `getRoomTree()`: extract the tree fetch + `DeptRow`/`YearRow`/…
+   types + `populated` filter + sorts + the `ordinal` helper from `app/page.tsx`. Refactor
+   the picker to consume it. **Behavior-preserving — verify `/` renders identically.**
+2. Room page: call `getRoomTree()`, wrap the layout (`flex h-dvh` → `<RoomSidebar>` +
+   `<div className="flex min-w-0 flex-1 flex-col">…</div>`), render the sidebar. Surface
+   the breadcrumb values off the existing `room` join (stop discarding them). Note the
+   PostgREST nested embed may type `room.batches` as an array-of-one — assert its shape
+   once, as `app/page.tsx:32` already does for the tree.
+3. Header Row 1: mono path over the Bricolage group (home link) + `IdentityReroll` +
+   `OnlineCount`.
+4. Chip row inside `MessageList` after `PinnedStrip` (consider a small
+   `components/room/lab-filter.tsx`): derive distinct live tags, move `labFilter` to
+   internal client state ("All" default), filter-aware empty state, and **drop the
+   hardcoded `labFilter={null}` prop** at the room page's `<MessageList>`.
+5. Mobile (<768px): hamburger in Row 1 toggles the sidebar as a left drawer — backdrop
+   dismiss, Esc, focus trap, body-scroll lock, focus-restore on close; slide transform
+   gated behind `prefers-reduced-motion`.
+6. Verify (below).
+
+**States/edges to build:** 0 lab tags → hide the chip row (no lone "All"); the active
+tag's last message expiring → fall back to "All"; filtered stream empty → a filter-aware
+empty line (not the generic empty-room copy); long dept name / group label → truncate +
+`title` in 260px; large tree → sidebar scrolls, current-room ancestors open; drawer open →
+body locked + focus trapped.
+
+**Anticipated deviations (record them as built — a silent deviation is how the next agent
+undoes this):**
+- `lib/room-tree.ts` is a **new shared module** not in the original 12-task plan — forced
+  by DRY between the `/` picker and the sidebar (the tree must not be defined twice).
+- The mobile drawer introduces a **motion moment (slide) not in design.md's four-moment
+  table** → document it like the prior dated amendments (SUDO badge 2026-08-05, fade floor
+  2026-08-30) and keep it behind `prefers-reduced-motion`.
+- The room `page.tsx` gains a **department-tree query** it did not previously run.
+- `PRODUCT.md` still does not exist; this step proceeded as an **extension of the
+  documented design.md world**, not via `init`. Offer `/impeccable init` (or `document`)
+  as a follow-up to close that gap — it is not a blocker for this build.
+
+**Verify — a green suite is not enough (AGENTS.md):**
+- **Prove the filter by breaking it:** invert or delete the `m.lab_tag === labFilter`
+  predicate and confirm a specific test fails; a test that passes both ways is not
+  coverage.
+- **Drive the chips from the UI** (click a lab, watch the stream narrow) — a filter set
+  only by a direct call is dead UI.
+- **Real browser:** desktop two-column frame; mobile drawer open / Esc / backdrop /
+  focus-return / body-lock; `prefers-reduced-motion`; measured contrast of the `pen` dot,
+  the `graphite` mono path, and the active `pen` chip (AA); 44px touch targets on a coarse
+  pointer (reuse the `.touch-target` class from the audit-fixes phase).
+- `tsc --noEmit`, `eslint` (directly — `next lint` is removed), `bun run build`, the full
+  test suite, and the impeccable detector. **No colors or fonts added.**
+
+**Files (expected):** new `lib/room-tree.ts`, `components/room/room-sidebar.tsx`, likely
+`components/room/lab-filter.tsx`; modified `app/page.tsx`,
+`app/c/[dept]/[year]/[batch]/[group]/page.tsx`, `components/chat/message-list.tsx`.
 
 **Environment:** `.env.local` is complete — Supabase URL, publishable key,
 `SUPABASE_SERVICE_ROLE_KEY`, a generated `IDENTITY_PEPPER`, and a generated
