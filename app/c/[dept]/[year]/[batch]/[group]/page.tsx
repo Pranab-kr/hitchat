@@ -1,10 +1,14 @@
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { getServiceClient } from '@/lib/supabase/admin'
+import { getRoomTree } from '@/lib/room-tree'
+import { ordinal, type DeptNode } from '@/lib/rooms'
 import { MESSAGE_COLUMNS } from '@/lib/columns'
 import { highlightCode } from '@/lib/highlight'
 import { verifySession } from '@/lib/auth/session'
 import { MessageList } from '@/components/chat/message-list'
+import { RoomTree, type CurrentRoom } from '@/components/room/room-tree'
+import { MobileRoomNav } from '@/components/room/mobile-room-nav'
 import { AdminBar } from '@/components/room/admin-bar'
 import { OnlineCount } from '@/components/room/online-count'
 import { IdentityReroll } from '@/components/room/identity-reroll'
@@ -37,6 +41,27 @@ export default async function RoomPage({ params }: { params: Promise<RoomParams>
     .maybeSingle()
 
   if (!room) notFound()
+
+  // The breadcrumb path reuses the department name that was joined for the room lookup
+  // above and, until now, discarded. PostgREST hands a to-one embed back as either an
+  // object or a single-element array depending on how it inferred the relationship, so
+  // normalize before reading. The year and batch numbers are already parsed from the URL.
+  const one = <T,>(value: T | T[]): T => (Array.isArray(value) ? value[0] : value)
+  type RoomDept = { name: string }
+  type RoomYear = { departments: RoomDept | RoomDept[] }
+  type RoomBatch = { years: RoomYear | RoomYear[] }
+  const roomBatch = one((room as unknown as { batches: RoomBatch | RoomBatch[] }).batches)
+  const deptName = one(one(roomBatch.years).departments).name
+
+  // The same tree the `/` picker renders, so the in-room index and the picker never
+  // drift. Tiny query; the page is already force-dynamic.
+  const tree: DeptNode[] = await getRoomTree()
+  const current: CurrentRoom = {
+    deptSlug: dept,
+    year: yearNumber,
+    batch: batchNumber,
+    group: room.label,
+  }
 
   const { data: messages } = await db
     .from('messages')
@@ -74,39 +99,53 @@ export default async function RoomPage({ params }: { params: Promise<RoomParams>
     : []
 
   return (
-    <div className="flex h-dvh flex-col">
-      <header className="flex items-end justify-between border-b border-hairline px-4 py-3">
-        <h1 className="font-display text-[32px] leading-[36px] font-semibold tracking-[-0.02em] text-ink">
-          {/* The room title doubles as the home link — back to the room picker. */}
-          <Link
-            href="/"
-            prefetch
-            title="Back to the room picker"
-            className="rounded-[4px] transition-colors hover:text-pen"
-          >
-            {room.label}
-          </Link>
-        </h1>
-        <div className="flex items-center gap-3">
-          <IdentityReroll />
-          <OnlineCount groupId={room.id} />
-        </div>
-      </header>
+    <div className="flex h-dvh">
+      {/* The notebook index. Fixed rail from md up; a drawer below (MobileRoomNav). */}
+      <aside className="hidden w-[260px] shrink-0 border-r border-hairline md:flex">
+        <RoomTree tree={tree} current={current} />
+      </aside>
 
-      {isAdmin && (
-        <AdminBar groupId={room.id} locked={room.is_locked} role={session.role} />
-      )}
+      <div className="flex min-w-0 flex-1 flex-col">
+        <header className="flex items-center justify-between gap-3 border-b border-hairline px-4 py-3">
+          <div className="flex min-w-0 items-center gap-2">
+            <MobileRoomNav tree={tree} current={current} />
+            <div className="min-w-0">
+              <p className="truncate font-mono text-[12px] leading-4 tracking-[0.02em] text-graphite">
+                {deptName} · {ordinal(yearNumber)} year · Batch {batchNumber}
+              </p>
+              <h1 className="font-display text-[32px] leading-[36px] font-semibold tracking-[-0.02em] text-ink">
+                {/* The room title doubles as the home link — back to the room picker. */}
+                <Link
+                  href="/"
+                  prefetch
+                  title="Back to the room picker"
+                  className="rounded-[4px] transition-colors hover:text-pen"
+                >
+                  {room.label}
+                </Link>
+              </h1>
+            </div>
+          </div>
+          <div className="flex shrink-0 items-center gap-3">
+            <IdentityReroll />
+            <OnlineCount groupId={room.id} />
+          </div>
+        </header>
 
-      <MessageList
-        groupId={room.id}
-        locked={room.is_locked}
-        initial={initial}
-        initialCodeHtml={initialCodeHtml}
-        labFilter={null}
-        isAdmin={isAdmin}
-        adminRole={session?.role ?? null}
-        ownerAdminIds={ownerAdminIds}
-      />
+        {isAdmin && (
+          <AdminBar groupId={room.id} locked={room.is_locked} role={session.role} />
+        )}
+
+        <MessageList
+          groupId={room.id}
+          locked={room.is_locked}
+          initial={initial}
+          initialCodeHtml={initialCodeHtml}
+          isAdmin={isAdmin}
+          adminRole={session?.role ?? null}
+          ownerAdminIds={ownerAdminIds}
+        />
+      </div>
     </div>
   )
 }

@@ -13,10 +13,10 @@ section for the step you're on. Full protocol in `AGENTS.md`.
 
 | | |
 |---|---|
-| **Phase** | **In progress — `feat/room-frame`: the room frame (260px sidebar + two-row header + lab chips).** |
-| **Current step** | Building the room frame per the confirmed `shape` brief below. **Nothing is built yet** — this entry was written before the build (AGENTS.md step 3). No app code has changed on this branch; only this file. |
-| **Branch** | `feat/room-frame` (branched from `main`; `main` was up to date with `origin/main`, so the loop's `git pull` was a proven no-op and was skipped). |
-| **Next action** | Plan step 1: create `lib/room-tree.ts` exporting `getRoomTree()` — the typed, filtered-to-populated, sorted `departments → years → batches → groups` fetch currently inlined in `app/page.tsx:24-38` (plus the `ORDINALS`/`ordinal` helper at `app/page.tsx:15-16`). Then refactor `app/page.tsx` to consume it with **no visible change** to the picker, and verify the picker renders identically before moving on. |
+| **Phase** | **Built & verified on `feat/room-frame` — the room frame (260px sidebar + two-row header + lab chips). Committed to the branch; NOT merged.** |
+| **Current step** | Complete and verified in a real browser. Awaiting the owner's go-ahead to merge `feat/room-frame` → `main` (the owner has gated merges since the audit-fixes phase, so this does not self-merge). |
+| **Branch** | `feat/room-frame` (branched from `main`). |
+| **Next action** | Owner decides merge. To merge: `git checkout main && git merge --no-ff feat/room-frame && git branch -d feat/room-frame` (then push if desired). Optional first: a manual click-through in a browser you control (the automated Playwright pass below already covered desktop + mobile). Do NOT merge without that go-ahead. |
 | **Blocked?** | No. |
 | **Last updated** | 2026-08-30 |
 
@@ -27,7 +27,33 @@ Its optional follow-ups (live click-through of the touch/hover/motion fixes, an
 
 ---
 
-## In-progress plan — `feat/room-frame` (shape brief, confirmed with the owner 2026-08-30)
+## Shipped & verified on `feat/room-frame` (NOT merged) — the room frame ✅
+
+**Status:** built, committed to `feat/room-frame`, verified in a real browser (Chromium,
+desktop + mobile). **Not merged to `main`** — awaiting the owner's go-ahead. Full suite
+**164/164**, `tsc` clean, `eslint` clean, `bun run build` passes, detector **0 findings**.
+The design brief that drove it follows; it matches what shipped, with the as-built
+deviations and the verification results recorded at the end of this section.
+
+**What shipped (files):**
+- **New `lib/rooms.ts`** — client-safe room-hierarchy types + `ordinal`. (See deviation
+  below: this split from `lib/room-tree.ts` was forced by the client/server boundary.)
+- **New `lib/room-tree.ts`** — `getRoomTree()`, the shared server fetch (`server-only`).
+- **New `lib/labs.ts`** — `matchesLab()` + `distinctLabTags()`, the filter as pure,
+  tested functions.
+- **New `components/room/room-tree.tsx`** — `RoomTree`, the notebook index (desktop rail +
+  drawer body); drawn SVG chevron, CSS pen dot, theme toggle footer.
+- **New `components/room/mobile-room-nav.tsx`** — `MobileRoomNav`, hamburger + drawer with
+  scrim, Esc, focus trap, body-scroll lock, focus restore.
+- **New `components/room/lab-filter.tsx`** — `LabFilter`, the dot-separated `radiogroup`
+  with roving tabindex + arrow keys.
+- **New tests** `tests/labs.test.ts` (6) and `tests/lab-filter.test.tsx` (6, RTL).
+- **Modified** `app/page.tsx` (picker now consumes `getRoomTree()`),
+  `app/c/[dept]/[year]/[batch]/[group]/page.tsx` (tree + breadcrumb + two-column frame),
+  `components/chat/message-list.tsx` (chip row, internal `labFilter` state, filter-aware
+  empty state, pins/reply-previews resolve pre-filter).
+
+---
 
 **What & why.** Build the room's persistent frame, in three regions that design.md
 §Layout already specs but the code never built. Closes P1 (no sense of place), the
@@ -100,34 +126,55 @@ empty line (not the generic empty-room copy); long dept name / group label → t
 `title` in 260px; large tree → sidebar scrolls, current-room ancestors open; drawer open →
 body locked + focus trapped.
 
-**Anticipated deviations (record them as built — a silent deviation is how the next agent
-undoes this):**
-- `lib/room-tree.ts` is a **new shared module** not in the original 12-task plan — forced
-  by DRY between the `/` picker and the sidebar (the tree must not be defined twice).
-- The mobile drawer introduces a **motion moment (slide) not in design.md's four-moment
-  table** → document it like the prior dated amendments (SUDO badge 2026-08-05, fade floor
-  2026-08-30) and keep it behind `prefers-reduced-motion`.
-- The room `page.tsx` gains a **department-tree query** it did not previously run.
-- `PRODUCT.md` still does not exist; this step proceeded as an **extension of the
-  documented design.md world**, not via `init`. Offer `/impeccable init` (or `document`)
-  as a follow-up to close that gap — it is not a blocker for this build.
+**Deviations, as built (recorded so the next agent doesn't undo them):**
+- **`lib/rooms.ts` was split out from `lib/room-tree.ts`.** `RoomTree` is a client
+  component and imports `ordinal` (a value); `lib/room-tree.ts` is `server-only` (it
+  imports the service client). A value import pulled the service client into the browser
+  bundle and **`bun run build` failed** — caught by the build, not by `tsc` or the suite.
+  Types + `ordinal` now live in the client-safe `lib/rooms.ts`; the server fetch stays in
+  `lib/room-tree.ts`. **Do not re-merge these two files.**
+- **`getRoomTree()` prunes empty batches/years/depts and sorts every level**, so both the
+  picker and the sidebar render it directly with no re-sort/re-filter. Behavior-preserving
+  for the picker (an empty batch contributed no chips before either).
+- **The mobile drawer's slide is a motion moment not in design.md's four-moment table** —
+  documented here like the SUDO-badge (2026-08-05) and fade-floor (2026-08-30) amendments;
+  it sits behind the global `prefers-reduced-motion` reset in `globals.css`.
+- **Drawer scrim is `bg-ink/40`** (an inked veil, dark in light theme / light in dark),
+  chosen over inventing a black overlay so the panel always separates from the veiled
+  stream without a new color.
+- **Icons are drawn SVG** (chevron, hamburger, close) and the current-room marker is a CSS
+  `bg-pen` dot — not unicode glyphs — avoiding the tofu risk and matching craft-floor.
+- **`MessageList` resolves pins and reply-previews from the pre-filter list**, so a lab
+  filter never hides the pinned strip or turns a reply quote into "expired".
+- **The room `page.tsx` now runs a department-tree query** it did not before, and reads
+  the department name off the room join that was previously discarded (normalized for the
+  object-or-array to-one embed).
+- `PRODUCT.md` still absent; built as an **extension of the documented design.md world**,
+  not via `init`. `/impeccable init`/`document` remains an open follow-up, not a blocker.
 
-**Verify — a green suite is not enough (AGENTS.md):**
-- **Prove the filter by breaking it:** invert or delete the `m.lab_tag === labFilter`
-  predicate and confirm a specific test fails; a test that passes both ways is not
-  coverage.
-- **Drive the chips from the UI** (click a lab, watch the stream narrow) — a filter set
-  only by a direct call is dead UI.
-- **Real browser:** desktop two-column frame; mobile drawer open / Esc / backdrop /
-  focus-return / body-lock; `prefers-reduced-motion`; measured contrast of the `pen` dot,
-  the `graphite` mono path, and the active `pen` chip (AA); 44px touch targets on a coarse
-  pointer (reuse the `.touch-target` class from the audit-fixes phase).
-- `tsc --noEmit`, `eslint` (directly — `next lint` is removed), `bun run build`, the full
-  test suite, and the impeccable detector. **No colors or fonts added.**
+**Verified — a green suite is not enough (AGENTS.md):**
+- **Filter proved by breaking it:** loosening `matchesLab` to also pass untagged messages
+  failed **exactly** `tests/labs.test.ts > "hides text messages … while a lab is active"`
+  and nothing else; reverted. A test that passed both ways would not be coverage.
+- **Chips driven from the UI, live DB:** seeded Lab 3 + Lab 4 code posts and one untagged
+  text into the (empty) `it/3/2/a` room; browser showed the chip row `All · Lab 3 · Lab 4`
+  with **Lab 4 active in `pen`**; clicking **Lab 4 narrowed the stream from 3 posts to the
+  one Lab 4 record card** (text + Lab 3 hidden), "All" restored all 3. The 3 probe rows
+  were deleted in a `finally`, and the room was **confirmed back to 0 messages**.
+- **Real browser (Chromium), 19 frame checks all pass:** desktop two-column frame with the
+  260px rail; breadcrumb `it · 3rd year · Batch 2` over the Bricolage `A` title (home
+  link); current room marked with `aria-current`; **mobile**: rail hidden, hamburger
+  opens a modal drawer, **body scroll locked, focus moves into the drawer, Escape closes
+  it and returns focus to the hamburger**.
+- **Contrast measured from rendered pixels:** breadcrumb path **5.33:1**, current-room
+  text **6.18:1** — both clear AA. (Active `pen` chip is the same link color, ~6.2:1.)
+- `tsc --noEmit` clean, `eslint` clean on all changed files, `bun run build` passes,
+  detector **0 findings** on the changed UI, full suite **164/164** (152 baseline + 6 + 6).
+  **No colors or fonts added.** Playwright was installed temporarily and removed;
+  `package.json`/`bun.lock` restored clean.
 
-**Files (expected):** new `lib/room-tree.ts`, `components/room/room-sidebar.tsx`, likely
-`components/room/lab-filter.tsx`; modified `app/page.tsx`,
-`app/c/[dept]/[year]/[batch]/[group]/page.tsx`, `components/chat/message-list.tsx`.
+**Not done / open:** a human click-through in a real browser (the automated pass covered
+it); the merge to `main`; and the optional `/impeccable init`.
 
 **Environment:** `.env.local` is complete — Supabase URL, publishable key,
 `SUPABASE_SERVICE_ROLE_KEY`, a generated `IDENTITY_PEPPER`, and a generated
