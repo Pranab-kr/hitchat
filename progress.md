@@ -13,17 +13,16 @@ section for the step you're on. Full protocol in `AGENTS.md`.
 
 | | |
 |---|---|
-| **Phase** | **In progress — code-card scrollbar placement fixed and verified; ready to merge.** |
-| **Current step** | `feat/fix-chat-scrollbar`: merge the verified full-width stream fix to local `main`. |
-| **Branch** | `feat/fix-chat-scrollbar` — branched from local `main`; `main` remains **ahead of `origin/main` by 22 commits, not pushed** (owner asked to hold the push). |
-| **Next action** | Commit this verified handoff, then run `git checkout main && git merge --no-ff feat/fix-chat-scrollbar` and delete the feature branch. |
+| **Phase** | **Idle — code-card scrollbar placement fixed and verified. Merged to `main` (local only, NOT pushed).** |
+| **Current step** | Nothing in flight. `feat/fix-chat-scrollbar` was verified, merged to `main`, and deleted. |
+| **Branch** | `main` — **ahead of `origin/main` by 26 commits, not pushed** (owner asked to hold the push). |
+| **Next action** | None pending. Before publishing, rotate the leaked service-role key and owner secret as described below, then run `git push origin main`. |
 | **Blocked?** | No. |
 | **Last updated** | 2026-08-30 |
 
 ## Shipped — code-card scrollbar placement ✅
 
-Follow-up fix on `feat/fix-chat-scrollbar`, verified and ready to merge to local
-`main` (not pushed).
+Follow-up fix on `feat/fix-chat-scrollbar`, merged to local `main` and not pushed.
 `components/chat/message-list.tsx` now makes the vertical scroll owner span the full
 chat column, while the message sheet remains left-aligned and capped at the design's
 720px measure. Opening a long code card can no longer move the scrollbar into the middle
@@ -1659,8 +1658,8 @@ column-level grant. Test that before trusting anything else.
 
 ## In progress
 
-*The code-card scrollbar placement fix is verified on `feat/fix-chat-scrollbar` and
-ready to merge; publishing remains held until secret rotation.*
+*Nothing. The latest code-card scrollbar placement fix is merged to local `main`;
+publishing remains held until secret rotation.*
 
 ---
 
