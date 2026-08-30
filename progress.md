@@ -13,12 +13,26 @@ section for the step you're on. Full protocol in `AGENTS.md`.
 
 | | |
 |---|---|
-| **Phase** | **In progress — fix the stream scrollbar moving into the middle of the chat when code expands.** |
-| **Current step** | `feat/fix-chat-scrollbar`: give the stream pane the full chat-column width while preserving the 720px left-aligned message sheet. |
+| **Phase** | **In progress — code-card scrollbar placement fixed and verified; ready to merge.** |
+| **Current step** | `feat/fix-chat-scrollbar`: merge the verified full-width stream fix to local `main`. |
 | **Branch** | `feat/fix-chat-scrollbar` — branched from local `main`; `main` remains **ahead of `origin/main` by 22 commits, not pushed** (owner asked to hold the push). |
-| **Next action** | Update `components/chat/message-list.tsx` so the scroll owner is full-width and message content sits in a 720px inner sheet, then verify open/closed code-card geometry in a real browser. |
+| **Next action** | Commit this verified handoff, then run `git checkout main && git merge --no-ff feat/fix-chat-scrollbar` and delete the feature branch. |
 | **Blocked?** | No. |
 | **Last updated** | 2026-08-30 |
+
+## Shipped — code-card scrollbar placement ✅
+
+Follow-up fix on `feat/fix-chat-scrollbar`, verified and ready to merge to local
+`main` (not pushed).
+`components/chat/message-list.tsx` now makes the vertical scroll owner span the full
+chat column, while the message sheet remains left-aligned and capped at the design's
+720px measure. Opening a long code card can no longer move the scrollbar into the middle
+of the page; long source still scrolls horizontally inside its code body.
+
+**Verified:** TypeScript, targeted ESLint, and `git diff --check` pass. A real Chromium
+check confirmed a 740px full-width stream at a 1000px viewport, no page overflow, internal
+code scrolling, and unchanged stream geometry before and after opening the code card.
+The disposable room and message used by the probe were deleted afterward.
 
 **Prior phase (done, merged):** chat message-flow audit fixes scored 19/20, merged to
 `main` and pushed to `origin/main` on 2026-08-30 (`845edce` + merge, recorded under Done).
@@ -1645,8 +1659,8 @@ column-level grant. Test that before trusting anything else.
 
 ## In progress
 
-*Nothing. The latest reaction, layout, and ban-reroll hardening is merged to local
-`main`; publishing remains held until secret rotation.*
+*The code-card scrollbar placement fix is verified on `feat/fix-chat-scrollbar` and
+ready to merge; publishing remains held until secret rotation.*
 
 ---
 
