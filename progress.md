@@ -15,7 +15,7 @@ section for the step you're on. Full protocol in `AGENTS.md`.
 |---|---|
 | **Phase** | **Idle — stream-control hardening merged to `main` (local only, NOT pushed to `origin`).** |
 | **Current step** | Nothing in flight. `feat/harden-stream-control` is merged to `main`; the branch has been deleted. |
-| **Branch** | `main` — **ahead of `origin/main` by 5 commits, not pushed** (owner asked to hold the push). |
+| **Branch** | `main` — **ahead of `origin/main` by 7 commits, not pushed** (owner asked to hold the push). |
 | **Next action** | None pending. When ready to publish: `git push origin main` — but **rotate secrets first** (see below), since the repo is public and both leaked during the build. Optional follow-ups from the two prior phases (human browser click-through of the room frame + this hardening; `/impeccable init`). |
 | **Blocked?** | No. |
 | **Last updated** | 2026-08-30 |
@@ -326,8 +326,8 @@ Send, `retryAfter` thrown away) and Casey (unsent code paste lost on app-switch)
 - The `retryAfter` value is now data, not a constant — do not "simplify" it back to 10, or
   the countdown test fails.
 - `getOwnMessageIds` caps at 100 ids like `getReactions`; the stream never exceeds that.
-- Unmerged: `main` still ahead of `origin/main` by 5 commits (the 3-commit room frame + the
-  merge + this one), all held per the owner's instruction. Rotate both secrets before any
+- Unmerged: `main` still ahead of `origin/main` by 7 commits (room frame 3 + prior handoff
+  docs 1 + this pass 3), all held per the owner's instruction. Rotate both secrets before any
   push (see Resume here).
 
 ### 2026-08-30 — Chat message-flow audit fixes ✅ (merged to `main`, pushed to `origin/main`)
