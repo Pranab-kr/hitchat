@@ -255,9 +255,10 @@ Deriving rather than storing means a user cannot claim someone else's handle, an
 database never holds a value that could be replayed as a device identifier.
 
 **Reroll** discards the token and generates a new one — new handle, and past messages
-keep their old handle. Rerolling also escapes a ban, which is acceptable: bans are a
-speed bump for lab-scale abuse, not a security control. Documented, not pretended
-otherwise.
+keep their old handle. The in-room control re-checks the current ban before rerolling,
+so a banned identity cannot use the normal identity control to return to posting. Clearing
+all browser storage can still create a fresh anonymous device, which remains an inherent
+trade-off of open access without accounts.
 
 **Collision:** ~1.4M handle combinations. Collisions within a 30-person room are
 vanishingly unlikely and harmless if they occur.
@@ -324,11 +325,10 @@ reads "original message expired".
 ### Reactions
 Fixed set of four: `works`, `buggy`, `fire`, `eyes`. One per person per mark, toggleable,
 counts shown inline. Fixed set avoids an emoji picker and keeps signal high. The marks
-are **drawn SVG in `currentColor`** (check, warning triangle, flame, eye) rather than
-unicode/emoji — the six-token palette allows no uncontrolled color in the room, and
-they render in the same stroked family as the app's other icons. *(Amended 2026-08-30 —
-the set was originally written as `✓ ⚠ 🔥 👀`; the drawn marks replace the two color
-emoji to keep reactions on-palette.)*
+are native emoji (`✅`, `⚠️`, `🔥`, `👀`) with accessible names; the room-facing controls
+show the emoji and optional count, while the reaction meaning is not repeated as visible
+text. *(Amended 2026-08-30 — the owner requested familiar emoji marks rather than
+drawn/text glyphs and visible word labels.)*
 
 ### Lab tag filter
 The room header shows chips built from `lab_tag` values currently present in the room:
@@ -520,7 +520,8 @@ conventions for this project are recorded in `AGENTS.md`.
 
 - **Free-tier limits.** Supabase free tier allows 200 concurrent Realtime connections.
   Sized for a handful of lab rooms; a college-wide rollout would need re-checking.
-- **Ban evasion by reroll.** Accepted, as noted above.
+- **Ban evasion by clearing browser storage.** Accepted as an inherent trade-off of open
+  access without accounts. The in-room reroll control stays locked for an active ban.
 - **`localStorage` cleared** ⇒ new identity. Acceptable for an 8-hour-lifetime product.
 - **Anyone with the link can join.** Accepted per the open-access decision; content is
   throwaway lab code that self-destructs.

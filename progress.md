@@ -13,10 +13,10 @@ section for the step you're on. Full protocol in `AGENTS.md`.
 
 | | |
 |---|---|
-| **Phase** | **Idle — `/impeccable polish` minor observations done. Merged to `main` (local only, NOT pushed to `origin`).** |
-| **Current step** | Nothing in flight. `feat/polish-minor-observations` merged to `main`; branch deleted. |
-| **Branch** | `main` — **ahead of `origin/main` by 17 commits, not pushed** (owner asked to hold the push). |
-| **Next action** | None pending. When ready to publish: `git push origin main` — but **rotate secrets first** (see below), since the repo is public and both leaked during the build. |
+| **Phase** | **Idle — reaction emoji, code overflow, and ban-reroll hardening verified.** |
+| **Current step** | `feat/reactions-code-ban-hardening` is complete and ready to merge into local `main`. |
+| **Branch** | `feat/reactions-code-ban-hardening` — `main` remains **ahead of `origin/main` by 17 commits, not pushed** (owner asked to hold the push). |
+| **Next action** | Run `git checkout main && git merge --no-ff feat/reactions-code-ban-hardening`, then delete the feature branch; do not push until both leaked secrets are rotated. |
 | **Blocked?** | No. |
 | **Last updated** | 2026-08-30 |
 
@@ -94,13 +94,51 @@ critique (`.impeccable/critique/2026-08-30T03-59-41Z__app-c-dept-year-batch-grou
 - The live `it` room and its real messages were untouched.
 
 **Next agent needs to know:**
-- The reaction marks are the second drawn-SVG family in the app (author marks are the
-  first) — keep them stroked and on-palette; do not reintroduce emoji.
+- The reaction marks were later changed to native emoji by the owner request; see the
+  newer "reaction emoji, code overflow, and ban-reroll hardening" entry below.
 - `CopyButton` now has three states (`idle`/`copied`/`failed`); the `failed` state's
   alert mark is a deliberate `text-rule`-on-surface exception, consistent with the
   SUDO/PINNED recipe, and pinned by the contrast test in the browser harness.
 - Unmerged: `main` is ahead of `origin/main` by 17 commits, all held per the owner's
   instruction. Rotate both secrets before any push (see Resume here).
+
+---
+
+## Shipped — reaction emoji, code overflow, and ban-reroll hardening ✅
+
+Built on `feat/reactions-code-ban-hardening` in response to the room screenshots.
+The branch has been verified and is ready to merge locally; it does not change the
+live database.
+
+**What shipped:**
+- **`components/chat/reactions.tsx`** — reaction controls now show only familiar native
+  emoji (`✅`, `⚠️`, `🔥`, `👀`) and an optional count. The visible words are gone; the
+  semantic words remain only in `aria-label` / accessible names.
+- **Code-layout constraints** — `MessageList`, `MessageRow`, and `CodeCard` now carry
+  `min-w-0` / `max-w-full` at each flex boundary. Code-card headers wrap long metadata,
+  and long source lines scroll inside the code body rather than widening the room/page.
+  The room title also truncates safely.
+- **`components/room/identity-reroll.tsx`** — reroll checks the current identity's ban
+  status immediately before rotating the token. An active ban changes the control to
+  `identity locked` / `while banned` and disables it; a failed status check fails closed.
+  This closes the normal UI ban-evasion path while preserving the anonymous model's
+  unavoidable storage-clearing trade-off.
+- **Tests/docs** — updated `tests/reactions.test.tsx`, added
+  `tests/identity-reroll.test.tsx` and `tests/code-card.test.tsx`, and amended the spec
+  plus `design.md` to record the requested emoji-only presentation and ban boundary.
+
+**Verified:** full suite **207/207**, `tsc --noEmit`, repository `eslint` with 0 errors,
+`bun run build`, `git diff --check`, and a real Chromium pass. Browser checks confirmed
+emoji-only reaction text, no page overflow with a 3,000-character unbroken code line,
+internal code-body scrolling, a disabled reroll after a live ban, and an unchanged token.
+The temporary browser probe seeded one disposable room/message and its probe ban; all
+were deleted afterward. Existing live room data and pre-existing ban rows were left
+untouched.
+
+**Decision:** the owner explicitly requested native emoji over the prior drawn-SVG marks
+and visible labels, so the spec/design change is deliberate despite the older craft-floor
+preference. Accessible names remain so removing visible labels does not remove meaning
+for screen-reader users.
 
 ---
 

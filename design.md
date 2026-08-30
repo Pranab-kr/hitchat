@@ -176,7 +176,7 @@ Desktop-first. Two columns.
 │  ▸ B1    │  │1│ #include <stdio.h>           │    │
 │          │  │2│ int main(){                  │    │
 │ ─────    │  └─┴──────────────────────────────┘    │
-│ ◐ theme  │   ✓ works 4  ⚠ buggy 1                  │
+│ ◐ theme  │   ✅ 4  ⚠️ 1                            │
 │          ├────────────────────────────────────────┤
 │          │  [ message ]              [ </> code ] │
 └──────────┴────────────────────────────────────────┘
@@ -312,19 +312,16 @@ people use during a lab session, not a landing page.
   marigold-on-marigold label, including the pinned strip. No new color was introduced.
 - **Empty room:** an invitation, not an apology — "Nothing here yet. Paste your lab
   code and someone will thank you." Set in Figtree at Body, `graphite`.
-- **Reaction bar:** a fixed set of four marks — `works`, `buggy`, `nice`, `looking` —
-  each a **drawn SVG in `currentColor`**, one stroked family with the copy and chevron
-  icons, carrying a visible word label (`works` over a drawn check, `buggy` over a
-  warning triangle, `nice` over a drawn flame, `looking` over a drawn eye), with the
-  count appending when present (`works 3`). No emoji: the strict six-token palette
-  allows no uncontrolled color in the room, and a flame or an eye in the room's own
-  ink reads as belonging to it. The label is part of the control, never aria-only: the
-  meaning must survive a touch screen and a screen reader, not just a hover. *(Amended
-  2026-08-30 — the set previously mixed tokened `✓ ⚠` with full-color `🔥 👀`; the P2
-  audit flagged the off-palette color.)*
+- **Reaction bar:** a fixed set of four emoji marks — `✅`, `⚠️`, `🔥`, `👀` — for
+  `works`, `buggy`, `nice`, and `looking`. The room-facing controls show only the emoji,
+  with the count appending when present (`🔥 3`); the meaning stays in the accessible
+  button name. *(Amended 2026-08-30 — the owner requested familiar native emoji marks
+  instead of drawn/text glyphs and visible word labels.)*
 - **New identity:** a two-line header control — the `new identity` label over the
   caption `fresh anonymous name`. The effect is stated on the control itself, in the
-  visible and accessible tree on every device. (Amended 2026-08-30 — same P2 gap.)
+  visible and accessible tree on every device. While the current identity is banned,
+  it becomes `identity locked` / `while banned` and does not reroll. (Amended
+  2026-08-30 — same P2 gap, plus ban-boundary hardening.)
 
 ---
 

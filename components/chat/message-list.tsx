@@ -188,7 +188,7 @@ export function MessageList({
         </div>
       )}
 
-      <div className="relative flex min-h-0 flex-1 overflow-hidden">
+      <div className="relative flex min-h-0 min-w-0 flex-1 overflow-hidden">
         {/* The stream is a log: role="log" announces newly arrived messages to a screen
             reader; aria-live="polite" makes the intent explicit without pre-empting the
             user. */}
@@ -197,7 +197,7 @@ export function MessageList({
           onScroll={handleScroll}
           role="log"
           aria-live="polite"
-          className="h-full overflow-y-auto"
+          className="h-full min-w-0 overflow-y-auto"
         >
           {!connected && (
             <div className="sticky top-0 bg-wash px-4 py-1 font-mono text-[12px] text-graphite" role="status">
