@@ -13,10 +13,10 @@ section for the step you're on. Full protocol in `AGENTS.md`.
 
 | | |
 |---|---|
-| **Phase** | **Idle — reaction emoji, code overflow, and ban-reroll hardening done. Merged to `main` (local only, NOT pushed).** |
-| **Current step** | Nothing in flight. `feat/reactions-code-ban-hardening` was verified, merged to `main`, and deleted. |
-| **Branch** | `main` — **ahead of `origin/main` by 20 commits, not pushed** (owner asked to hold the push). |
-| **Next action** | None pending. Before publishing, rotate the leaked service-role key and owner secret as described below, then run `git push origin main`. |
+| **Phase** | **In progress — fix the stream scrollbar moving into the middle of the chat when code expands.** |
+| **Current step** | `feat/fix-chat-scrollbar`: give the stream pane the full chat-column width while preserving the 720px left-aligned message sheet. |
+| **Branch** | `feat/fix-chat-scrollbar` — branched from local `main`; `main` remains **ahead of `origin/main` by 22 commits, not pushed** (owner asked to hold the push). |
+| **Next action** | Update `components/chat/message-list.tsx` so the scroll owner is full-width and message content sits in a 720px inner sheet, then verify open/closed code-card geometry in a real browser. |
 | **Blocked?** | No. |
 | **Last updated** | 2026-08-30 |
 
