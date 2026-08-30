@@ -15,7 +15,7 @@ section for the step you're on. Full protocol in `AGENTS.md`.
 |---|---|
 | **Phase** | **Idle — P2 in-room onboarding done. Merged to `main` (local only, NOT pushed to `origin`).** |
 | **Current step** | Nothing in flight. `feat/in-room-onboard` merged to `main`; branch deleted. |
-| **Branch** | `main` — **ahead of `origin/main` by 12 commits, not pushed** (owner asked to hold the push). |
+| **Branch** | `main` — **ahead of `origin/main` by 13 commits, not pushed** (owner asked to hold the push). |
 | **Next action** | None pending. When ready to publish: `git push origin main` — but **rotate secrets first** (see below), since the repo is public and both leaked during the build. |
 | **Blocked?** | No. |
 | **Last updated** | 2026-08-30 |
@@ -102,7 +102,7 @@ deep-linked student. Built as the critique prescribed, in the record-sheet world
   `useMounted` (that would hide it from no-JS entirely).
 - The reaction accessible names changed case (`Works` → `works`) to match the now-visible
   text — WCAG 2.5.3. Tests pin the lowercase labels; don't re-capitalize.
-- Unmerged: `main` is ahead of `origin/main` by 12 commits (this pass 2 + prior handoff
+- Unmerged: `main` is ahead of `origin/main` by 13 commits (this pass 3 + prior handoff
   docs 1 + room frame 3 + a11y 3 + stream-control 3), all held per the owner's
   instruction. Rotate both secrets before any push (see Resume here).
 
