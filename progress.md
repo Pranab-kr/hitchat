@@ -13,10 +13,10 @@ section for the step you're on. Full protocol in `AGENTS.md`.
 
 | | |
 |---|---|
-| **Phase** | **Idle — P2 in-room onboarding done. Merged to `main` (local only, NOT pushed to `origin`).** |
-| **Current step** | Nothing in flight. `feat/in-room-onboard` merged to `main`; branch deleted. |
-| **Branch** | `main` — **ahead of `origin/main` by 13 commits, not pushed** (owner asked to hold the push). |
-| **Next action** | None pending. When ready to publish: `git push origin main` — but **rotate secrets first** (see below), since the repo is public and both leaked during the build. |
+| **Phase** | **In progress — `/impeccable polish` on the four critique minor observations.** Reaction emoji → drawn SVG marks, `AdminControls` fallback string, silent copy failure, and the 5-min/30s fade-interval doc deviation. |
+| **Current step** | Building on `feat/polish-minor-observations`. See the plan section below. |
+| **Branch** | `feat/polish-minor-observations` (from `main`; `main` is ahead of `origin/main` by 14 commits, held per the owner's instruction). |
+| **Next action** | Merge to `main` after browser verification; record under Done. |
 | **Blocked?** | No. |
 | **Last updated** | 2026-08-30 |
 
@@ -24,6 +24,37 @@ section for the step you're on. Full protocol in `AGENTS.md`.
 `main` and pushed to `origin/main` on 2026-08-30 (`845edce` + merge, recorded under Done).
 Its optional follow-ups (live click-through of the touch/hover/motion fixes, an
 `/impeccable audit` re-run on `main`) are unstarted and **not** blocking this step.
+
+---
+
+## Polish — the four critique minor observations (in progress)
+
+`/impeccable polish` on the message room. All four items are the critique's Minor
+Observations (`.impeccable/critique/2026-08-30T03-59-41Z__app-c-dept-year-batch-group-page-tsx.md:88-92`).
+
+1. **Reaction marks (`reactions.tsx`)** — the set mixes tokened glyphs (`✓ ⚠` in
+   `currentColor`) with full-color emoji (`🔥 👀`), uncontrolled color against the
+   six-token palette. Replace **all four** with drawn SVGs in `currentColor`, one
+   stroked family with the app's other icons (copy/chevron/close, 1.5px stroke). The
+   labels (works/buggy/nice/looking) and the fixed set are unchanged.
+2. **`AdminControls` fallback** — `run()` gains a per-action fallback so even the
+   impossible "no message returned" path reads precise ("Couldn't pin that. Try again."),
+   matching the copy the actions already return.
+3. **Silent copy failure (`copy-button.tsx`)** — on a clipboard rejection the button
+   now shows `couldn't copy` in `rule` and reverts after 1.5s, the same confirm rhythm
+   as `✓ copied`. The button can no longer stand there dead in an insecure context.
+4. **Fade-interval doc deviation** — `design.md` claims a 5-minute recompute; the code
+   ticks on the shared 30s `useNow` that also hides expired messages and retires the
+   self-delete window. Amending design.md to state the real interval and why (a second,
+   slower clock would exist only for an imperceptible difference across 2-hour bands).
+
+**Decisions:**
+- `design.md` and the spec's reactions line are updated deliberately (AGENTS.md: never
+  silently diverge), same dated-amendment precedent as SUDO/fade-floor/record-line.
+- The failure label stays `text-rule` (the app's error color, used by every error span)
+  even though it measures ~3.9:1 in light — the same accepted treatment as the existing
+  `deleteError`/ban-error spans; the word carries the meaning. Measured and recorded.
+- No new colors, no new fonts, no new motion.
 
 ---
 
