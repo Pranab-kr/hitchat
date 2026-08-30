@@ -13,10 +13,10 @@ section for the step you're on. Full protocol in `AGENTS.md`.
 
 | | |
 |---|---|
-| **Phase** | **In progress — reaction controls, code-layout resilience, and ban identity hardening.** |
-| **Current step** | `feat/reactions-code-ban-hardening`: inspect the room message/reaction/composer/identity paths, add regression coverage, implement the three fixes, then verify in a real browser. |
-| **Branch** | `feat/reactions-code-ban-hardening` — branched from local `main`; `main` remains **ahead of `origin/main` by 17 commits, not pushed** (owner asked to hold the push). |
-| **Next action** | Inspect `components/chat/reactions.tsx`, `message-row.tsx`, `code-card.tsx`, `message-list.tsx`, `components/room/identity-reroll.tsx`, `app/actions/moderation.ts`, and `lib/use-anon-token.ts`; map the screenshot failures to existing behavior before editing. |
+| **Phase** | **Idle — reaction emoji, code overflow, and ban-reroll hardening verified.** |
+| **Current step** | `feat/reactions-code-ban-hardening` is complete and ready to merge into local `main`. |
+| **Branch** | `feat/reactions-code-ban-hardening` — `main` remains **ahead of `origin/main` by 17 commits, not pushed** (owner asked to hold the push). |
+| **Next action** | Run `git checkout main && git merge --no-ff feat/reactions-code-ban-hardening`, then delete the feature branch; do not push until both leaked secrets are rotated. |
 | **Blocked?** | No. |
 | **Last updated** | 2026-08-30 |
 
