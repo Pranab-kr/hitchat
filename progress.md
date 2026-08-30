@@ -13,10 +13,10 @@ section for the step you're on. Full protocol in `AGENTS.md`.
 
 | | |
 |---|---|
-| **Phase** | **Idle — stream-control hardening merged to `main` (local only, NOT pushed to `origin`).** |
-| **Current step** | Nothing in flight. `feat/harden-stream-control` is merged to `main`; the branch has been deleted. |
-| **Branch** | `main` — **ahead of `origin/main` by 7 commits, not pushed** (owner asked to hold the push). |
-| **Next action** | None pending. When ready to publish: `git push origin main` — but **rotate secrets first** (see below), since the repo is public and both leaked during the build. Optional follow-ups from the two prior phases (human browser click-through of the room frame + this hardening; `/impeccable init`). |
+| **Phase** | **In progress — P1 stream a11y + the Sam flags: live-region stream, non-color author cue, pinned-strip touch floors.** |
+| **Current step** | `feat/a11y-stream-author-cues` — see the "In progress" section below. |
+| **Branch** | `feat/a11y-stream-author-cues` (from `main`; `main` is **ahead of `origin/main` by 7 commits, not pushed**). |
+| **Next action** | Add `role="log"` + `aria-live="polite"` to the stream container in `components/chat/message-list.tsx` (the `overflow-y-auto` scroll div). |
 | **Blocked?** | No. |
 | **Last updated** | 2026-08-30 |
 
@@ -229,6 +229,33 @@ One step at a time. Never start step N+1 before step N is merged.
 
 Step 3 before step 4, always. A branch with commits and no recorded intent is
 unrecoverable by a fresh agent.
+
+---
+
+## In progress — 2026-08-30 · P1 stream a11y + the Sam flags ✅
+
+`/impeccable audit — accessibility` on the message room. Three findings, all
+actionable, all P1/flagged: **fix before merge.** Branch `feat/a11y-stream-author-cues`.
+
+**Findings:**
+1. **P1 — the stream is not a live region.** A screen reader gets no announcement when
+   new messages arrive. Fix: `role="log"` + `aria-live="polite"` on the stream scroll
+   container in `components/chat/message-list.tsx` (the `overflow-y-auto` div).
+2. **P1/Sam — author identity is color-only.** The handle, the reply-preview author,
+   and the pinned-strip author are all distinguished by `author_color` alone — useless
+   to a color-blind reader. Fix: a deterministic **non-color mark** beside the color.
+   Since `messages.author_color` is the stored light hex, and `lib/author-color.ts`
+   already maps hex → index 1–8, derive one of 8 SVG glyphs from that index (the color
+   slice is hash-derived, so the glyph is stable per author). Rendered as `currentColor`
+   beside the name in the row, the reply preview, and the pinned strip.
+3. **P1/Sam — pinned-strip jump rows have no touch floor.** Each jump row is
+   `px-1 py-0.5` (~24px tall) — under the 44px coarse-pointer recommendation, and the
+   PINNED toggle is only ~36px. Fix: apply the existing `.touch-target` class (the
+   `@media (pointer: coarse)` floor in `app/globals.css`) to the jump rows and the
+   toggle, closing the gap the 2026-08-30 touch sweep left.
+
+**The "Sam flags"** are the named P1 items 2–3 (plus the stream live region), raised
+against the 2026-08-30 merge; fixing all three clears them and the P1 stream a11y.
 
 ---
 
