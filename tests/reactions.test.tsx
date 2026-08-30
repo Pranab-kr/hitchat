@@ -13,13 +13,20 @@ const empty: ReactionState = { counts: {}, mine: [] }
 afterEach(cleanup)
 
 describe('Reactions', () => {
-  it('shows a visible word label beside every glyph', () => {
+  it('uses emoji marks without visible word labels', () => {
     render(
       <Reactions messageId="m1" state={empty} error={null} pending={false} onToggle={() => {}} />,
     )
 
-    for (const label of ['works', 'buggy', 'nice', 'looking']) {
-      expect(screen.getByRole('button', { name: label })).toHaveTextContent(label)
+    for (const [label, mark] of [
+      ['works', '✅'],
+      ['buggy', '⚠️'],
+      ['nice', '🔥'],
+      ['looking', '👀'],
+    ]) {
+      const button = screen.getByRole('button', { name: label })
+      expect(button).toHaveTextContent(mark)
+      expect(button).not.toHaveTextContent(label)
     }
   })
 
@@ -45,12 +52,12 @@ describe('Reactions', () => {
     )
   })
 
-  it('draws every mark as an SVG in currentColor, never an emoji', () => {
+  it('keeps the emoji marks decorative while the button stays accessible', () => {
     const { container } = render(
       <Reactions messageId="m1" state={empty} error={null} pending={false} onToggle={() => {}} />,
     )
 
-    expect(container.querySelectorAll('button svg[aria-hidden="true"]')).toHaveLength(4)
-    expect(container.innerHTML).not.toMatch(/\p{Extended_Pictographic}/u)
+    expect(container.querySelectorAll('button span[aria-hidden="true"]')).toHaveLength(4)
+    expect(container.querySelectorAll('button[aria-label]')).toHaveLength(4)
   })
 })

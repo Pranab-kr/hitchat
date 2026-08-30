@@ -24,26 +24,26 @@ export function CodeCard({
 
   const body = (
     <div
-      className="overflow-x-auto px-4 py-3 font-mono text-[13px] leading-[21px]"
+      className="min-w-0 max-w-full overflow-x-auto px-4 py-3 font-mono text-[13px] leading-[21px]"
       // Safe: Shiki escapes every '<' in the input (asserted in tests/highlight.test.ts).
       dangerouslySetInnerHTML={{ __html: html ?? '' }}
     />
   )
 
   return (
-    <div className="my-2 flex overflow-hidden rounded-card border border-hairline bg-code-bg">
+    <div className="my-2 flex min-w-0 max-w-full overflow-hidden rounded-card border border-hairline bg-code-bg">
       {/* Nothing else in the app uses a vertical rule. That exclusivity is the point. */}
       <div className="w-[2px] shrink-0 bg-rule" aria-hidden />
 
-      <div className="min-w-0 flex-1">
-        <div className="flex items-center gap-3 border-b border-hairline px-4 py-2">
+      <div className="min-w-0 max-w-full flex-1">
+        <div className="flex min-w-0 flex-wrap items-center gap-3 border-b border-hairline px-4 py-2">
           {labTag && (
             <span className="shrink-0 font-mono text-[12px] tracking-[0.02em] text-rule">
               {labTag}
             </span>
           )}
           {title && (
-            <span className="truncate text-[13px] font-medium text-ink">{title}</span>
+            <span className="min-w-0 flex-1 truncate text-[13px] font-medium text-ink">{title}</span>
           )}
           <span className="ml-auto shrink-0 font-mono text-[12px] text-graphite">
             {lang}

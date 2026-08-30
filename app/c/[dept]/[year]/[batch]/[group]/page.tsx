@@ -113,13 +113,13 @@ export default async function RoomPage({ params }: { params: Promise<RoomParams>
               <p className="truncate font-mono text-[12px] leading-4 tracking-[0.02em] text-graphite">
                 {deptName} · {ordinal(yearNumber)} year · Batch {batchNumber}
               </p>
-              <h1 className="font-display text-[32px] leading-[36px] font-semibold tracking-[-0.02em] text-ink">
+              <h1 className="min-w-0 truncate font-display text-[32px] leading-[36px] font-semibold tracking-[-0.02em] text-ink">
                 {/* The room title doubles as the home link — back to the room picker. */}
                 <Link
                   href="/"
                   prefetch
                   title="Back to the room picker"
-                  className="rounded-[4px] transition-colors hover:text-pen"
+                  className="block truncate rounded-[4px] transition-colors hover:text-pen"
                 >
                   {room.label}
                 </Link>

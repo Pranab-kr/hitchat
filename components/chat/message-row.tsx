@@ -109,7 +109,7 @@ export const MessageRow = memo(function MessageRow({
       initial={mounted ? (reduce ? { opacity: 0 } : { opacity: 0, y: 8 }) : false}
       animate={{ opacity: 1, y: 0 }}
       transition={reduce ? { duration: 0 } : { duration: 0.18, ease: 'easeOut' }}
-      className={`group px-4 py-1 transition-colors ${highlighted ? 'bg-pen/8' : ''}`}
+      className={`group min-w-0 max-w-full px-4 py-1 transition-colors ${highlighted ? 'bg-pen/8' : ''}`}
     >
       {message.reply_to_id && (
         <button
@@ -200,7 +200,7 @@ export const MessageRow = memo(function MessageRow({
         )}
       </div>
 
-      {/* Code bodies never fade — someone copying an 18-hour-old answer needs to read it
+      {/* Code bodies never fade — someone copying an 8-hour-old answer needs to read it
           perfectly. Only text ages. */}
       {isCode ? (
         <CodeCard
