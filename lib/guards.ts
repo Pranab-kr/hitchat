@@ -61,7 +61,7 @@ export async function assertRateOk(
 }
 
 // The windows must track check_rate_limit in the migration exactly — text is 5/10s,
-// code 3/60s, reaction 30/60s, admin_login 5/60s.
+// code 10/60s, reaction 30/60s, admin_login 5/60s.
 const RATE_WINDOWS: Record<'text' | 'code' | 'reaction' | 'admin_login', number> = {
   text: 10,
   code: 60,

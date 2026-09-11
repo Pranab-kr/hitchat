@@ -36,7 +36,11 @@ export default async function AdminsPage() {
   }))
 
   return (
-    <OwnerShell title="Admins" sub="Who can moderate, and who used to.">
+    <OwnerShell
+      title="Admins"
+      sub="Who can moderate, and who used to."
+      role={session.role}
+    >
       <AdminsPanel admins={admins} />
     </OwnerShell>
   )

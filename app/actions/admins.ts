@@ -11,6 +11,7 @@ import { type AdminsState, type AdminSummary, emptyAdminsState } from '@/lib/own
 
 export async function createCoAdmin(
   displayName: string,
+  customSecret?: string,
 ): Promise<ActionResult<{ secret: string }>> {
   const auth = await requireOwner()
   if (!auth.ok) return auth
@@ -19,9 +20,20 @@ export async function createCoAdmin(
   if (!name) return err('invalid', 'Give them a name you will recognise.')
   if (name.length > 40) return err('invalid', 'That name is too long. Keep it under 40 characters.')
 
-  // Generated server-side so it is always strong — an owner-chosen secret would be the
-  // weakest link in an otherwise bcrypt-cost-12 system. Shown once, never again.
-  const secret = randomBytes(24).toString('base64url')
+  let secret: string
+  if (customSecret !== undefined && customSecret.trim() !== '') {
+    const trimmed = customSecret.trim()
+    if (trimmed.length < 8) {
+      return err('invalid', 'Custom secret must be at least 8 characters.')
+    }
+    if (trimmed.length > 72) {
+      return err('invalid', 'Custom secret must be at most 72 characters.')
+    }
+    secret = trimmed
+  } else {
+    // Generated server-side if not specified — shown once, never again.
+    secret = randomBytes(24).toString('base64url')
+  }
 
   const db = getServiceClient()
   const { error } = await db.from('admins').insert({
@@ -102,7 +114,9 @@ export async function createCoAdminForm(
 ): Promise<AdminsState> {
   const raw = form.get('displayName')
   const name = typeof raw === 'string' ? raw.trim() : ''
-  const result = await createCoAdmin(name)
+  const rawSecret = form.get('customSecret')
+  const customSecret = typeof rawSecret === 'string' ? rawSecret.trim() : undefined
+  const result = await createCoAdmin(name, customSecret)
 
   if (!result.ok) return { ...emptyAdminsState, error: result.message }
   return { error: null, notice: null, secret: result.data.secret, secretFor: name }

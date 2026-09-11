@@ -6,10 +6,12 @@ import { ThemeToggle } from '@/components/theme-toggle'
 export function OwnerShell({
   title,
   sub,
+  role,
   children,
 }: {
   title: string
   sub: string
+  role?: 'owner' | 'co_admin'
   children: React.ReactNode
 }) {
   return (
@@ -35,9 +37,11 @@ export function OwnerShell({
         <Link prefetch href="/sudo/structure" className="py-2 text-graphite hover:text-pen">
           structure
         </Link>
-        <Link prefetch href="/sudo/admins" className="py-2 text-graphite hover:text-pen">
-          admins
-        </Link>
+        {role !== 'co_admin' && (
+          <Link prefetch href="/sudo/admins" className="py-2 text-graphite hover:text-pen">
+            admins
+          </Link>
+        )}
         <Link prefetch href="/" className="py-2 text-graphite hover:text-pen">
           rooms
         </Link>

@@ -14,11 +14,10 @@ export const metadata: Metadata = {
 
 export default async function StructurePage() {
   // This page re-verifies its own session. proxy.ts is not authorization, and every
-  // action behind these forms calls requireOwner() again regardless of what happens
+  // action behind these forms calls requireAdmin() again regardless of what happens
   // here — this check only decides whether the page renders at all.
   const session = await verifySession()
   if (!session) redirect('/sudo')
-  if (session.role !== 'owner') redirect('/')
 
   const db = getServiceClient()
   const { data } = await db
@@ -38,7 +37,11 @@ export default async function StructurePage() {
   }))
 
   return (
-    <OwnerShell title="Structure" sub="Departments, years, batches and groups.">
+    <OwnerShell
+      title="Structure"
+      sub="Departments, years, batches and groups."
+      role={session.role}
+    >
       <StructureForms departments={sorted} />
 
       <section className="mt-10">

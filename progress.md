@@ -13,12 +13,53 @@ section for the step you're on. Full protocol in `AGENTS.md`.
 
 | | |
 |---|---|
-| **Phase** | **In progress — co-admin structure access, 10/60s code rate limit, and custom co-admin secret.** |
-| **Current step** | In progress on `feat/coadmin-structure-rate-custom-secret`. Implementing co-admin structure management, code rate limit (10/60s), and optional custom secret in co-admin creation. |
-| **Branch** | `feat/coadmin-structure-rate-custom-secret` |
-| **Next action** | Apply migration 0011, update structure actions and guards to allow co-admins, add custom secret handling in `createCoAdmin`, and update test suite. |
+| **Phase** | **Idle — co-admin structure access, 10/60s code post limit, and customizable co-admin secrets implemented, verified, and merged.** |
+| **Current step** | Nothing in flight. `feat/coadmin-structure-rate-custom-secret` was verified and merged. |
+| **Branch** | `main` — **ahead of `origin/main`, not pushed** (owner asked to hold the push). |
+| **Next action** | None pending. Before publishing, rotate the leaked service-role key and owner secret as described below, then run `git push origin main`. |
 | **Blocked?** | No. |
 | **Last updated** | 2026-09-12 |
+
+## Shipped — co-admin structure access, 10/60s code rate limit, and custom co-admin secret ✅
+
+Built on `feat/coadmin-structure-rate-custom-secret` in response to owner request.
+
+**What shipped (files):**
+- **`supabase/migrations/0011_code_rate_limit_10.sql`** — **applied live** to `vbbinzmpnszdayrdfsle`.
+  Replaces `check_rate_limit` function to increase code post rate limit from 3 to 10 per
+  60 seconds.
+- **`lib/guards.ts`** — updated comments documenting the 10/60s code post window.
+- **`app/actions/structure.ts`** — changed authorization guard from `requireOwner` to
+  `requireAdmin` on all 5 structure operations (`createDepartment`, `createYear`,
+  `createBatch`, `createGroup`, `deleteDepartment`).
+- **`app/sudo/structure/page.tsx`** — removed `session.role !== 'owner'` redirect; co-admins
+  now have full access to `/sudo/structure`. Passes `session.role` to `OwnerShell`.
+- **`components/admin/owner-shell.tsx`** — accepts `role?: 'owner' | 'co_admin'`; hides the
+  `/sudo/admins` link for co-admins so they only see structure and rooms links.
+- **`app/sudo/admins/page.tsx`** — passes `role={session.role}` to `OwnerShell`.
+- **`app/actions/admins.ts`** — `createCoAdmin(displayName, customSecret?)` and
+  `createCoAdminForm` now accept an optional custom secret (validated min 8, max 72
+  characters). If left blank or omitted, it auto-generates a 24-byte random base64url
+  string as before. The secret is bcrypt-hashed (cost 12) and returned once for display.
+- **`components/admin/admins-panel.tsx`** — added `customSecret` input field to
+  `CreateCoAdmin` form and updated explanatory text.
+- **`docs/superpowers/specs/2026-08-03-anon-lab-chat-design.md`** — spec updated to record
+  the 10/60s code limit, co-admin structure access, and customizable secrets.
+- **`tests/owner-actions.test.ts`** — updated test suite: verifies co-admin can manage
+  structure, verifies co-admin is still rejected from admin management, and adds tests
+  for custom secrets (valid custom secret hashing, min 8 chars, max 72 chars).
+- **`tests/messages-action.test.ts`** — added rate limit test confirming 10 code posts
+  succeed and the 11th is rejected with `rate_limited`.
+
+**Verified — a green suite is not enough (AGENTS.md):**
+- **Full suite 211/211** tests pass across all 28 test files.
+- `tsc --noEmit` clean, ESLint clean (0 errors), `bun run build` passes with Turbopack.
+- **Migration 0011 verified live:** probe in database verified 10 code insertions allowed,
+  11th rejected.
+- **Real browser (Playwright with system Brave):** automated probe logged in with a custom
+  secret as co-admin, loaded `/sudo/structure` (HTTP 200), confirmed `/sudo/admins` link is
+  hidden, created a department via the UI, and confirmed navigating to `/sudo/admins`
+  redirected back to `/`. Probe rows cleaned up immediately.
 
 ## Shipped — code-card scrollbar placement ✅
 

@@ -1,7 +1,7 @@
 'use server'
 
 import { getServiceClient } from '@/lib/supabase/admin'
-import { requireOwner } from '@/lib/auth/require'
+import { requireAdmin } from '@/lib/auth/require'
 import { type ActionResult, ok, err } from '@/lib/result'
 import type { StructureState } from '@/lib/owner-forms'
 
@@ -19,7 +19,7 @@ export async function createDepartment(input: {
   name: string
   slug: string
 }): Promise<ActionResult<{ id: string }>> {
-  const auth = await requireOwner()
+  const auth = await requireAdmin()
   if (!auth.ok) return auth
 
   const name = input.name.trim()
@@ -48,7 +48,7 @@ export async function createYear(input: {
   departmentId: string
   number: number
 }): Promise<ActionResult<{ id: string }>> {
-  const auth = await requireOwner()
+  const auth = await requireAdmin()
   if (!auth.ok) return auth
 
   // 5 is allowed for five-year integrated courses; the DB check constraint matches.
@@ -75,7 +75,7 @@ export async function createBatch(input: {
   yearId: string
   number: number
 }): Promise<ActionResult<{ id: string }>> {
-  const auth = await requireOwner()
+  const auth = await requireAdmin()
   if (!auth.ok) return auth
 
   if (!Number.isInteger(input.number) || input.number < 1 || input.number > 8) {
@@ -99,7 +99,7 @@ export async function createGroup(input: {
   batchId: string
   label: string
 }): Promise<ActionResult<{ id: string }>> {
-  const auth = await requireOwner()
+  const auth = await requireAdmin()
   if (!auth.ok) return auth
 
   // Stored uppercase, and the room URL lowercases it. The room page looks the group up
@@ -126,7 +126,7 @@ export async function deleteDepartment(input: {
   id: string
   confirmName: string
 }): Promise<ActionResult<null>> {
-  const auth = await requireOwner()
+  const auth = await requireAdmin()
   if (!auth.ok) return auth
 
   const db = getServiceClient()

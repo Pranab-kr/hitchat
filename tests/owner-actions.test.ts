@@ -3,7 +3,6 @@ import { describe, it, expect, beforeAll, afterAll, beforeEach, vi } from 'vites
 import bcrypt from 'bcryptjs'
 import { createHash, randomBytes } from 'node:crypto'
 import { createClient } from '@supabase/supabase-js'
-import type { ActionResult } from '@/lib/result'
 
 // Same shape as tests/admin-auth.test.ts: next/headers is mocked because cookies()
 // throws outside a request scope, and everything below it is real — real admin rows,
@@ -100,36 +99,32 @@ afterAll(async () => {
   }
 })
 
-describe('owner-only actions reject a co-admin session', () => {
-  // The single most important assertion in this file: a co-admin is a real,
-  // fully-authenticated admin. Only the role check stands between them and the
-  // structure of every room in the app.
-  it('rejects every structure change', async () => {
+describe('structure actions admit a co-admin session', () => {
+  it('allows a co-admin to manage structure', async () => {
     await signInAs(coAdminId)
 
-    const calls: Array<() => Promise<ActionResult<unknown>>> = [
-      () => structure.createDepartment({ name: 'X', slug: `xx-${RUN}` }),
-      () => structure.createYear({ departmentId: crypto.randomUUID(), number: 1 }),
-      () => structure.createBatch({ yearId: crypto.randomUUID(), number: 1 }),
-      () => structure.createGroup({ batchId: crypto.randomUUID(), label: 'A' }),
-      () => structure.deleteDepartment({ id: crypto.randomUUID(), confirmName: 'X' }),
-    ]
+    const dept = await structure.createDepartment({ name: `Co Dept ${RUN}`, slug: `co-${RUN}` })
+    expect(dept.ok).toBe(true)
+    if (!dept.ok) return
+    deptIds.push(dept.data.id)
 
-    for (const call of calls) {
-      const result = await call()
-      expect(result.ok).toBe(false)
-      if (result.ok) continue
-      expect(result.code).toBe('unauthorized')
-      expect(result.message).toBe('Only the owner can do that.')
-    }
+    const year = await structure.createYear({ departmentId: dept.data.id, number: 1 })
+    expect(year.ok).toBe(true)
+    if (!year.ok) return
 
-    // The refusal must be a refusal, not a failed write reported as one.
-    const { count } = await db
-      .from('departments')
-      .select('id', { count: 'exact', head: true })
-      .eq('slug', `xx-${RUN}`)
-    expect(count).toBe(0)
+    const batch = await structure.createBatch({ yearId: year.data.id, number: 1 })
+    expect(batch.ok).toBe(true)
+    if (!batch.ok) return
+
+    const group = await structure.createGroup({ batchId: batch.data.id, label: 'A' })
+    expect(group.ok).toBe(true)
+
+    const del = await structure.deleteDepartment({ id: dept.data.id, confirmName: `Co Dept ${RUN}` })
+    expect(del.ok).toBe(true)
   })
+})
+
+describe('owner-only admin actions reject a co-admin session', () => {
 
   it('rejects admin management', async () => {
     await signInAs(coAdminId)
@@ -393,6 +388,47 @@ describe('createCoAdmin', () => {
     await signInAs(ownerId)
     const result = await admins.createCoAdmin('   ')
     expect(result.ok).toBe(false)
+  })
+
+  it('accepts and hashes a valid custom secret', async () => {
+    await signInAs(ownerId)
+
+    const name = `Custom Secret TA ${RUN}`
+    const custom = `custom-secret-${RUN}`
+    const result = await admins.createCoAdmin(name, custom)
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+    expect(result.data.secret).toBe(custom)
+
+    const { data: row } = await db
+      .from('admins')
+      .select('id, secret_hash, role')
+      .eq('display_name', name)
+      .single()
+    extraAdminIds.push(row!.id)
+
+    expect(row!.role).toBe('co_admin')
+    expect(await bcrypt.compare(custom, row!.secret_hash)).toBe(true)
+  })
+
+  it('rejects a custom secret under 8 characters', async () => {
+    await signInAs(ownerId)
+    const result = await admins.createCoAdmin(`Short ${RUN}`, 'short7')
+    expect(result.ok).toBe(false)
+    if (!result.ok) {
+      expect(result.code).toBe('invalid')
+      expect(result.message).toContain('at least 8 characters')
+    }
+  })
+
+  it('rejects a custom secret over 72 characters', async () => {
+    await signInAs(ownerId)
+    const result = await admins.createCoAdmin(`Long ${RUN}`, 'a'.repeat(73))
+    expect(result.ok).toBe(false)
+    if (!result.ok) {
+      expect(result.code).toBe('invalid')
+      expect(result.message).toContain('at most 72 characters')
+    }
   })
 })
 

@@ -226,6 +226,30 @@ describe('postCode', () => {
     if (result.ok) return
     expect(result.code).toBe('invalid')
   })
+
+  it('allows 10 code posts per 60s and rate-limits the eleventh', async () => {
+    const { postCode } = await import('../app/actions/messages')
+    const { hashToken } = await import('../lib/identity')
+    const token = tok('code-rate-token')
+    const hash = hashToken(token)
+    await db.from('rate_events').delete().eq('author_token_hash', hash)
+
+    const codes: (string | undefined)[] = []
+    for (let i = 0; i < 11; i++) {
+      const r = await postCode({
+        token,
+        groupId,
+        body: `int x = ${i};`,
+        lang: 'c',
+      })
+      codes.push(r.ok ? undefined : r.code)
+    }
+
+    await db.from('rate_events').delete().eq('author_token_hash', hash)
+
+    expect(codes.slice(0, 10)).toEqual(Array(10).fill(undefined))
+    expect(codes[10]).toBe('rate_limited')
+  }, 45_000)
 })
 
 describe('deleteOwnMessage', () => {

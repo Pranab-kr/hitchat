@@ -66,8 +66,8 @@ function CreateCoAdmin() {
   return (
     <Card title="New co-admin">
       <p className="mt-1 text-[15px] leading-6 text-graphite">
-        The secret is generated here and shown once. There is no way to look it up later
-        — if it is lost, revoke the admin and make a new one.
+        A custom secret can be set or auto-generated, and is shown once. There is no way
+        to look it up later — if it is lost, revoke the admin and make a new one.
       </p>
 
       <form action={action} className="mt-4 space-y-3">
@@ -78,6 +78,13 @@ function CreateCoAdmin() {
           placeholder="Lab Assistant"
           autoComplete="off"
           required
+        />
+        <Field
+          id="admin-custom-secret"
+          name="customSecret"
+          label="custom secret (leave blank to auto-generate)"
+          placeholder="optional (min. 8 characters)"
+          autoComplete="off"
         />
         {state.error && <FormError>{state.error}</FormError>}
         <SubmitButton pending={pending}>Create co-admin</SubmitButton>
