@@ -13,12 +13,12 @@ section for the step you're on. Full protocol in `AGENTS.md`.
 
 | | |
 |---|---|
-| **Phase** | **Idle — code-card scrollbar placement fixed and verified. Merged to `main` (local only, NOT pushed).** |
-| **Current step** | Nothing in flight. `feat/fix-chat-scrollbar` was verified, merged to `main`, and deleted. |
-| **Branch** | `main` — **ahead of `origin/main` by 26 commits, not pushed** (owner asked to hold the push). |
-| **Next action** | None pending. Before publishing, rotate the leaked service-role key and owner secret as described below, then run `git push origin main`. |
+| **Phase** | **In progress — co-admin structure access, 10/60s code rate limit, and custom co-admin secret.** |
+| **Current step** | In progress on `feat/coadmin-structure-rate-custom-secret`. Implementing co-admin structure management, code rate limit (10/60s), and optional custom secret in co-admin creation. |
+| **Branch** | `feat/coadmin-structure-rate-custom-secret` |
+| **Next action** | Apply migration 0011, update structure actions and guards to allow co-admins, add custom secret handling in `createCoAdmin`, and update test suite. |
 | **Blocked?** | No. |
-| **Last updated** | 2026-08-30 |
+| **Last updated** | 2026-09-12 |
 
 ## Shipped — code-card scrollbar placement ✅
 
