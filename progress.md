@@ -13,12 +13,44 @@ section for the step you're on. Full protocol in `AGENTS.md`.
 
 | | |
 |---|---|
-| **Phase** | **In progress — consolidate /sudo and delete /sudo/structure** |
-| **Current step** | Merging auth and structure into `/sudo`, updating `loginFormAction` redirect, updating `OwnerShell` navigation, and deleting `/sudo/structure`. |
-| **Branch** | `feat/consolidate-sudo-structure` |
-| **Next action** | Implement changes in `app/sudo/page.tsx`, `app/actions/admin.ts`, `components/admin/owner-shell.tsx`, remove `app/sudo/structure/`, and verify. |
+| **Phase** | **Idle — consolidated /sudo and deleted /sudo/structure route implemented, verified, and merged.** |
+| **Current step** | Nothing in flight. `feat/consolidate-sudo-structure` verified and merged. |
+| **Branch** | `main` — **ahead of `origin/main`, not pushed** (owner asked to hold the push). |
+| **Next action** | None pending. Before publishing, rotate the leaked service-role key and owner secret as described below, then run `git push origin main`. |
 | **Blocked?** | No. |
 | **Last updated** | 2026-09-15 |
+
+## Shipped — consolidate /sudo and delete /sudo/structure route ✅
+
+Built on `feat/consolidate-sudo-structure` in response to owner request.
+
+**What shipped (files):**
+- **`app/sudo/page.tsx`** — consolidated authentication and structure management onto a single route.
+  When unauthenticated, renders the sign-in card with `SudoForm`. When authenticated, queries
+  the department/year/batch/group hierarchy and renders `OwnerShell` with `StructureForms` and
+  the current rooms list. Uses `generateMetadata()` to provide dynamic title ('Structure' vs 'Sign in').
+- **`app/actions/admin.ts`** — updated `loginFormAction` to `redirect('/sudo')` on successful login
+  instead of `redirect('/')`.
+- **`components/admin/owner-shell.tsx`** — updated the `structure` nav link target from `/sudo/structure`
+  to `/sudo`.
+- **Deleted `app/sudo/structure/`** (`page.tsx` and `loading.tsx`) — completely removed `/sudo/structure`
+  route so direct requests to it return 404.
+- **`README.md` & `docs/superpowers/specs/2026-08-03-anon-lab-chat-design.md`** — updated documentation
+  and spec to record `/sudo` as the single route for both login and structure management.
+- **`tests/admin-auth.test.ts`** — added tests for `loginFormAction` verifying error state on invalid
+  secret and redirect to `/sudo` on valid secret. Guard proved by mutation (changing redirect to `/`
+  failed the assertion).
+
+**Verified — a green suite is not enough (AGENTS.md):**
+- **Full suite 213/213** tests pass across all 28 test files.
+- `tsc --noEmit` clean, ESLint clean (0 errors), `bun run build` passes with Turbopack.
+- **Guard proven by mutation:** mutating `loginFormAction` redirect from `/sudo` to `/` failed exactly
+  `tests/admin-auth.test.ts > loginFormAction > redirects to /sudo on successful login`.
+- **HTTP verification against production server (`next start`):**
+  - Unauthenticated `GET /sudo` returns HTTP 200 with "Sign in" form and secret input.
+  - `GET /sudo/structure` returns HTTP 404.
+  - Authenticated `GET /sudo` returns HTTP 200 with Structure management, "Current rooms", and
+    `href="/sudo"` in navigation. Temporary session row deleted immediately after verification.
 
 ## Shipped — co-admin structure access, 10/60s code rate limit, and custom co-admin secret ✅
 

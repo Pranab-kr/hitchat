@@ -373,8 +373,9 @@ Admin capabilities in any room:
 - Post with a **SUDO** badge
 
 Admin pages:
-- `/sudo/structure` (owner and co-admin) — create, rename, delete departments, years,
-  batches, groups. Deleting cascades and is confirmed with a typed room name.
+- `/sudo` (owner and co-admin) — sign in when unauthenticated; once authenticated,
+  create, rename, delete departments, years, batches, groups. Deleting cascades and is
+  confirmed with a typed room name.
 
 Owner-only pages:
 - `/sudo/admins` — create a co-admin (customizable or server-generated secret, shown

@@ -86,9 +86,8 @@ Or deploy directly to [Vercel](https://vercel.com/) / your preferred host by con
 
 ## Admin Panel & Room Setup
 
-1. Navigate to `/sudo` to sign in with your `OWNER_SECRET`.
-2. Visit `/sudo/structure` to create departments, academic years, batches, and group rooms (e.g. `CSE` $\rightarrow$ Year `3` $\rightarrow$ Batch `2` $\rightarrow$ Group `A`).
-3. Add co-admins at `/sudo/admins` if needed.
+1. Navigate to `/sudo` to sign in with your `OWNER_SECRET` and manage department structure (e.g. `CSE` $\rightarrow$ Year `3` $\rightarrow$ Batch `2` $\rightarrow$ Group `A`).
+2. Add co-admins at `/sudo/admins` if needed.
 4. Students can now open `https://your-domain.com` and join their lab group.
 
 ---

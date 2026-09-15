@@ -73,6 +73,6 @@ export async function loginFormAction(
   const result = await adminLogin(typeof secret === 'string' ? secret : '')
 
   // redirect() throws to unwind, so it must sit outside any try/catch.
-  if (result.ok) redirect('/')
+  if (result.ok) redirect('/sudo')
   return { error: result.message }
 }

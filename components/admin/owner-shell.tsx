@@ -34,7 +34,7 @@ export function OwnerShell({
       </div>
 
       <nav className="mb-8 flex flex-wrap gap-x-4 gap-y-1 border-b border-hairline pb-3 font-mono text-[12px] leading-4 tracking-[0.02em]">
-        <Link prefetch href="/sudo/structure" className="py-2 text-graphite hover:text-pen">
+        <Link prefetch href="/sudo" className="py-2 text-graphite hover:text-pen">
           structure
         </Link>
         {role !== 'co_admin' && (

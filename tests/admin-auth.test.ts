@@ -32,7 +32,7 @@ vi.mock('next/headers', () => ({
 
 const { verifySession, createSession, destroySession } = await import('@/lib/auth/session')
 const { requireAdmin, requireOwner } = await import('@/lib/auth/require')
-const { adminLogin, adminLogout } = await import('@/app/actions/admin')
+const { adminLogin, adminLogout, loginFormAction } = await import('@/app/actions/admin')
 
 const db = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -348,3 +348,30 @@ describe('adminLogout', () => {
     await expect(destroySession()).resolves.toBeUndefined()
   })
 })
+
+describe('loginFormAction', () => {
+  it('returns an error state on a bad secret without redirecting', async () => {
+    const formData = new FormData()
+    formData.append('secret', `bad-guess-${RUN}`)
+    mocks.ip = ipFor('form-bad')
+    const result = await loginFormAction({ error: null }, formData)
+    expect(result.error).toBe("That secret doesn't work.")
+  })
+
+  it('redirects to /sudo on successful login', async () => {
+    const formData = new FormData()
+    formData.append('secret', CO_SECRET)
+    mocks.ip = ipFor('form-good')
+    let redirected = false
+    try {
+      await loginFormAction({ error: null }, formData)
+    } catch (err: unknown) {
+      redirected = true
+      const e = err as { message: string; digest?: string }
+      expect(e.message).toBe('NEXT_REDIRECT')
+      expect(e.digest).toContain('/sudo')
+    }
+    expect(redirected).toBe(true)
+  })
+})
+
