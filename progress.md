@@ -13,12 +13,12 @@ section for the step you're on. Full protocol in `AGENTS.md`.
 
 | | |
 |---|---|
-| **Phase** | **Idle — co-admin structure access, 10/60s code post limit, and customizable co-admin secrets implemented, verified, and merged.** |
-| **Current step** | Nothing in flight. `feat/coadmin-structure-rate-custom-secret` was verified and merged. |
-| **Branch** | `main` — **ahead of `origin/main`, not pushed** (owner asked to hold the push). |
-| **Next action** | None pending. Before publishing, rotate the leaked service-role key and owner secret as described below, then run `git push origin main`. |
+| **Phase** | **In progress — consolidate /sudo and delete /sudo/structure** |
+| **Current step** | Merging auth and structure into `/sudo`, updating `loginFormAction` redirect, updating `OwnerShell` navigation, and deleting `/sudo/structure`. |
+| **Branch** | `feat/consolidate-sudo-structure` |
+| **Next action** | Implement changes in `app/sudo/page.tsx`, `app/actions/admin.ts`, `components/admin/owner-shell.tsx`, remove `app/sudo/structure/`, and verify. |
 | **Blocked?** | No. |
-| **Last updated** | 2026-09-12 |
+| **Last updated** | 2026-09-15 |
 
 ## Shipped — co-admin structure access, 10/60s code rate limit, and custom co-admin secret ✅
 
