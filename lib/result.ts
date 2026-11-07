@@ -4,6 +4,7 @@ export type ActionErrorCode =
   | 'locked'
   | 'invalid'
   | 'unauthorized'
+  | 'not_found'
   | 'server'
 
 export type ActionResult<T> =
