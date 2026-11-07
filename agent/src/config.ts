@@ -9,6 +9,11 @@ import path from 'node:path'
 
 export type Config = { url: string; token: string }
 
+// The deployed site. A default is safe to ship now that the domain has settled: it only
+// decides where `init` points when the caller says nothing, and --url / HITCHAT_URL win
+// for anyone running their own copy.
+export const DEFAULT_URL = 'https://chat.pranabkr.in'
+
 export function configPath(): string {
   const override = process.env.HITCHAT_CONFIG
   if (override) return override

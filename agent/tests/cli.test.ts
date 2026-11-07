@@ -85,13 +85,37 @@ describe('init', () => {
     expect(new Headers(h.calls[0].init.headers).get('authorization')).toBe(`Bearer ${saved.token}`)
   })
 
-  it('exits 2 with a usage message and writes nothing when --url is missing', async () => {
+  it('falls back to the published site when --url is omitted', async () => {
     const h = harness(() => json({ ok: true, data: { rooms: [] } }))
 
     const code = await runCli(['init', '--new'], h.io, h.fetchImpl)
 
+    expect(code).toBe(0)
+    expect(h.calls[0].url).toBe('https://chat.pranabkr.in/api/agent/rooms')
+    expect(JSON.parse(readFileSync(file, 'utf8'))).toMatchObject({
+      url: 'https://chat.pranabkr.in',
+    })
+  })
+
+  it('prefers --url and HITCHAT_URL over the built-in default', async () => {
+    process.env.HITCHAT_URL = 'https://self.hosted'
+    const h = harness(() => json({ ok: true, data: { rooms: [] } }))
+
+    const code = await runCli(['init', '--new'], h.io, h.fetchImpl)
+    expect(code).toBe(0)
+    expect(h.calls[0].url).toBe('https://self.hosted/api/agent/rooms')
+
+    await runCli(['init', '--url', BASE, '--new'], h.io, h.fetchImpl)
+    expect(h.calls[1].url).toBe(`${BASE}/api/agent/rooms`)
+  })
+
+  it('exits 2 with a usage message and writes nothing without a token', async () => {
+    const h = harness(() => json({ ok: true, data: { rooms: [] } }))
+
+    const code = await runCli(['init', '--url', BASE], h.io, h.fetchImpl)
+
     expect(code).toBe(2)
-    expect(errored(h)).toContain('--url')
+    expect(errored(h)).toContain('--token')
     expect(existsSync(file)).toBe(false)
   })
 

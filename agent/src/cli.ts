@@ -5,7 +5,7 @@ import { readFileSync } from 'node:fs'
 import path from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { HitchatError, listRooms, readMessages, sendCode, sendMessage } from './client'
-import { type Config, resolveConfig, writeConfig } from './config'
+import { type Config, DEFAULT_URL, resolveConfig, writeConfig } from './config'
 
 // A thin shell over the client. It owns no rules: every limit, ban, lock and quota is
 // decided by the app. What it does own is three conventions the spec pins down — every
@@ -44,14 +44,14 @@ function buildProgram(io: CliIo, fetchImpl?: typeof fetch): Command {
   program
     .command('init')
     .description('Save the URL and token, after proving both work.')
-    .option('--url <url>', 'hitchat base URL, e.g. http://localhost:3000')
+    .option('--url <url>', `hitchat base URL (default ${DEFAULT_URL})`)
     .option('--token <token>', 'the token to post as (the identity)')
     .option('--new', 'mint a fresh UUID token instead')
     .action(async (options: { url?: string; token?: string; new?: boolean }) => {
-      // No hardcoded default host: the deployed domain is not settled, and a wrong
-      // default would be worse than asking.
-      const url = options.url ?? process.env.HITCHAT_URL
-      if (!url) throw new UsageError('Add --url <url>. There is no default host.')
+      // One-time setup: the URL and the token are written to the config file, so every
+      // later command needs neither. --url and HITCHAT_URL override the published site
+      // for anyone running their own copy.
+      const url = options.url ?? process.env.HITCHAT_URL ?? DEFAULT_URL
 
       const token = options.new ? randomUUID() : (options.token ?? process.env.HITCHAT_TOKEN)
       if (!token) throw new UsageError('Add --token <token> or --new.')
