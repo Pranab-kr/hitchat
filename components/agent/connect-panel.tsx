@@ -140,7 +140,8 @@ export function ConnectPanel({ origin }: { origin: string }) {
           themselves. If you install it once with{' '}
           <code className="font-mono">{GLOBAL_INSTALL}</code>, replace the whole{' '}
           <code className="font-mono">command</code>/<code className="font-mono">args</code>{' '}
-          pair with <code className="font-mono">hitchat-mcp</code>.
+          pair with <code className="font-mono">hitchat-mcp</code> — and if the editor cannot
+          find it, give it the full path to that binary instead.
         </p>
       </section>
 
