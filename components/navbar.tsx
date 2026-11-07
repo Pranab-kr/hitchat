@@ -1,11 +1,24 @@
 'use client'
 
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { ThemeToggle } from '@/components/theme-toggle'
 
 export function Navbar() {
   const pathname = usePathname()
+  const [scrolled, setScrolled] = useState(false)
+
+  useEffect(() => {
+    function onScroll() {
+      const isScrolled = window.scrollY > 16
+      setScrolled((prev) => (prev !== isScrolled ? isScrolled : prev))
+    }
+
+    onScroll()
+    window.addEventListener('scroll', onScroll, { passive: true })
+    return () => window.removeEventListener('scroll', onScroll)
+  }, [])
 
   // In-room chat (/c/...) has its own two-column lab-sheet frame (design.md § Layout).
   if (pathname.startsWith('/c/')) {
@@ -16,8 +29,14 @@ export function Navbar() {
   const isSudo = pathname === '/sudo' || pathname.startsWith('/sudo/')
 
   return (
-    <header className="sticky top-3 sm:top-4 z-40 w-full px-4 sm:px-6 pointer-events-none">
-      <div className="mx-auto flex max-w-2xl items-center justify-between rounded-full border border-hairline bg-paper/85 dark:bg-paper/85 backdrop-blur-md shadow-xs px-3.5 py-1.5 sm:px-4 sm:py-2 pointer-events-auto transition-all">
+    <header className="sticky top-0 sm:top-2 z-40 w-full px-4 sm:px-6 pointer-events-none transition-all duration-300">
+      <div
+        className={`mx-auto flex items-center justify-between rounded-full pointer-events-auto transition-all duration-300 ease-out motion-reduce:transition-none ${
+          scrolled
+            ? 'max-w-[620px] border border-hairline bg-paper/85 dark:bg-paper/85 backdrop-blur-md shadow-xs px-3.5 py-1.5 sm:px-4 sm:py-2 translate-y-2 scale-[0.98]'
+            : 'max-w-2xl border border-transparent bg-transparent shadow-none px-4 py-3 sm:px-6 sm:py-4 translate-y-0 scale-100'
+        }`}
+      >
         <Link
           href="/"
           prefetch
