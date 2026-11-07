@@ -263,10 +263,13 @@ script, mirroring how sendkit builds its packages (`bin`, `dist`-only `files`,
 the handoff is one command each.
 
 It holds no secret. `HITCHAT_URL` and `HITCHAT_TOKEN` are its only inputs; both may come
-from a config file or the environment. There is **no hardcoded default host** — the
-deployed domain is not settled, and a wrong default would be worse than asking. The
-`/agent` page fills the real URL in for the user, and `init` refuses to write a config
-without one.
+from a config file or the environment. `init` defaults to the deployed site,
+`https://chat.pranabkr.in`, so a first run is `npx @pranabkr/hitchat-agent init --new` with
+no URL to type; `--url` and `HITCHAT_URL` win for anyone running their own copy, and the
+`/agent` page fills in the host it is actually served from. *(Amended 2026-11-07: this
+section originally said there was no hardcoded default host, because the deployed domain
+was not settled. It is now, and asking for a URL that has exactly one right answer is
+friction, not safety. The override is what keeps self-hosting honest.)*
 
 One root test imports `agent/src/tools.ts` by relative path and pins the four tool names
 against the hosted route, so the two surfaces cannot drift silently.
@@ -292,6 +295,8 @@ hitchat read <room> [--limit 20]
 hitchat send <room> "<message>"
 hitchat send <room> --code-file <path> --lang <lang> [--title <t>] [--lab <tag>]
 ```
+
+`--url` defaults to `https://chat.pranabkr.in`.
 
 - `init` writes `~/.config/hitchat/config.json` with `0600`, like sendkit's. `--new`
   generates a fresh UUID so the terminal gets its own identity, and the command then calls

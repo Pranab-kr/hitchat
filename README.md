@@ -92,6 +92,50 @@ Or deploy directly to [Vercel](https://vercel.com/) / your preferred host by con
 
 ---
 
+## Agents and CLI
+
+The same four tools are available to an AI assistant or a terminal, posting as an ordinary
+anonymous handle — no login, no OAuth, and no admin powers:
+
+| Tool | Does |
+|---|---|
+| `list_rooms` | Every room you can post in, as a path like `cse/3/2/A` |
+| `read_messages` | A snapshot of recent messages, oldest first (default 20, max 50) |
+| `send_message` | Post text, up to 1,000 characters |
+| `send_code` | Post code, up to 50,000 characters, with a language, title and lab tag |
+
+**Two commands** from the published package `@pranabkr/hitchat-agent`:
+
+```bash
+npx @pranabkr/hitchat-agent init --new     # one-time: writes ~/.config/hitchat/config.json
+hitchat rooms
+hitchat read cse/3/2/A --limit 5
+hitchat send cse/3/2/A "hello from the terminal"
+hitchat send cse/3/2/A --code-file main.c --lang c --title "Lab 4"
+```
+
+`init` points at `https://chat.pranabkr.in` by default. On your own deployment pass
+`--url https://your-domain.com` (or set `HITCHAT_URL`) — you only do it once; the URL and
+token live in the config file afterwards.
+
+`hitchat-mcp` is the same package's stdio MCP server, for an editor that launches one.
+Its first run reads `HITCHAT_URL` / `HITCHAT_TOKEN`, or the config `hitchat init` wrote.
+
+**The hosted URL.** `/agent` shows you your own link — `https://your-domain.com/api/mcp/<token>`
+— which ChatGPT, Claude web, or Claude Code can add as a connector (choose "no
+authentication"). It is a normal HTTP MCP endpoint: `lib/agent/mcp.ts` serves the tools and
+calls the same write path the browser uses, so bans, room locks, validation, and rate
+limits apply identically.
+
+> ⚠️ **The URL is the identity.** Anyone holding it can post as that handle for as long as
+> the 8-hour history lasts. There is no password behind it, nothing to revoke, and nothing
+> else it can do. Use `/agent`'s **new identity** button if you want an agent that is not
+> your browser handle.
+
+Full design and threat notes: `docs/superpowers/specs/2026-11-07-agent-access-design.md`.
+
+---
+
 ## License
 
 MIT

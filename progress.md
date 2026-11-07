@@ -13,11 +13,11 @@ section for the step you're on. Full protocol in `AGENTS.md`.
 
 | | |
 |---|---|
-| **Phase** | **In progress — agent access. Phases 1-4 done; phase 5 (hosted MCP tools) is next.** |
-| **Current step** | Phase 4 verified: the built `hitchat-mcp` answered a real stdio client (`initialize` → `tools/list` → `list_rooms` → `send_message` → `read_messages`), the posted message rendered in `/c/it/3/2/a` as `ZenGoblin795` with no SUDO badge, a 1,200-character send came back `isError` carrying the app's own wording, and the row was deleted. App suite 290/290, `tsc` clean, ESLint clean, `next build` passes, `agent:test` 35/35. |
-| **Branch** | `feat/agent-access` — cut from local `main`. |
-| **Next action** | Task 15 in the plan: create `lib/agent/mcp-names.ts` (`MCP_TOOL_NAMES`) and `lib/agent/mcp.ts` (`registerHostedTools(server, hash)`), replace the placeholder `ping` tool in `app/api/mcp/[token]/route.ts` while keeping its exports, `runtime` and `dynamic` flags, and add `tests/agent-mcp.test.ts` — which imports `../../agent/src/names` so the local and hosted tool lists cannot drift. Plan: `docs/superpowers/plans/2026-11-07-agent-access-implementation.md`. |
-| **Blocked?** | No. |
+| **Phase** | **Agent access built end to end (phases 1-6). Branch NOT merged and package NOT published — both are the owner's call.** |
+| **Current step** | Phase 6 verified: `/agent` reaches the hosted tools and the browser checks pass; docs updated. App suite 305/305, `tsc` clean, ESLint clean, `next build` passes, `agent:test` 37/37, `pack:dry` packs 4 files / 13 KB. |
+| **Branch** | `feat/agent-access` — cut from local `main`, 6 phases on one branch (recorded deviation below). |
+| **Next action** | Two owner actions, in this order. (1) Publish: `bun run --cwd agent pack:dry` then `npm publish ./agent --access public` (needs the owner's npm session — `npm whoami` was `pranab-kr`). (2) Merge once publishing is done, so `progress.md` can record the outcome in the same pass: `git checkout main && git merge --no-ff feat/agent-access`. Nothing is pushed by either step. |
+| **Blocked?** | No. One step is **unverified**: adding the hosted MCP URL as a connector in ChatGPT or Claude web. The app was only ever reachable at `localhost:3000` from this machine, so there was no public URL to paste. Everything else in phases 1-6 was driven against a real build. |
 | **Last updated** | 2026-11-07 |
 
 > **Deviation from the loop, recorded 2026-11-07.** Agent access is a six-phase feature
@@ -25,6 +25,77 @@ section for the step you're on. Full protocol in `AGENTS.md`.
 > instead of one branch per step. Requested by the owner. **Phase 1 was a gate and passed:**
 > `createMcpHandler` serves through a Next 16 route handler in both `next dev` and
 > `next start`, so phases 2-6 stay in this app. No separate Hono app is needed.
+
+## Shipped — agent access phase 6: connect page, docs, packaging ✅
+
+- **`app/agent/page.tsx`** — server component. `dynamic = 'force-dynamic'`, and the origin
+  is built from `headers()` (`x-forwarded-host` → `host`, `x-forwarded-proto`), so a deploy
+  needs no configured domain.
+- **`components/agent/connect-panel.tsx`** — the URL, a copy button, the Claude Code /
+  ChatGPT / terminal blocks, and the warning. **The "new identity" control is not a
+  reroll**: it issues a UUID into component state so an agent gets its own name while the
+  browser keeps the one it is already sitting in a room with. Switching it changes the
+  helper line to "A separate name, only for agents. Your browser keeps its own."
+- **`app/page.tsx`** — one quiet footer line, `agent access`, no new nav.
+- **Docs** — README gains "Agents and CLI" (four tools, the two binaries, the hosted URL,
+  the warning); the main spec gains a short "Agent access" section naming the one
+  interface addition (`not_found`); `AGENTS.md`'s language rule now lists **five** places
+  (constraint, `ALLOWED_LANGS`, grammars, and the `send_code` description in *both* tool
+  surfaces — the plan said four and missed the hosted copy).
+- **`agent` package** — `pack:dry` packs 4 files, 13 KB unpacked: `package.json`,
+  `dist/cli.js`, `dist/mcp.js`, one shared chunk. Bin paths and `files: ["dist"]` hold.
+
+**Verified in a real browser against `next start`:** the home footer link reaches `/agent`;
+no horizontal overflow at 375 or 1280 (`scrollWidth` 360/1265 vs `innerWidth` 375/1280);
+the warning sits at y≈359-399, above the fold at desktop; `#agent-url` carries the stored
+UUID; "new identity" shows a different UUID and the helper line switches; a reload brings
+the **stored** identity back, proving the click never wrote localStorage. Copy buttons sit
+on the first line of each block rather than floating mid-block on a wrapped URL.
+
+**Amendment the plan did not have — `init` now has a default host.** The design said
+"there is no hardcoded default host" because the deployed domain was not settled. The owner
+settled it (`chat.pranabkr.in`), and being asked for a URL that has exactly one right answer
+is friction, so `agent/src/config.ts` exports `DEFAULT_URL`, `init` falls back to it, and
+`--url` / `HITCHAT_URL` still win. Both the design spec (§6 and §7) and the README were
+amended in the same commit — the rule is "the spec changes deliberately", not "never".
+
+**Connector question, honestly unresolved (Task 16 Step 2):** adding
+`https://<host>/api/mcp/<token>` as a connector in **ChatGPT or Claude web** was not tested.
+There is no public deployment reachable from the machine this was built on, only
+`localhost:3000`, and a connector cannot reach that. A local client is proven: the same
+URL, with the token in the path, answers `initialize` → `tools/list` → `tools/call` through
+`scripts/mcp-probe.ts`, and `.mcp.json` carries a `type: "http"` entry for an editor. Do not
+claim the web-connector path works until someone pastes the URL into ChatGPT or Claude web
+against the deployed host.
+
+## Shipped — agent access phase 5: the hosted MCP tools ✅
+
+- **`lib/agent/mcp-names.ts`** — `MCP_TOOL_NAMES`, no imports.
+- **`lib/agent/mcp.ts`** — `registerHostedTools(server, hash, origin?)`. Handlers call
+  `listRooms`, `readMessages`, `postAgentText`, `postAgentCode` **directly**, not over HTTP,
+  so ban → lock → validate → rate → insert still has one implementation. A refusal keeps
+  the server's wording plus the retry window; an unexpected throw is logged and answered
+  with "hitchat didn't answer. Try again." so an internal message never reaches a model.
+- **`app/api/mcp/[token]/route.ts`** — the placeholder `ping` is gone. `resolveToken`
+  (header wins over path) → `isToken` → 401, then a server per request built with the
+  hashed token. The factory **throws** if it is somehow reached without a valid token:
+  unreachable, and loud rather than silently posting under an empty hash.
+- **Tests** — `tests/agent-mcp.test.ts` (11): the two name lists are equal (imports
+  `agent/src/names`), four tools register in order, every description states the rules,
+  `send_message` passes `hash === hashToken(TOKEN)` and never the raw token, room paths are
+  resolved before posting, unknown room is `isError`, refusal carries the retry window, and
+  two route cases — a malformed token is 401, a valid one lists the four tools. The route
+  answers `tools/list` over **SSE** even in `responseMode: 'json'`, so the test decodes a
+  `data:` line exactly like `scripts/mcp-probe.ts`.
+
+**Verified against `next start` (not dev):** probe printed
+`TOOLS: list_rooms read_messages send_message send_code`; `tools/call send_message` posted
+and returned the absolute room URL; `read_messages` returned it; the room page rendered it
+as `ZenGoblin795` with zero SUDO marks; a malformed path token answered **401**; the row
+(`admin_id: null`) was deleted afterwards.
+
+**Guard proven by breaking it:** replacing the `check()` body with `return null` failed
+exactly the 401 test; reverted.
 
 ## Shipped — agent access phase 4: the local stdio MCP server ✅
 

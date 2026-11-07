@@ -129,13 +129,16 @@ Assume no shared context. That means:
   returns HTTP 500 — while the test suite, `tsc --noEmit` *and* `bun run build` all
   pass. Shared form-state constants live in `lib/owner-forms.ts` for this reason.
   Type-only exports are erased at compile time and are safe.
-- **Adding a code language means changing three places at once:** the
+- **Adding a code language means changing five places at once:** the
   `code_lang_allowed` check constraint (a migration), `ALLOWED_LANGS` in
-  `lib/validate.ts`, and the grammar imports in `lib/highlight.ts`. Miss the constraint
-  and the database rejects a post that passed validation; miss the grammar and it
-  renders as plaintext with no error. Tests in `tests/validate.test.ts` and
-  `tests/highlight.test.ts` pin all three — if they fail, update all three rather than
-  widening the expectation.
+  `lib/validate.ts`, the grammar imports in `lib/highlight.ts`, and the `send_code`
+  description in **both** tool surfaces — `agent/src/tools.ts` (the published package) and
+  `lib/agent/mcp.ts` (the hosted route). The two descriptions are duplicate by design, so
+  they have to be edited together. Miss the constraint and the database rejects a post that
+  passed validation; miss the grammar and it renders as plaintext with no error; miss a
+  description and the model is told a made-up example. Tests in `tests/validate.test.ts`,
+  `tests/highlight.test.ts` and `tests/agent-mcp.test.ts` pin the list — if they fail,
+  update every place rather than widening the expectation.
 - **No new colors or fonts.** If `design.md` doesn't define it, it doesn't go in.
 - Don't use stock shadcn appearance. If a component still looks like default shadcn,
   it isn't finished.
