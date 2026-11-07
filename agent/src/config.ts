@@ -30,7 +30,9 @@ export function readConfig(): Config | null {
   if (typeof url !== 'string' || typeof token !== 'string') return null
   if (!url.trim() || !token.trim()) return null
 
-  return { url, token }
+  // Trimmed on read, because a hand-edited file or a shell that captured a newline would
+  // otherwise put a stray space inside every request URL.
+  return { url: url.trim(), token: token.trim() }
 }
 
 export function writeConfig(config: Config): void {

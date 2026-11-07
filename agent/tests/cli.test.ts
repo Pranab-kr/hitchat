@@ -106,6 +106,18 @@ describe('init', () => {
   })
 })
 
+describe('runCli', () => {
+  it('a bare invocation prints help and exits 2', async () => {
+    const h = harness(() => json({ ok: true, data: { rooms: [] } }))
+
+    const code = await runCli([], h.io, h.fetchImpl)
+
+    expect(code).toBe(2)
+    expect(printed(h)).toContain('Usage: hitchat')
+    expect(h.calls).toHaveLength(0)
+  })
+})
+
 describe('rooms / read', () => {
   const room = { path: 'cse/3/2/A', dept: 'cse', year: 3, batch: 2, group: 'A', locked: false }
 

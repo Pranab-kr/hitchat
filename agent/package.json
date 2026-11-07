@@ -3,6 +3,9 @@
   "version": "0.1.0",
   "description": "CLI and local MCP server for hitchat, the anonymous self-destructing lab chat.",
   "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
   "bin": {
     "hitchat": "./dist/cli.js",
     "hitchat-mcp": "./dist/mcp.js"

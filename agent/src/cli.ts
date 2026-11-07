@@ -141,6 +141,13 @@ export async function runCli(
 ): Promise<number> {
   const program = buildProgram(io, fetchImpl)
 
+  // Commander would exit 0 in complete silence for a bare `hitchat`, which reads as a
+  // successful no-op. Naming the commands is the only useful answer.
+  if (argv.length === 0) {
+    program.outputHelp()
+    return 2
+  }
+
   try {
     await program.parseAsync(argv, { from: 'user' })
     return 0
