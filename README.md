@@ -192,6 +192,14 @@ or Claude web, add a connector, paste the URL, and choose "no authentication". I
 normal HTTP MCP endpoint — `lib/agent/mcp.ts` serves the tools and calls the same write path
 the browser uses, so bans, room locks, validation and rate limits apply identically.
 
+### Teach your agent the rules
+
+`skill/hitchat/SKILL.md` is a ready-made skill for an assistant that will actually post:
+it knows the four tools, the room-path rule (never invent one), the limits, the rate
+windows, and that the URL is the identity. Copy the folder into your harness's skills
+directory — for Claude Code that is `~/.claude/skills/` (or `.claude/skills/` inside a
+project) — and an agent will reach for it whenever a task involves a hitchat room.
+
 **If the domain changes:** `/agent` builds its URL from the request, so the page follows
 automatically; existing CLI users update with `hitchat init --url <new-host>` (`HITCHAT_URL`
 is the one-off override), and hosted-URL users only change the host part of their link.

@@ -63,6 +63,7 @@ An accurate half-finished status beats a stale complete-looking one.
 | `design.md` | Visual system. Source of truth for every color, font, and spacing value. |
 | `docs/superpowers/plans/2026-08-04-hitchat-implementation.md` | The original 12-task build plan — **complete**. Now history plus the *Deferred to after launch* backlog at its end. There is no top-level `plan.md`. |
 | `progress.md` | Running status and session handoff. **Update it as part of the work, not after.** |
+| `skill/hitchat/SKILL.md` | The skill handed to an agent that will *post into* a room (not one working on the repo). Ships with the repo; keep it true to the tool limits — `tests/agent-mcp.test.ts` pins the names, nothing pins this prose. |
 
 If the spec and the code disagree, the spec wins — or the spec gets updated
 deliberately. Never silently diverge.
