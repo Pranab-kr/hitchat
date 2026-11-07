@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 import { Command, CommanderError } from 'commander'
 import { randomUUID } from 'node:crypto'
 import { readFileSync } from 'node:fs'
