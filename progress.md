@@ -13,18 +13,32 @@ section for the step you're on. Full protocol in `AGENTS.md`.
 
 | | |
 |---|---|
-| **Phase** | **In progress — agent access, phase 1 of 6 (the MCP pipe gate).** |
-| **Current step** | Phase 1: prove `createMcpHandler` runs inside a Next route handler. Design: `docs/superpowers/specs/2026-11-07-agent-access-design.md`. Plan: `docs/superpowers/plans/2026-11-07-agent-access-implementation.md`. |
+| **Phase** | **In progress — agent access. Phase 1 (the MCP pipe gate) passed; phase 2 is next.** |
+| **Current step** | Phase 1 verified end to end: `bun run scripts/mcp-probe.ts http://localhost:3000/api/mcp/probe-token` printed `TOOLS: ping` against `next start`, and a `tools/call` returned `pong`. Route: `app/api/mcp/[token]/route.ts`. Probe: `scripts/mcp-probe.ts`. |
 | **Branch** | `feat/agent-access` — cut from local `main`. |
-| **Next action** | Run `bun run scripts/mcp-probe.ts http://localhost:3000/api/mcp/probe-token` against a running `bun dev` and confirm it prints `TOOLS: ping` (Task 3 in the plan). |
+| **Next action** | Task 4 in the plan: add `lib/agent/token.ts` and `tests/agent-token.test.ts`, writing the tests first. Plan: `docs/superpowers/plans/2026-11-07-agent-access-implementation.md`. |
 | **Blocked?** | No. |
 | **Last updated** | 2026-11-07 |
 
 > **Deviation from the loop, recorded 2026-11-07.** Agent access is a six-phase feature
 > built on one long-lived branch, `feat/agent-access`, merged to `main` once after phase 6,
-> instead of one branch per step. Requested by the owner. **Phase 1 is a gate:** if the MCP
-> SDK cannot serve through a Next route handler, stop and switch to a separate Hono app
-> (approach C in the design). Do not build phases 2-6 on an unproven transport.
+> instead of one branch per step. Requested by the owner. **Phase 1 was a gate and passed:**
+> `createMcpHandler` serves through a Next 16 route handler in both `next dev` and
+> `next start`, so phases 2-6 stay in this app. No separate Hono app is needed.
+
+## Shipped — agent access phase 1: the MCP pipe gate ✅
+
+- **`package.json`, `bun.lock`** — added `@modelcontextprotocol/server@2.4.0` and `zod@4.6.7`.
+- **`app/api/mcp/[token]/route.ts`** — `GET`/`POST`/`DELETE` forwarded to
+  `createMcpHandler`, server built per request, one placeholder `ping` tool. Phase 5
+  replaces the tool set and keeps the route shape, `runtime = 'nodejs'` and the dynamic flag.
+- **`scripts/mcp-probe.ts`** — dependency-free JSON-RPC probe (handles JSON and SSE
+  reply bodies). Exits 0 on a non-empty tool list; reused in phase 5.
+
+**Verified:** `next build` compiles and type-checks; `next start` + probe prints
+`TOOLS: ping`; `tools/call` returns `pong`; ESLint clean. `scripts/mcp-probe.ts` needs
+`export {}` because the app's `tsconfig` includes `scripts/`, so top-level await only
+compiles if the file is a module — `next build` type-checks it.
 
 ## Shipped — consolidate /sudo and delete /sudo/structure route ✅
 
