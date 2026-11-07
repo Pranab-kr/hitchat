@@ -1,9 +1,8 @@
 import { defineConfig } from 'tsdown'
 
-// Two binaries, one bundle each. `mcp.ts` joins the entry list in the phase that
-// writes it — an entry naming a file that does not exist fails the build.
+// Two binaries, one bundle each.
 export default defineConfig({
-  entry: ['src/cli.ts'],
+  entry: ['src/cli.ts', 'src/mcp.ts'],
   format: 'esm',
   target: 'node20',
   // The package is `"type": "module"`, so a plain `.js` is already ESM. Emitting `.mjs`
