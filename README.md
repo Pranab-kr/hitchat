@@ -61,6 +61,11 @@ IDENTITY_PEPPER=your-random-identity-pepper
 
 # Password/secret for the owner admin account (minimum 16 characters)
 OWNER_SECRET=your-secure-owner-secret
+
+# Optional: the public origin, used by /agent to print the agent URL and editor configs.
+# Without it the page uses the host the request arrived on, so a local build prints
+# http://localhost:3000.
+SITE_URL=https://your-domain.com
 ```
 
 > ⚠️ **Important**: Never change `IDENTITY_PEPPER` after launch, as it re-derives all student handles and active bans.
@@ -200,11 +205,13 @@ windows, and that the URL is the identity. Copy the folder into your harness's s
 directory — for Claude Code that is `~/.claude/skills/` (or `.claude/skills/` inside a
 project) — and an agent will reach for it whenever a task involves a hitchat room.
 
-**If the domain changes:** `/agent` builds its URL from the request, so the page follows
-automatically; existing CLI users update with `hitchat init --url <new-host>` (`HITCHAT_URL`
-is the one-off override), and hosted-URL users only change the host part of their link.
-The one place baked into code is `DEFAULT_URL` in `agent/src/config.ts`, and new users get
-it from the next published version.
+**If the domain changes:** set `SITE_URL` and redeploy — `/agent` prints it into every
+config block, so nothing else in the page has to change (with no `SITE_URL` it falls back
+to the request's host, and to Vercel's production domain there). Existing CLI users update
+with `hitchat init --url <new-host>` (`HITCHAT_URL` is the one-off override), and
+hosted-URL users only change the host part of their link. The one place baked into the
+package is `DEFAULT_URL` in `agent/src/config.ts`, and new users get it from the next
+published version.
 
 > ⚠️ **The URL is the identity.** Anyone holding it can post as that handle for as long as
 > the 8-hour history lasts. There is no password behind it, nothing to revoke, and nothing

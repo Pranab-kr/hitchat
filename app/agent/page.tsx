@@ -3,9 +3,12 @@ import Link from 'next/link'
 import { headers } from 'next/headers'
 import { ConnectPanel } from '@/components/agent/connect-panel'
 import { ThemeToggle } from '@/components/theme-toggle'
+import { resolveOrigin } from '@/lib/site-origin'
 
-// The URL a person copies has to be the host they are actually on, so this page reads the
-// request rather than trusting a configured domain the way an API build would.
+// The URL a person copies has to be the one other machines can reach. Resolving it from
+// the request alone hands out `http://localhost:3000` to anyone browsing a local build,
+// which is useless once it is pasted into an editor somewhere else — so SITE_URL (or the
+// platform's production domain) wins when set, and the request is only the fallback.
 export const dynamic = 'force-dynamic'
 
 export const metadata: Metadata = {
@@ -16,9 +19,13 @@ export const metadata: Metadata = {
 export default async function AgentPage() {
   // Next 16: headers() is async.
   const h = await headers()
-  const host = h.get('x-forwarded-host') ?? h.get('host') ?? 'localhost:3000'
-  const proto = h.get('x-forwarded-proto') ?? 'http'
-  const origin = `${proto}://${host}`
+  const origin = resolveOrigin({
+    siteUrl: process.env.SITE_URL,
+    platformHost: process.env.VERCEL_PROJECT_PRODUCTION_URL,
+    forwardedHost: h.get('x-forwarded-host'),
+    host: h.get('host'),
+    forwardedProto: h.get('x-forwarded-proto'),
+  })
 
   return (
     <main className="mx-auto max-w-2xl px-6 py-12">

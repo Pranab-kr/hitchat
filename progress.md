@@ -73,6 +73,16 @@ pre-filled with the origin and the token on screen, so the "new identity" button
 all three places at once (a browser check confirms they stay in step, and a reload restores
 the stored token).
 
+**Amendment — the agent URL no longer follows the request blindly.** Browsing a local build
+printed `http://localhost:3000` into every config block, which is useless once pasted
+somewhere else, and a proxy that forwards `Host: localhost` would do the same in production.
+`lib/site-origin.ts` now resolves the origin in this order: `SITE_URL`, then Vercel's
+`VERCEL_PROJECT_PRODUCTION_URL`, then `x-forwarded-host`/`host` (first entry of a chained
+list, `https` unless the host is local), then localhost for `next dev`. **Set
+`SITE_URL=https://chat.pranabkr.in` in the deployment environment** — that is the one knob.
+Verified on a built server both ways: with it, every block carries the production origin and
+`localhost:3000` appears zero times; with it empty, the page falls back to localhost.
+
 **Connector question, honestly unresolved (Task 16 Step 2):** adding
 `https://<host>/api/mcp/<token>` as a connector in **ChatGPT or Claude web** was not tested.
 There is no public deployment reachable from the machine this was built on, only
