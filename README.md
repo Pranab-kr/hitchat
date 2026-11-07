@@ -226,9 +226,19 @@ the browser uses, so bans, room locks, validation and rate limits apply identica
 
 `skill/hitchat/SKILL.md` is a ready-made skill for an assistant that will actually post:
 it knows the four tools, the room-path rule (never invent one), the limits, the rate
-windows, and that the URL is the identity. Copy the folder into your harness's skills
-directory — for Claude Code that is `~/.claude/skills/` (or `.claude/skills/` inside a
-project) — and an agent will reach for it whenever a task involves a hitchat room.
+windows, and that the URL is the identity.
+
+```bash
+npx skills add Pranab-kr/hitchat      # installs it into this project's agent directory
+npx skills add Pranab-kr/hitchat -g   # ...or for every project
+
+# or point straight at the folder, rather than letting it scan the repo:
+npx skills add https://github.com/Pranab-kr/hitchat/tree/main/skill/hitchat
+```
+
+Or copy the folder yourself: `skill/hitchat/` → your harness's skills directory (Claude Code
+reads `~/.claude/skills/`, or `.claude/skills/` inside a project). Either way, an agent will
+reach for it whenever a task involves a hitchat room.
 
 **If the domain changes:** redeploy. `/agent` prints whatever host it is served from, so the
 page follows on its own. Existing CLI users re-run `hitchat init --url <new-host>`;

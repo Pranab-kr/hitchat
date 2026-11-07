@@ -107,6 +107,16 @@ describe('ConnectPanel', () => {
     ).toBeGreaterThan(0)
   })
 
+  it('carries the command that installs the repo skill into an agent', () => {
+    render(<ConnectPanel origin={ORIGIN} />)
+
+    // Verified against the real CLI: `npx skills add Pranab-kr/hitchat` finds
+    // skill/hitchat/SKILL.md and installs it into the project's agent directory.
+    expect(document.getElementById('skill-install')?.textContent).toBe(
+      'npx skills add Pranab-kr/hitchat',
+    )
+  })
+
   it('rewrites the editor configs when a separate identity is issued', () => {
     render(<ConnectPanel origin={ORIGIN} />)
 

@@ -16,6 +16,7 @@ const PACKAGE = '@pranabkr/hitchat-agent'
 const STDIO_COMMAND = ['npx', '-y', '-p', PACKAGE, 'hitchat-mcp']
 
 const GLOBAL_INSTALL = `npm i -g ${PACKAGE}`
+const SKILL_REPO = 'Pranab-kr/hitchat'
 const GLOBAL_INIT = 'hitchat init --new'
 const NPX_INIT = `npx -y -p ${PACKAGE} hitchat init --new`
 
@@ -178,6 +179,27 @@ export function ConnectPanel({ origin }: { origin: string }) {
         Agents can read, send text, and send code. They cannot pin, lock, delete, or ban
         anyone, and everything they post erases itself after 8 hours like everything else.
       </p>
+
+      <section>
+        <h2 className="text-[15px] leading-6 font-semibold text-ink">Teach your agent the rules</h2>
+        <p className="mt-1 text-[13px] leading-5 text-graphite">
+          An assistant that has never seen this page does not know the room paths, the limits,
+          or that the link is the identity. This repo ships that as a skill:
+        </p>
+
+        <Block id="skill-install" text={`npx skills add ${SKILL_REPO}`} />
+
+        <p className="mt-2 text-[13px] leading-5 text-graphite">
+          That finds the one skill in this repo. To point at it directly, use{' '}
+          <code className="font-mono break-all">
+            https://github.com/{SKILL_REPO}/tree/main/skill/hitchat
+          </code>{' '}
+          instead. Either way it installs into the agent&apos;s skills directory for this
+          project (add <code className="font-mono">-g</code> for every project), and after
+          that, asking your agent to post makes it look the room up first instead of guessing
+          a path.
+        </p>
+      </section>
     </div>
   )
 }
