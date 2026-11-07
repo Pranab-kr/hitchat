@@ -13,11 +13,11 @@ section for the step you're on. Full protocol in `AGENTS.md`.
 
 | | |
 |---|---|
-| **Phase** | **Agent access built end to end (phases 1-6). Branch NOT merged and package NOT published — both are the owner's call.** |
-| **Current step** | Phase 6 verified: `/agent` reaches the hosted tools and the browser checks pass; docs updated. App suite 305/305, `tsc` clean, ESLint clean, `next build` passes, `agent:test` 37/37, `pack:dry` packs 4 files / 13 KB. |
-| **Branch** | `feat/agent-access` — cut from local `main`, 6 phases on one branch (recorded deviation below). |
-| **Next action** | Two owner actions, in this order. (1) Publish: `bun run --cwd agent pack:dry` then `npm publish ./agent --access public` (needs the owner's npm session — `npm whoami` was `pranab-kr`). (2) Merge once publishing is done, so `progress.md` can record the outcome in the same pass: `git checkout main && git merge --no-ff feat/agent-access`. Nothing is pushed by either step. |
-| **Blocked?** | No. One step is **unverified**: adding the hosted MCP URL as a connector in ChatGPT or Claude web. The app was only ever reachable at `localhost:3000` from this machine, so there was no public URL to paste. Everything else in phases 1-6 was driven against a real build. |
+| **Phase** | **Agent access shipped. All six phases merged to `main` and pushed on 2026-11-07 (`3d98fc4..db3e5d8`). The npm package is the only thing not published.** |
+| **Current step** | Post-merge verification on `main`: app suite 309/309 across 38 files, `agent:test` 37/37, both `tsc` runs clean, ESLint clean, `next build` passes, `pack:dry` packs 4 files / 13 KB. |
+| **Branch** | `main`, tracking `origin/main` at `db3e5d8`. `feat/agent-access` is merged and can be deleted (`git branch -d feat/agent-access`). |
+| **Next action** | Publish, with the owner's npm session: `bun run --cwd agent pack:dry` then `npm publish ./agent --access public`. `prepublishOnly` runs the build and the agent tests first. After it lands, set this row to "shipped" and note the published version. |
+| **Blocked?** | No. One step is **unverified**: adding the hosted MCP URL as a connector in ChatGPT or Claude web. It needs the deployed host (`https://chat.pranabkr.in`), which was not reachable from the build machine. Everything else was driven against a real build. |
 | **Last updated** | 2026-11-07 |
 
 > **Deviation from the loop, recorded 2026-11-07.** Agent access is a six-phase feature
