@@ -16,47 +16,108 @@ export function Navbar() {
   const isSudo = pathname === '/sudo' || pathname.startsWith('/sudo/')
 
   return (
-    <header className="sticky top-0 z-40 w-full border-b border-hairline bg-paper/95 backdrop-blur-xs">
-      <div className="mx-auto flex max-w-2xl items-center justify-between px-6 py-3">
+    <header className="sticky top-3 sm:top-4 z-40 w-full px-4 sm:px-6 pointer-events-none">
+      <div className="mx-auto flex max-w-2xl items-center justify-between rounded-full border border-hairline bg-paper/85 dark:bg-paper/85 backdrop-blur-md shadow-xs px-3.5 py-1.5 sm:px-4 sm:py-2 pointer-events-auto transition-all">
         <Link
           href="/"
           prefetch
           aria-label="hitchat home"
-          className="touch-target inline-flex items-center font-display text-[20px] leading-6 font-semibold tracking-[-0.02em] text-ink transition-colors hover:text-pen"
+          className="group touch-target inline-flex size-8 items-center justify-center rounded-full text-ink transition-colors hover:bg-wash"
         >
-          hitchat
+          <HitchatLogo />
         </Link>
 
-        <nav aria-label="Main" className="flex items-center gap-2 sm:gap-3">
+        <nav aria-label="Main" className="flex items-center gap-1 sm:gap-2">
           <Link
             href="/agent"
             prefetch
             aria-current={isAgent ? 'page' : undefined}
-            className={`touch-target inline-flex items-center rounded-input border px-3 py-1.5 text-[13px] leading-5 font-medium transition-colors ${
-              isAgent
-                ? 'border-pen bg-wash text-pen'
-                : 'border-hairline text-ink hover:bg-wash hover:text-pen'
-            }`}
+            className="group relative touch-target inline-flex items-center rounded-full px-3 py-1 text-[13px] leading-5 font-medium transition-colors"
           >
-            Agent docs
+            <span
+              className={`transition-colors duration-150 ${
+                isAgent ? 'text-ink font-semibold' : 'text-graphite group-hover:text-ink'
+              }`}
+            >
+              Agent docs
+            </span>
+            <span
+              className={`absolute bottom-0 left-3 right-3 h-[1.5px] rounded-full transition-all duration-200 ${
+                isAgent
+                  ? 'bg-pen scale-x-100 opacity-100'
+                  : 'bg-pen scale-x-0 opacity-0 group-hover:scale-x-100 group-hover:opacity-100'
+              } origin-center`}
+            />
           </Link>
 
           <Link
             href="/sudo"
             prefetch
             aria-current={isSudo ? 'page' : undefined}
-            className={`touch-target inline-flex items-center rounded-input border border-hairline border-l-2 border-l-marigold px-2.5 py-1.5 font-mono text-[11px] leading-5 font-semibold tracking-[0.08em] text-ink transition-colors ${
-              isSudo
-                ? 'bg-marigold/20 ring-1 ring-marigold/40'
-                : 'bg-marigold/10 hover:bg-marigold/20'
-            }`}
+            className="group relative touch-target inline-flex items-center gap-1.5 rounded-full px-3 py-1 font-mono text-[12px] leading-5 tracking-[0.06em] font-medium transition-colors"
           >
-            SUDO
+            <span
+              className={`size-1.5 rounded-full transition-transform duration-150 ${
+                isSudo
+                  ? 'bg-marigold scale-110'
+                  : 'bg-marigold/70 group-hover:scale-125 group-hover:bg-marigold'
+              }`}
+            />
+            <span
+              className={`transition-colors duration-150 ${
+                isSudo ? 'text-ink font-semibold' : 'text-graphite group-hover:text-ink'
+              }`}
+            >
+              SUDO
+            </span>
+            <span
+              className={`absolute bottom-0 left-3 right-3 h-[1.5px] rounded-full transition-all duration-200 ${
+                isSudo
+                  ? 'bg-marigold scale-x-100 opacity-100'
+                  : 'bg-marigold scale-x-0 opacity-0 group-hover:scale-x-100 group-hover:opacity-100'
+              } origin-center`}
+            />
           </Link>
 
-          <ThemeToggle />
+          <div className="ml-1 flex items-center border-l border-hairline pl-1 sm:pl-2">
+            <ThemeToggle />
+          </div>
         </nav>
       </div>
     </header>
+  )
+}
+
+// Lab record file meets chat: lab paper bubble with hitchat's signature 2px vertical red rule
+function HitchatLogo() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      width="20"
+      height="20"
+      fill="none"
+      aria-hidden="true"
+      className="shrink-0 transition-transform duration-200 group-hover:scale-110"
+    >
+      <path
+        d="M4 6a3 3 0 0 1 3-3h10a3 3 0 0 1 3 3v7a3 3 0 0 1-3 3H9l-4 3.5V6z"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M8.5 5.5v8"
+        stroke="var(--rule)"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+      />
+      <path
+        d="M11.5 8h5M11.5 11.5h3"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeOpacity="0.6"
+      />
+    </svg>
   )
 }
