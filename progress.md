@@ -13,12 +13,12 @@ section for the step you're on. Full protocol in `AGENTS.md`.
 
 | | |
 |---|---|
-| **Phase** | **Navigation bar shipped on `feat/navbar-sudo-agent`. Verified in production build and test suite.** |
-| **Current step** | Shipped navigation bar with SUDO (`/sudo`) and Agent docs (`/agent`) buttons. Unit tests (323/323), agent tests (37/37), tsc, eslint, and next build all passing cleanly. |
-| **Branch** | `feat/navbar-sudo-agent` (ready for review / merge to `main`) |
-| **Next action** | Review branch `feat/navbar-sudo-agent`, merge into `main` when ready. |
+| **Phase** | **Navigation bar shipped and merged to `main`. Verified in production build and test suite.** |
+| **Current step** | Shipped navigation bar with SUDO (`/sudo`) and Agent docs (`/agent`) navigation links, floating island scroll animation, and grid-aligned SVG logo. Full suite 324/324, agent suite 37/37, tsc, eslint, and next build passing cleanly. |
+| **Branch** | `main`, tracking `origin/main` |
+| **Next action** | Ready for next task. |
 | **Blocked?** | No. |
-| **Last updated** | 2026-11-07 |
+| **Last updated** | 2026-11-08 |
 
 ## Shipped — site navigation bar with SUDO and Agent Docs buttons ✅
 
