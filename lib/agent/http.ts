@@ -36,3 +36,15 @@ export function errorJson(
     retryAfter === undefined ? { ok: false, code, message } : { ok: false, code, message, retryAfter },
   )
 }
+
+// A malformed body and a missing body are the same problem to the caller: the JSON did
+// not parse into an object. Route handlers answer both with `invalid`, never a 500.
+export async function readJsonObject(req: Request): Promise<Record<string, unknown> | null> {
+  try {
+    const value: unknown = await req.json()
+    if (!value || typeof value !== 'object' || Array.isArray(value)) return null
+    return value as Record<string, unknown>
+  } catch {
+    return null
+  }
+}

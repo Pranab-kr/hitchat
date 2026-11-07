@@ -13,10 +13,10 @@ section for the step you're on. Full protocol in `AGENTS.md`.
 
 | | |
 |---|---|
-| **Phase** | **In progress — agent access. Phase 1 (the MCP pipe gate) passed; phase 2 is next.** |
-| **Current step** | Phase 1 verified end to end: `bun run scripts/mcp-probe.ts http://localhost:3000/api/mcp/probe-token` printed `TOOLS: ping` against `next start`, and a `tools/call` returned `pong`. Route: `app/api/mcp/[token]/route.ts`. Probe: `scripts/mcp-probe.ts`. |
+| **Phase** | **In progress — agent access. Phases 1 and 2 done; phase 3 (the CLI) is next.** |
+| **Current step** | Phase 2 verified: the HTTP API answered curl against the dev server, the posted message rendered in `/c/it/3/2/a` as a normal handle with no SUDO badge, and the row was deleted afterwards. Full suite 290/290, `tsc` clean, ESLint clean, `next build` passes. |
 | **Branch** | `feat/agent-access` — cut from local `main`. |
-| **Next action** | Task 4 in the plan: add `lib/agent/token.ts` and `tests/agent-token.test.ts`, writing the tests first. Plan: `docs/superpowers/plans/2026-11-07-agent-access-implementation.md`. |
+| **Next action** | Task 10 in the plan: create `agent/package.json`, `agent/tsconfig.json`, `agent/tsdown.config.ts`, `agent/vitest.config.ts` and `agent/src/config.ts`, and add the `agent` exclusions to root `tsconfig.json`, `eslint.config.mjs`, `vitest.config.ts` and `.gitignore`. Plan: `docs/superpowers/plans/2026-11-07-agent-access-implementation.md`. |
 | **Blocked?** | No. |
 | **Last updated** | 2026-11-07 |
 
@@ -25,6 +25,41 @@ section for the step you're on. Full protocol in `AGENTS.md`.
 > instead of one branch per step. Requested by the owner. **Phase 1 was a gate and passed:**
 > `createMcpHandler` serves through a Next 16 route handler in both `next dev` and
 > `next start`, so phases 2-6 stay in this app. No separate Hono app is needed.
+
+## Shipped — agent access phase 2: the HTTP API ✅
+
+- **`lib/rooms-server.ts`** — `findRoomByPath()`, the room page's lookup extracted so the
+  page and the agent paths cannot drift. It lowercases the slug and uppercases the label,
+  so `/c/IT/3/2/A` now resolves instead of 404ing.
+- **`lib/agent/token.ts`** — `isToken`, `tokenFromHeader` (Bearer or `x-hitchat-token`),
+  `tokenFromPath`, `resolveToken`. 16–128 chars of `[A-Za-z0-9_-]`.
+- **`lib/agent/rooms.ts`** — `parseRoomPath`, `listRooms` (includes `locked`), `resolveRoom`,
+  `roomPath`, `roomWebPath`.
+- **`lib/agent/read.ts`** — newest-n snapshot, oldest first; excludes deleted and expired;
+  default 20, max 50, code truncated at 8,000 chars with `truncated: true`.
+- **`lib/agent/post.ts`** — the only agent write path. Ban → lock → validate → reply →
+  rate → insert, with `admin_id: null` and no cookie read anywhere. Returns `expires_at`.
+- **`lib/agent/http.ts`** — `jsonResult`, `errorJson`, `readJsonObject`; status map
+  400/401/403/403/404/429/500 and `Retry-After`.
+- **`lib/result.ts`** — added the `not_found` code.
+- **`app/api/agent/{rooms,messages,code}/route.ts`** — GET rooms, GET+POST messages,
+  POST code. Token from the header only; the MCP route (phase 5) also accepts it in the path.
+- **Tests** — `agent-token` (17), `rooms-server` (4), `agent-rooms` (10), `agent-read` (7),
+  `agent-http` (7), `agent-result` (1), `agent-post` (12), `agent-api` (19).
+
+**Verified:** full suite 290/290; `tsc --noEmit` clean; ESLint clean; `next build` lists
+`/api/agent/{code,messages,rooms}` as dynamic routes. Curl against the dev server:
+`GET /api/agent/rooms` listed `it/3/2/A` and `it/3/2/B`; `POST /api/agent/messages`
+returned `{ id, expires_at, room: "it/3/2/A", url }`; the message rendered in
+`/c/it/3/2/a` as `PrimeShift705` with `admin_id: null`; the row was deleted after the check.
+
+**Guards proven by breaking them:** writing a real admin id instead of `null` failed the
+`admin_id` assertion; removing `assertRoomOpen` failed the locked-room test. Both reverted.
+
+**Decided during the build:** `readMessages(id, 0)` clamps to 1 rather than falling back to
+the default 20 — an explicit limit means it, even a bad one. A bulk `messages` insert must
+set `expires_at` on every row, because PostgREST builds the statement from the union of
+keys and sends null for the rows that omit it.
 
 ## Shipped — agent access phase 1: the MCP pipe gate ✅
 

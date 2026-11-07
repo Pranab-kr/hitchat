@@ -46,7 +46,7 @@ type AgentPost = {
   replyToId?: string
 }
 
-async function postAgentMessage(input: AgentPost): Promise<ActionResult<{ id: string }>> {
+async function postAgentMessage(input: AgentPost): Promise<ActionResult<{ id: string; expires_at: string }>> {
   const banned = await assertNotBanned(input.hash)
   if (!banned.ok) return banned
 
@@ -89,11 +89,11 @@ async function postAgentMessage(input: AgentPost): Promise<ActionResult<{ id: st
       author_color: color,
       admin_id: null,
     })
-    .select('id')
+    .select('id, expires_at')
     .single()
 
   if (error || !data) return err('server', "Message didn't send. Try again.")
-  return ok({ id: data.id })
+  return ok({ id: data.id, expires_at: data.expires_at })
 }
 
 export async function postAgentText(input: {
@@ -101,7 +101,7 @@ export async function postAgentText(input: {
   groupId: string
   text: string
   replyToId?: string
-}): Promise<ActionResult<{ id: string }>> {
+}): Promise<ActionResult<{ id: string; expires_at: string }>> {
   return postAgentMessage({
     hash: input.hash,
     groupId: input.groupId,
@@ -119,7 +119,7 @@ export async function postAgentCode(input: {
   title?: string
   labTag?: string
   replyToId?: string
-}): Promise<ActionResult<{ id: string }>> {
+}): Promise<ActionResult<{ id: string; expires_at: string }>> {
   return postAgentMessage({
     hash: input.hash,
     groupId: input.groupId,

@@ -100,3 +100,15 @@ export async function resolveRoom(input: string): Promise<ResolvedRoom | null> {
 
   return { ...hit, ...parsed }
 }
+
+type RoomPathParts = Pick<ResolvedRoom, 'dept' | 'year' | 'batch' | 'group'>
+
+// The canonical path an agent passes back, with the label as stored (cse/3/2/A).
+export function roomPath(room: RoomPathParts): string {
+  return `${room.dept}/${room.year}/${room.batch}/${room.group}`
+}
+
+// The browser route, which uses the lowercase label the picker links to.
+export function roomWebPath(room: RoomPathParts): string {
+  return `/c/${room.dept}/${room.year}/${room.batch}/${room.group.toLowerCase()}`
+}
