@@ -13,11 +13,11 @@ section for the step you're on. Full protocol in `AGENTS.md`.
 
 | | |
 |---|---|
-| **Phase** | **Agent access shipped. All six phases merged to `main` and pushed on 2026-11-07 (`3d98fc4..db3e5d8`). The npm package is the only thing not published.** |
-| **Current step** | Post-merge verification on `main`: app suite 309/309 across 38 files, `agent:test` 37/37, both `tsc` runs clean, ESLint clean, `next build` passes, `pack:dry` packs 4 files / 13 KB. |
-| **Branch** | `main`, tracking `origin/main` at `db3e5d8`. `feat/agent-access` is merged and can be deleted (`git branch -d feat/agent-access`). |
-| **Next action** | Publish, with the owner's npm session: `bun run --cwd agent pack:dry` then `npm publish ./agent --access public`. `prepublishOnly` runs the build and the agent tests first. After it lands, set this row to "shipped" and note the published version. |
-| **Blocked?** | No. One step is **unverified**: adding the hosted MCP URL as a connector in ChatGPT or Claude web. It needs the deployed host (`https://chat.pranabkr.in`), which was not reachable from the build machine. Everything else was driven against a real build. |
+| **Phase** | **Navigation bar: SUDO and Agent Docs buttons (In progress)** |
+| **Current step** | In progress on `feat/navbar-sudo-agent`: build a navigation bar with access to SUDO (`/sudo`) and Agent docs (`/agent`) buttons conforming to `design.md`. |
+| **Branch** | `feat/navbar-sudo-agent` |
+| **Next action** | Design and implement `Navbar` component, incorporate into header navigation, verify styling and contrast against `design.md`, and write component tests. |
+| **Blocked?** | No. |
 | **Last updated** | 2026-11-07 |
 
 > **Deviation from the loop, recorded 2026-11-07.** Agent access is a six-phase feature
