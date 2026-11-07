@@ -29,19 +29,21 @@ export function Navbar() {
   const isSudo = pathname === '/sudo' || pathname.startsWith('/sudo/')
 
   return (
-    <header className="sticky top-0 sm:top-2 z-40 w-full px-4 sm:px-6 pointer-events-none transition-all duration-300">
+    <header className="sticky top-0 sm:top-2 z-40 w-full pointer-events-none transition-all duration-300">
       <div
         className={`mx-auto flex items-center justify-between rounded-full pointer-events-auto transition-all duration-300 ease-out motion-reduce:transition-none ${
           scrolled
-            ? 'max-w-[620px] border border-hairline bg-paper/85 dark:bg-paper/85 backdrop-blur-md shadow-xs px-3.5 py-1.5 sm:px-4 sm:py-2 translate-y-2 scale-[0.98]'
-            : 'max-w-2xl border border-transparent bg-transparent shadow-none px-4 py-3 sm:px-6 sm:py-4 translate-y-0 scale-100'
+            ? 'w-[calc(100%-2rem)] max-w-[620px] border border-hairline bg-paper/85 dark:bg-paper/85 backdrop-blur-md shadow-xs px-3.5 py-1.5 sm:px-4 sm:py-2 translate-y-2 scale-[0.98]'
+            : 'max-w-2xl border border-transparent bg-transparent shadow-none px-6 py-4 translate-y-0 scale-100'
         }`}
       >
         <Link
           href="/"
           prefetch
           aria-label="hitchat home"
-          className="group touch-target inline-flex size-8 items-center justify-center rounded-full text-ink transition-colors hover:bg-wash"
+          className={`group touch-target inline-flex size-8 items-center justify-center rounded-full text-ink transition-all hover:bg-wash ${
+            scrolled ? 'ml-0' : '-ml-1.5'
+          }`}
         >
           <HitchatLogo />
         </Link>
@@ -98,7 +100,11 @@ export function Navbar() {
             />
           </Link>
 
-          <div className="ml-1 flex items-center border-l border-hairline pl-1 sm:pl-2">
+          <div
+            className={`flex items-center border-l border-hairline pl-1 sm:pl-2 transition-all ${
+              scrolled ? 'ml-1 mr-0' : 'ml-1.5 -mr-1.5'
+            }`}
+          >
             <ThemeToggle />
           </div>
         </nav>
