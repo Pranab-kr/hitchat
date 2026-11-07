@@ -13,12 +13,18 @@ section for the step you're on. Full protocol in `AGENTS.md`.
 
 | | |
 |---|---|
-| **Phase** | **Idle — consolidated /sudo and deleted /sudo/structure route implemented, verified, and merged.** |
-| **Current step** | Nothing in flight. `feat/consolidate-sudo-structure` verified and merged. |
-| **Branch** | `main` — **ahead of `origin/main`, not pushed** (owner asked to hold the push). |
-| **Next action** | None pending. Before publishing, rotate the leaked service-role key and owner secret as described below, then run `git push origin main`. |
+| **Phase** | **In progress — agent access, phase 1 of 6 (the MCP pipe gate).** |
+| **Current step** | Phase 1: prove `createMcpHandler` runs inside a Next route handler. Design: `docs/superpowers/specs/2026-11-07-agent-access-design.md`. Plan: `docs/superpowers/plans/2026-11-07-agent-access-implementation.md`. |
+| **Branch** | `feat/agent-access` — cut from local `main`. |
+| **Next action** | Run `bun run scripts/mcp-probe.ts http://localhost:3000/api/mcp/probe-token` against a running `bun dev` and confirm it prints `TOOLS: ping` (Task 3 in the plan). |
 | **Blocked?** | No. |
-| **Last updated** | 2026-09-15 |
+| **Last updated** | 2026-11-07 |
+
+> **Deviation from the loop, recorded 2026-11-07.** Agent access is a six-phase feature
+> built on one long-lived branch, `feat/agent-access`, merged to `main` once after phase 6,
+> instead of one branch per step. Requested by the owner. **Phase 1 is a gate:** if the MCP
+> SDK cannot serve through a Next route handler, stop and switch to a separate Hono app
+> (approach C in the design). Do not build phases 2-6 on an unproven transport.
 
 ## Shipped — consolidate /sudo and delete /sudo/structure route ✅
 
