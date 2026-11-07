@@ -70,19 +70,21 @@ export default async function HomePage() {
         </div>
       )}
 
-      <p className="mt-12 font-mono text-[12px] leading-4 tracking-[0.02em] text-graphite">
-        No sign-up. No names. Messages delete themselves after 8 hours.
-      </p>
+      <div className="mt-12 flex flex-wrap items-center justify-between gap-3">
+        <p className="font-mono text-[12px] leading-4 tracking-[0.02em] text-graphite">
+          No sign-up. No names. Messages delete themselves after 8 hours.
+        </p>
 
-      {/* One quiet line, no new nav: the picker stays the first thing a student sees. */}
-      <p className="mt-2 font-mono text-[12px] leading-4 tracking-[0.02em] text-graphite">
+        {/* A secondary (hairline) button, not a nav link: findable, but the picker above
+            stays the first thing a student sees. design.md allows pen-filled primary,
+            hairline secondary, rule destructive — nothing else. */}
         <Link
           href="/agent"
-          className="rounded-[4px] transition-colors hover:text-pen"
+          className="shrink-0 rounded-[6px] border border-hairline px-3 py-1.5 text-[13px] leading-5 font-medium text-ink transition-colors hover:bg-wash"
         >
-          agent access
+          Agent access
         </Link>
-      </p>
+      </div>
     </main>
   )
 }

@@ -113,26 +113,28 @@ anonymous handle — no login, no OAuth, and no admin powers:
 `hitchat-mcp` stdio server:
 
 ```bash
-npm i -g @pranabkr/hitchat-agent          # then `hitchat` and `hitchat-mcp` are on PATH
-# or, without installing:
+# install once: `hitchat` and `hitchat-mcp` are then on PATH
+npm i -g @pranabkr/hitchat-agent
+hitchat init --new                      # one-time: mints a name, writes ~/.config/hitchat/config.json
+
+# or without installing
 npx -y -p @pranabkr/hitchat-agent hitchat init --new
 ```
 
 A package with more than one binary cannot be run by a bare `npx <package>` — `-p` names
 the package and the last argument names the binary, which is why every command below spells
-both out.
+both out. `init` already defaults to `https://chat.pranabkr.in`, so nothing after it needs a
+URL.
 
 ```bash
-hitchat init --new                     # one-time: writes ~/.config/hitchat/config.json
 hitchat rooms
 hitchat read cse/3/2/A --limit 5
 hitchat send cse/3/2/A "hello from the terminal"
 hitchat send cse/3/2/A --code-file main.c --lang c --title "Lab 4"
 ```
 
-`init` points at `https://chat.pranabkr.in` by default. On your own deployment pass
-`--url https://your-domain.com` (or set `HITCHAT_URL`) — you only do it once; the URL and
-token live in the config file afterwards.
+On your own deployment pass `--url https://your-domain.com` to `init` (or set
+`HITCHAT_URL`) — once; the URL and token live in the config file afterwards.
 
 ### Add it to your editor
 

@@ -15,8 +15,33 @@ const PACKAGE = '@pranabkr/hitchat-agent'
 // run by bare `npx <package>`.
 const STDIO_COMMAND = ['npx', '-y', '-p', PACKAGE, 'hitchat-mcp']
 
+const GLOBAL_INSTALL = `npm i -g ${PACKAGE}`
+const GLOBAL_INIT = 'hitchat init --new'
+const NPX_INIT = `npx -y -p ${PACKAGE} hitchat init --new`
+
 function pretty(value: unknown): string {
   return JSON.stringify(value, null, 2)
+}
+
+// One bordered block with a copy button. `pre` keeps JSON's own line breaks; `code`
+// wraps long single-line commands.
+function Block({ id, text, pre = false }: { id: string; text: string; pre?: boolean }) {
+  const shared = 'min-w-0 flex-1 font-mono text-[13px] leading-[21px] text-ink'
+
+  return (
+    <div className="mt-2 flex items-start gap-3 rounded-[8px] border border-hairline bg-surface px-3 py-2">
+      {pre ? (
+        <pre id={id} className={`${shared} overflow-x-auto`}>
+          {text}
+        </pre>
+      ) : (
+        <code id={id} className={`${shared} break-all`}>
+          {text}
+        </code>
+      )}
+      <CopyButton text={text} />
+    </div>
+  )
 }
 
 export function ConnectPanel({ origin }: { origin: string }) {
@@ -48,22 +73,12 @@ export function ConnectPanel({ origin }: { origin: string }) {
     mcp: { servers: { hitchat: { type: 'local', command: STDIO_COMMAND, environment: env } } },
   })
 
-  const cli = `npx -y -p ${PACKAGE} hitchat init --url ${origin} --new`
-
   return (
     <div className="space-y-8">
       <section>
         <h2 className="text-[15px] leading-6 font-semibold text-ink">Your agent URL</h2>
 
-        <div className="mt-2 flex items-start gap-3 rounded-[8px] border border-hairline bg-surface px-3 py-2">
-          <code
-            id="agent-url"
-            className="min-w-0 flex-1 break-all font-mono text-[13px] leading-[21px] text-ink"
-          >
-            {url}
-          </code>
-          <CopyButton text={url} />
-        </div>
+        <Block id="agent-url" text={url} />
 
         <div className="mt-3 flex items-start justify-between gap-3">
           <p className="text-[13px] leading-5 text-graphite">
@@ -98,12 +113,7 @@ export function ConnectPanel({ origin }: { origin: string }) {
 
       <section>
         <h2 className="text-[15px] leading-6 font-semibold text-ink">Claude Code</h2>
-        <div className="mt-2 flex items-start gap-3 rounded-[8px] border border-hairline bg-surface px-3 py-2">
-          <code className="min-w-0 flex-1 break-all font-mono text-[13px] leading-[21px] text-ink">
-            {claudeCode}
-          </code>
-          <CopyButton text={claudeCode} />
-        </div>
+        <Block id="claude-code" text={claudeCode} />
         <p className="mt-2 text-[13px] leading-5 text-graphite">
           That adds the hosted URL as a remote server, with no authentication to set up.
         </p>
@@ -116,35 +126,19 @@ export function ConnectPanel({ origin }: { origin: string }) {
           Drop this next to your project:
         </p>
 
-        <div className="mt-2 flex items-start gap-3 rounded-[8px] border border-hairline bg-surface px-3 py-2">
-          <pre
-            id="claude-config"
-            className="min-w-0 flex-1 overflow-x-auto font-mono text-[13px] leading-[21px] text-ink"
-          >
-            {claudeConfig}
-          </pre>
-          <CopyButton text={claudeConfig} />
-        </div>
+        <Block id="claude-config" text={claudeConfig} pre />
 
         <p className="mt-4 text-[13px] leading-5 text-graphite">
           OpenCode reads <code className="font-mono">opencode.json</code> (or{' '}
           <code className="font-mono">~/.config/opencode/opencode.json</code> for every project):
         </p>
 
-        <div className="mt-2 flex items-start gap-3 rounded-[8px] border border-hairline bg-surface px-3 py-2">
-          <pre
-            id="opencode-config"
-            className="min-w-0 flex-1 overflow-x-auto font-mono text-[13px] leading-[21px] text-ink"
-          >
-            {opencodeConfig}
-          </pre>
-          <CopyButton text={opencodeConfig} />
-        </div>
+        <Block id="opencode-config" text={opencodeConfig} pre />
 
         <p className="mt-2 text-[13px] leading-5 text-graphite">
           Both run the same local server, so nothing leaves your machine except the posts
           themselves. If you install it once with{' '}
-          <code className="font-mono">npm i -g {PACKAGE}</code>, replace the whole{' '}
+          <code className="font-mono">{GLOBAL_INSTALL}</code>, replace the whole{' '}
           <code className="font-mono">command</code>/<code className="font-mono">args</code>{' '}
           pair with <code className="font-mono">hitchat-mcp</code>.
         </p>
@@ -160,19 +154,22 @@ export function ConnectPanel({ origin }: { origin: string }) {
 
       <section>
         <h2 className="text-[15px] leading-6 font-semibold text-ink">Your terminal</h2>
-        <div className="mt-2 flex items-start gap-3 rounded-[8px] border border-hairline bg-surface px-3 py-2">
-          <code className="min-w-0 flex-1 break-all font-mono text-[13px] leading-[21px] text-ink">
-            {cli}
-          </code>
-          <CopyButton text={cli} />
-        </div>
+        <p className="mt-1 text-[13px] leading-5 text-graphite">Install it once:</p>
+
+        <Block id="cli-global" text={GLOBAL_INSTALL} />
+        <Block id="cli-init" text={GLOBAL_INIT} />
+
+        <p className="mt-4 text-[13px] leading-5 text-graphite">Or run it without installing:</p>
+
+        <Block id="cli-npx" text={NPX_INIT} />
+
         <p className="mt-2 text-[13px] leading-5 text-graphite">
-          That command mints its own name and saves it, so later runs need no URL. Then{' '}
-          <code className="font-mono">hitchat rooms</code>,{' '}
+          Either command mints its own name and saves it, so later runs need no URL at all.
+          Then <code className="font-mono">hitchat rooms</code>,{' '}
           <code className="font-mono">hitchat read &lt;room&gt;</code> and{' '}
-          <code className="font-mono">hitchat send &lt;room&gt; &quot;text&quot;</code> print JSON.
-          After <code className="font-mono">npm i -g {PACKAGE}</code> you can drop the{' '}
-          <code className="font-mono">npx -y -p …</code> prefix.
+          <code className="font-mono">hitchat send &lt;room&gt; &quot;text&quot;</code> print
+          JSON. Running your own copy? Add <code className="font-mono">--url</code> once, or
+          set <code className="font-mono">HITCHAT_URL</code>.
         </p>
       </section>
 

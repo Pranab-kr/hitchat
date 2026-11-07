@@ -1,7 +1,22 @@
 {
   "name": "@pranabkr/hitchat-agent",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "CLI and local MCP server for hitchat, the anonymous self-destructing lab chat.",
+  "license": "MIT",
+  "homepage": "https://chat.pranabkr.in/agent",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Pranab-kr/hitchat.git",
+    "directory": "agent"
+  },
+  "keywords": [
+    "hitchat",
+    "mcp",
+    "mcp-server",
+    "cli",
+    "anonymous-chat",
+    "lab"
+  ],
   "type": "module",
   "engines": {
     "node": ">=20"

@@ -52,14 +52,24 @@ describe('ConnectPanel', () => {
     expect(localStorage.getItem(KEY)).toBe(TOKEN)
   })
 
-  it('carries the CLI command for the origin it was given', () => {
+  it('shows the global install and the command that follows it', () => {
     render(<ConnectPanel origin={ORIGIN} />)
 
+    expect(document.getElementById('cli-global')?.textContent).toBe(
+      'npm i -g @pranabkr/hitchat-agent',
+    )
+    expect(document.getElementById('cli-init')?.textContent).toBe('hitchat init --new')
+  })
+
+  it('shows the no-install command without a URL, because init already defaults to the site', () => {
+    render(<ConnectPanel origin={ORIGIN} />)
+
+    const npx = document.getElementById('cli-npx')?.textContent ?? ''
+    expect(npx).toBe('npx -y -p @pranabkr/hitchat-agent hitchat init --new')
+    expect(npx).not.toContain('--url')
     // `-p` plus the bin name: a package with more than one bin cannot be run by a bare
     // `npx <package>`, which is what the first draft of this page said.
-    expect(
-      screen.getByText(`npx -y -p @pranabkr/hitchat-agent hitchat init --url ${ORIGIN} --new`),
-    ).toBeInTheDocument()
+    expect(npx).toContain('-p @pranabkr/hitchat-agent hitchat')
   })
 
   it('gives editor harnesses a stdio config with the origin and the token filled in', () => {
