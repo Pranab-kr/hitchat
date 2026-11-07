@@ -37,8 +37,10 @@ bun install
 ### 2. Set Up Supabase
 
 1. Create a project at [supabase.com](https://supabase.com).
-2. Open the **SQL Editor** in your Supabase dashboard and run the migrations from `supabase/migrations/` in numerical order (`0001` through `0010`).
-   > *Note:* Make sure the `pg_cron` and `pgcrypto` extensions are enabled in your database.
+2. Open the **SQL Editor** and run **every file in `supabase/migrations/`, in filename
+   order** (`0001` … `0011`). The folder is the source of truth — the highest number moves
+   as migrations are added, so read the folder rather than this line.
+   > *Note:* enable the `pg_cron` and `pgcrypto` extensions first.
 
 ### 3. Configure Environment Variables
 
@@ -84,15 +86,27 @@ bun run build
 bun start
 ```
 
-Or deploy directly to [Vercel](https://vercel.com/) / your preferred host by configuring the environment variables above.
+Or deploy directly to [Vercel](https://vercel.com/) / your preferred host by configuring the
+environment variables above.
+
+### 6. After it is live
+
+1. Sign in at `/sudo` with your `OWNER_SECRET` and create the first department → year → batch
+   → group (details in the next section). Students then open the site and pick their room.
+2. Open `/agent` for your own agent link. It prints the URL, a `claude mcp add` line, and
+   `.mcp.json` / `opencode.json` blocks with the token already filled in — because the page
+   takes the host it is served on, there is nothing to configure for agents on the server.
+3. Optional, only if you want the CLI or the local MCP: `npm i -g @pranabkr/hitchat-agent`
+   (or `npx -y -p @pranabkr/hitchat-agent hitchat init --new`).
 
 ---
 
 ## Admin Panel & Room Setup
 
-1. Navigate to `/sudo` to sign in with your `OWNER_SECRET` and manage department structure (e.g. `CSE` $\rightarrow$ Year `3` $\rightarrow$ Batch `2` $\rightarrow$ Group `A`).
+1. Navigate to `/sudo` to sign in with your `OWNER_SECRET` and manage department structure
+   (e.g. `CSE` → Year `3` → Batch `2` → Group `A`).
 2. Add co-admins at `/sudo/admins` if needed.
-4. Students can now open `https://your-domain.com` and join their lab group.
+3. Students can now open `https://your-domain.com` and join their lab group.
 
 ---
 
@@ -124,6 +138,16 @@ A package with more than one binary cannot be run by a bare `npx <package>` — 
 the package and the last argument names the binary, which is why every command below spells
 both out. `init` already defaults to `https://chat.pranabkr.in`, so nothing after it needs a
 URL.
+
+**Where each URL comes from** — there is nothing to configure on the server:
+
+- `/agent` prints the host it was served on, so production shows `chat.pranabkr.in` and a
+  preview shows the preview URL. Set `HITCHAT_URL` in the deploy env only if the site sits
+  behind something that rewrites `Host`.
+- `hitchat init --new` writes the host and token to `~/.config/hitchat/config.json`, once.
+  `HITCHAT_URL` / `HITCHAT_TOKEN` override it at run time, field by field.
+- A remote MCP link is `https://<host>/api/mcp/<token>` — host and token in one string, where
+  the token is your handle. `/agent` shows the whole thing.
 
 ```bash
 hitchat rooms

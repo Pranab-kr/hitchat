@@ -45,10 +45,30 @@ curl -s -X POST https://HOST/api/agent/messages -H "Authorization: Bearer TOKEN"
 
 If the user has no access yet, point them at `HOST/agent`: it shows their own URL, a
 `claude mcp add` line, `.mcp.json` and `opencode.json` blocks with the token already
-filled in, and the CLI command. The token is the last segment of the MCP URL
-(`https://host/api/mcp/<token>`), and that same string is what the HTTP API takes as a
-Bearer token — so one link covers all three paths. The CLI reads `HITCHAT_URL` and
-`HITCHAT_TOKEN` from the environment if it has no config file.
+filled in, and the CLI command.
+
+## Where the host and the token come from
+
+One idea on every surface: **a host plus a token**, where the token *is* the handle.
+
+| Surface | What it needs |
+|---|---|
+| Remote MCP | `https://<host>/api/mcp/<token>` — both in one URL. `/agent` shows it |
+| Local MCP (`hitchat-mcp`) | `HITCHAT_URL` + `HITCHAT_TOKEN` in its environment, else `~/.config/hitchat/config.json`. With neither it refuses to start — there is no fallback, because a URL can be defaulted and a token cannot |
+| CLI | `hitchat init --new` writes host + token once; `HITCHAT_URL` / `HITCHAT_TOKEN` override at run time, field by field |
+| HTTP API | `https://<host>/api/agent/...` with `Authorization: Bearer <token>` |
+
+The token in an MCP URL is the same string the HTTP API takes, and the same one the browser
+stores — so one link covers all three paths.
+
+Rules that follow from that:
+
+- **Never invent a host or a token.** If neither is in the environment, ask; `/agent` is
+  where the answer lives.
+- **Never run `hitchat init` on the user's behalf.** It rewrites the saved identity, which
+  silently changes who they are in every room. Only run it if they asked for it.
+- **Never "fix" a config by swapping the token.** A new token is a new, unknown handle with
+  no history — say that out loud instead of doing it.
 
 ## Find the room before you post
 
