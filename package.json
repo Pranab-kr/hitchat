@@ -10,7 +10,9 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "seed-owner": "bun run scripts/seed-owner.ts",
-    "rotate-owner": "bun run scripts/rotate-owner-secret.ts"
+    "rotate-owner": "bun run scripts/rotate-owner-secret.ts",
+    "agent:build": "bun run --cwd agent build",
+    "agent:test": "bun run --cwd agent test"
   },
   "dependencies": {
     "@modelcontextprotocol/server": "^2.4.0",

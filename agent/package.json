@@ -1,0 +1,33 @@
+{
+  "name": "@pranabkr/hitchat-agent",
+  "version": "0.1.0",
+  "description": "CLI and local MCP server for hitchat, the anonymous self-destructing lab chat.",
+  "type": "module",
+  "bin": {
+    "hitchat": "./dist/cli.js",
+    "hitchat-mcp": "./dist/mcp.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "tsdown",
+    "test": "vitest run",
+    "pack:dry": "bun run build && bun pm pack --dry-run",
+    "prepublishOnly": "bun run build && vitest run"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/server": "^2.4.0",
+    "commander": "^14.0.0",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@types/node": "^20",
+    "tsdown": "^0.18.0",
+    "typescript": "^5",
+    "vitest": "^4.1.10"
+  }
+}

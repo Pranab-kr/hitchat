@@ -17,6 +17,10 @@
 /.next/
 /out/
 
+# published agent package (own install, own build output)
+/agent/node_modules
+/agent/dist
+
 # production
 /build
 

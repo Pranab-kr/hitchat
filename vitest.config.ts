@@ -1,4 +1,4 @@
-import { defineConfig } from 'vitest/config'
+import { configDefaults, defineConfig } from 'vitest/config'
 import { loadEnv } from 'vite'
 import react from '@vitejs/plugin-react'
 import path from 'node:path'
@@ -14,6 +14,9 @@ export default defineConfig({
     setupFiles: ['./tests/setup.ts'],
     globals: true,
     env: testEnv,
+    // Assigning `exclude` replaces the defaults, which would stop node_modules and
+    // dist from being ignored; spread configDefaults back in before adding the package.
+    exclude: [...configDefaults.exclude, 'agent/**'],
   },
   resolve: {
     alias: {
