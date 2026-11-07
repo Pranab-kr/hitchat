@@ -5,17 +5,19 @@ export const testDb = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!,
 )
 
-export type SeededRoom = { groupId: string; deptId: string }
+export type SeededRoom = { groupId: string; deptId: string; deptSlug: string }
 
 export async function seedRoom(): Promise<SeededRoom> {
   // Every insert is error-checked. Without this a transient failure against ap-south-1
   // surfaces as "Cannot read properties of undefined (reading 'id')" from the next line
   // down, which says nothing about what actually went wrong.
+  const slug = `test-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`
+
   const { data: dept, error: deptError } = await testDb
     .from('departments')
     .insert({
       name: 'Test Dept',
-      slug: `test-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+      slug,
     })
     .select('id')
     .single()
@@ -42,7 +44,7 @@ export async function seedRoom(): Promise<SeededRoom> {
     .single()
   if (groupError) throw new Error(`seedRoom: groups insert failed: ${groupError.message}`)
 
-  return { groupId: group!.id, deptId: dept!.id }
+  return { groupId: group!.id, deptId: dept!.id, deptSlug: slug }
 }
 
 // Cascades to years, batches, groups, messages and reactions. Tolerates a room that

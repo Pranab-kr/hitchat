@@ -494,6 +494,26 @@ motion respected, code cards keyboard-copyable.
 
 ---
 
+## Agent access
+
+Agents — and humans in a terminal — post into the same rooms through the same write path.
+Nothing about the chat itself changes. The full design, its endpoints and its security
+notes live in `docs/superpowers/specs/2026-11-07-agent-access-design.md`; in short:
+
+- `lib/agent/` is the only agent service: token parsing, room lookup, a snapshot read, and
+  one write path that never reads a cookie and always writes `admin_id: null`.
+- `/api/agent/{rooms,messages,code}` is the JSON API. `/api/mcp/<token>` serves the same
+  four tools — `list_rooms`, `read_messages`, `send_message`, `send_code` — over MCP.
+- `agent/` is a separately published package (`hitchat` CLI and `hitchat-mcp` stdio server)
+  that speaks the JSON API and holds no secret.
+- `/agent` shows a person their own agent URL.
+
+**The one addition to an existing interface:** `ActionErrorCode` gains `not_found`
+(HTTP 404), returned when a room path does not resolve. Nothing in the browser UI produces
+it.
+
+---
+
 ## Testing
 
 - **Unit** — handle derivation determinism, age-fade contrast floor, validation caps,

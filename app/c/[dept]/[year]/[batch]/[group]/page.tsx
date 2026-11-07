@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { getServiceClient } from '@/lib/supabase/admin'
 import { getRoomTree } from '@/lib/room-tree'
+import { findRoomByPath } from '@/lib/rooms-server'
 import { ordinal, type DeptNode } from '@/lib/rooms'
 import { MESSAGE_COLUMNS } from '@/lib/columns'
 import { highlightCode } from '@/lib/highlight'
@@ -29,29 +30,13 @@ export default async function RoomPage({ params }: { params: Promise<RoomParams>
 
   const db = getServiceClient()
 
-  const { data: room } = await db
-    .from('groups')
-    .select(
-      'id, label, is_locked, batches!inner(number, years!inner(number, departments!inner(slug, name)))',
-    )
-    .eq('label', group.toUpperCase())
-    .eq('batches.number', batchNumber)
-    .eq('batches.years.number', yearNumber)
-    .eq('batches.years.departments.slug', dept)
-    .maybeSingle()
-
+  // Shared with the agent surfaces (lib/rooms-server.ts), so a room an agent can post to
+  // is exactly a room this page can render. Mixed-case slugs and labels now resolve
+  // instead of 404ing, because both sides normalise before querying.
+  const room = await findRoomByPath(dept, yearNumber, batchNumber, group)
   if (!room) notFound()
 
-  // The breadcrumb path reuses the department name that was joined for the room lookup
-  // above and, until now, discarded. PostgREST hands a to-one embed back as either an
-  // object or a single-element array depending on how it inferred the relationship, so
-  // normalize before reading. The year and batch numbers are already parsed from the URL.
-  const one = <T,>(value: T | T[]): T => (Array.isArray(value) ? value[0] : value)
-  type RoomDept = { name: string }
-  type RoomYear = { departments: RoomDept | RoomDept[] }
-  type RoomBatch = { years: RoomYear | RoomYear[] }
-  const roomBatch = one((room as unknown as { batches: RoomBatch | RoomBatch[] }).batches)
-  const deptName = one(one(roomBatch.years).departments).name
+  const deptName = room.deptName
 
   // The same tree the `/` picker renders, so the in-room index and the picker never
   // drift. Tiny query; the page is already force-dynamic.
@@ -133,12 +118,12 @@ export default async function RoomPage({ params }: { params: Promise<RoomParams>
         </header>
 
         {isAdmin && (
-          <AdminBar groupId={room.id} locked={room.is_locked} role={session.role} />
+          <AdminBar groupId={room.id} locked={room.isLocked} role={session.role} />
         )}
 
         <MessageList
           groupId={room.id}
-          locked={room.is_locked}
+          locked={room.isLocked}
           initial={initial}
           initialCodeHtml={initialCodeHtml}
           isAdmin={isAdmin}

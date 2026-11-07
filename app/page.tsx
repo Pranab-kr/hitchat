@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import Link from 'next/link'
 import { getRoomTree } from '@/lib/room-tree'
 import { ordinal } from '@/lib/rooms'
 import { ThemeToggle } from '@/components/theme-toggle'
@@ -71,6 +72,16 @@ export default async function HomePage() {
 
       <p className="mt-12 font-mono text-[12px] leading-4 tracking-[0.02em] text-graphite">
         No sign-up. No names. Messages delete themselves after 8 hours.
+      </p>
+
+      {/* One quiet line, no new nav: the picker stays the first thing a student sees. */}
+      <p className="mt-2 font-mono text-[12px] leading-4 tracking-[0.02em] text-graphite">
+        <Link
+          href="/agent"
+          className="rounded-[4px] transition-colors hover:text-pen"
+        >
+          agent access
+        </Link>
       </p>
     </main>
   )

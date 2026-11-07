@@ -13,12 +13,234 @@ section for the step you're on. Full protocol in `AGENTS.md`.
 
 | | |
 |---|---|
-| **Phase** | **Idle — consolidated /sudo and deleted /sudo/structure route implemented, verified, and merged.** |
-| **Current step** | Nothing in flight. `feat/consolidate-sudo-structure` verified and merged. |
-| **Branch** | `main` — **ahead of `origin/main`, not pushed** (owner asked to hold the push). |
-| **Next action** | None pending. Before publishing, rotate the leaked service-role key and owner secret as described below, then run `git push origin main`. |
-| **Blocked?** | No. |
-| **Last updated** | 2026-09-15 |
+| **Phase** | **Agent access built end to end (phases 1-6). Branch NOT merged and package NOT published — both are the owner's call.** |
+| **Current step** | Phase 6 verified: `/agent` reaches the hosted tools and the browser checks pass; docs updated. App suite 305/305, `tsc` clean, ESLint clean, `next build` passes, `agent:test` 37/37, `pack:dry` packs 4 files / 13 KB. |
+| **Branch** | `feat/agent-access` — cut from local `main`, 6 phases on one branch (recorded deviation below). |
+| **Next action** | Two owner actions, in this order. (1) Publish: `bun run --cwd agent pack:dry` then `npm publish ./agent --access public` (needs the owner's npm session — `npm whoami` was `pranab-kr`). (2) Merge once publishing is done, so `progress.md` can record the outcome in the same pass: `git checkout main && git merge --no-ff feat/agent-access`. Nothing is pushed by either step. |
+| **Blocked?** | No. One step is **unverified**: adding the hosted MCP URL as a connector in ChatGPT or Claude web. The app was only ever reachable at `localhost:3000` from this machine, so there was no public URL to paste. Everything else in phases 1-6 was driven against a real build. |
+| **Last updated** | 2026-11-07 |
+
+> **Deviation from the loop, recorded 2026-11-07.** Agent access is a six-phase feature
+> built on one long-lived branch, `feat/agent-access`, merged to `main` once after phase 6,
+> instead of one branch per step. Requested by the owner. **Phase 1 was a gate and passed:**
+> `createMcpHandler` serves through a Next 16 route handler in both `next dev` and
+> `next start`, so phases 2-6 stay in this app. No separate Hono app is needed.
+
+## Shipped — agent access phase 6: connect page, docs, packaging ✅
+
+- **`app/agent/page.tsx`** — server component. `dynamic = 'force-dynamic'`, and the origin
+  is built from `headers()` (`x-forwarded-host` → `host`, `x-forwarded-proto`), so a deploy
+  needs no configured domain.
+- **`components/agent/connect-panel.tsx`** — the URL, a copy button, the Claude Code /
+  ChatGPT / terminal blocks, and the warning. **The "new identity" control is not a
+  reroll**: it issues a UUID into component state so an agent gets its own name while the
+  browser keeps the one it is already sitting in a room with. Switching it changes the
+  helper line to "A separate name, only for agents. Your browser keeps its own."
+- **`app/page.tsx`** — one quiet footer line, `agent access`, no new nav.
+- **Docs** — README gains "Agents and CLI" (four tools, the two binaries, the hosted URL,
+  the warning); the main spec gains a short "Agent access" section naming the one
+  interface addition (`not_found`); `AGENTS.md`'s language rule now lists **five** places
+  (constraint, `ALLOWED_LANGS`, grammars, and the `send_code` description in *both* tool
+  surfaces — the plan said four and missed the hosted copy).
+- **`agent` package** — `pack:dry` packs 4 files, 13 KB unpacked: `package.json`,
+  `dist/cli.js`, `dist/mcp.js`, one shared chunk. Bin paths and `files: ["dist"]` hold.
+
+**Verified in a real browser against `next start`:** the home footer link reaches `/agent`;
+no horizontal overflow at 375 or 1280 (`scrollWidth` 360/1265 vs `innerWidth` 375/1280);
+the warning sits at y≈359-399, above the fold at desktop; `#agent-url` carries the stored
+UUID; "new identity" shows a different UUID and the helper line switches; a reload brings
+the **stored** identity back, proving the click never wrote localStorage. Copy buttons sit
+on the first line of each block rather than floating mid-block on a wrapped URL.
+
+**Amendment the plan did not have — `init` now has a default host.** The design said
+"there is no hardcoded default host" because the deployed domain was not settled. The owner
+settled it (`chat.pranabkr.in`), and being asked for a URL that has exactly one right answer
+is friction, so `agent/src/config.ts` exports `DEFAULT_URL`, `init` falls back to it, and
+`--url` / `HITCHAT_URL` still win. Both the design spec (§6 and §7) and the README were
+amended in the same commit — the rule is "the spec changes deliberately", not "never".
+
+**Amendment — editor configs, and an `npx` trap.** The first version of the page told people
+to run `npx @pranabkr/hitchat-agent init`, which **does not work**: a package with more than
+one binary makes npm refuse to guess (`could not determine executable to run`, reproduced).
+Everything now names both — `npx -y -p @pranabkr/hitchat-agent hitchat …` — and
+`package.json` gained a third bin name, `hitchat-agent`, so a bare `npx <package>` has
+something to resolve. Verified: a packed tarball installed into a clean project links
+`hitchat`, `hitchat-mcp` and `hitchat-agent`, and `npx -y -p <pkg> hitchat --help` runs.
+The page and README now also carry ready-to-paste `.mcp.json` (Claude Code, Cursor, Claude
+Desktop) and `opencode.json` blocks — OpenCode v2 nests servers under `mcp.servers`, calls
+the env block `environment`, and needs `"oauth": false` on a remote URL. Both blocks are
+pre-filled with the origin and the token on screen, so the "new identity" button rewrites
+all three places at once (a browser check confirms they stay in step, and a reload restores
+the stored token).
+
+**Connector question, honestly unresolved (Task 16 Step 2):** adding
+`https://<host>/api/mcp/<token>` as a connector in **ChatGPT or Claude web** was not tested.
+There is no public deployment reachable from the machine this was built on, only
+`localhost:3000`, and a connector cannot reach that. A local client is proven: the same
+URL, with the token in the path, answers `initialize` → `tools/list` → `tools/call` through
+`scripts/mcp-probe.ts`, and `.mcp.json` carries a `type: "http"` entry for an editor. Do not
+claim the web-connector path works until someone pastes the URL into ChatGPT or Claude web
+against the deployed host.
+
+## Shipped — agent access phase 5: the hosted MCP tools ✅
+
+- **`lib/agent/mcp-names.ts`** — `MCP_TOOL_NAMES`, no imports.
+- **`lib/agent/mcp.ts`** — `registerHostedTools(server, hash, origin?)`. Handlers call
+  `listRooms`, `readMessages`, `postAgentText`, `postAgentCode` **directly**, not over HTTP,
+  so ban → lock → validate → rate → insert still has one implementation. A refusal keeps
+  the server's wording plus the retry window; an unexpected throw is logged and answered
+  with "hitchat didn't answer. Try again." so an internal message never reaches a model.
+- **`app/api/mcp/[token]/route.ts`** — the placeholder `ping` is gone. `resolveToken`
+  (header wins over path) → `isToken` → 401, then a server per request built with the
+  hashed token. The factory **throws** if it is somehow reached without a valid token:
+  unreachable, and loud rather than silently posting under an empty hash.
+- **Tests** — `tests/agent-mcp.test.ts` (11): the two name lists are equal (imports
+  `agent/src/names`), four tools register in order, every description states the rules,
+  `send_message` passes `hash === hashToken(TOKEN)` and never the raw token, room paths are
+  resolved before posting, unknown room is `isError`, refusal carries the retry window, and
+  two route cases — a malformed token is 401, a valid one lists the four tools. The route
+  answers `tools/list` over **SSE** even in `responseMode: 'json'`, so the test decodes a
+  `data:` line exactly like `scripts/mcp-probe.ts`.
+
+**Verified against `next start` (not dev):** probe printed
+`TOOLS: list_rooms read_messages send_message send_code`; `tools/call send_message` posted
+and returned the absolute room URL; `read_messages` returned it; the room page rendered it
+as `ZenGoblin795` with zero SUDO marks; a malformed path token answered **401**; the row
+(`admin_id: null`) was deleted afterwards.
+
+**Guard proven by breaking it:** replacing the `check()` body with `return null` failed
+exactly the 401 test; reverted.
+
+## Shipped — agent access phase 4: the local stdio MCP server ✅
+
+- **`agent/src/names.ts`** — `TOOL_NAMES` and `ToolName`, with **no imports**, so the app's
+  phase-5 test can read the list by relative path without pulling in the package's deps.
+- **`agent/src/tools.ts`** — `registerTools(server, config, fetchImpl?)`: `list_rooms`,
+  `read_messages`, `send_message`, `send_code`. Every handler is a thin call into the
+  client; a refusal comes back as `{ isError: true }` carrying the server's own wording
+  (plus the retry window when there is one). Descriptions carry the limits a model needs:
+  paths from `list_rooms`, 1,000 / 50,000 characters, 8 hours, no admin actions.
+  `lang` is a plain string on purpose — an enum here would be a fifth copy of
+  `ALLOWED_LANGS`, and a wrong language already returns the app's `invalid` message.
+- **`agent/src/mcp.ts`** — the `hitchat-mcp` bin: `serveStdio` with one `McpServer` per
+  connection. A missing config prints to **stderr** and exits 1 rather than serving four
+  tools that all fail (stdout belongs to the protocol).
+- **`agent/tsdown.config.ts`** — entry is now `['src/cli.ts', 'src/mcp.ts']`.
+- **Tests** — `agent/tests/tools.test.ts` (5): the four names in order, every description
+  states the rules, every handler returns MCP text content (never a bare string),
+  `read_messages` forwards room + limit, a refusal becomes `isError`.
+
+**Verified:** `agent:test` 35/35; `tsc -p agent/tsconfig.json` clean; `agent:build` emits
+`dist/cli.js` and `dist/mcp.js`. Driven through real stdio framing with a hand-written
+JSON-RPC client against the built binary: `initialize` answered `hitchat 0.1.0` on
+protocol `2025-06-18`, `tools/list` returned the four names, `list_rooms` listed
+`it/3/2/A` and `it/3/2/B`, `send_message` posted and the room page rendered it as
+`ZenGoblin795` with zero SUDO marks, `read_messages` returned it, and a 1,200-character
+send came back `isError` with "Messages are 1,000 characters max" — proof the package
+never re-implemented a limit. The row (`admin_id: null`) was deleted afterwards.
+A `.mcp.json` entry (gitignored) points an editor at `node agent/dist/mcp.js`.
+
+**Guard proven by breaking it:** renaming `send_code` to `send-code` failed exactly the
+four-names test; reverted.
+
+## Shipped — agent access phase 3: the CLI ✅
+
+- **`agent/`** — a published package, `@pranabkr/hitchat-agent`, deliberately **not** a bun
+  workspace member. `package.json` (`type: module`, `bin` → `dist/cli.js` + `dist/mcp.js`,
+  `files: ["dist"]`, `engines: node >= 20`, `build`/`test`/`pack:dry`/`prepublishOnly`),
+  `tsconfig.json`, `tsdown.config.ts`, `vitest.config.ts`.
+- **`agent/src/config.ts`** — `configPath()`, `readConfig()`, `writeConfig()` (mkdir -p,
+  mode 0600), plus `resolveConfig(env)` which layers `HITCHAT_URL`/`HITCHAT_TOKEN` over the
+  file field by field. Values are trimmed on read.
+- **`agent/src/types.ts`** — the wire shapes restated: the package cannot import from the
+  app. snake_case field names match the API.
+- **`agent/src/client.ts`** — `HitchatError { code, retryAfter? }`, `apiCall`, `listRooms`,
+  `readMessages`, `sendMessage`, `sendCode`. It carries the token and unwraps
+  `{ ok, data }`; it owns no rule.
+- **`agent/src/cli.ts`** — `runCli(argv, io, fetchImpl?)` and the `hitchat` bin:
+  `init` (proves the pair against `/api/agent/rooms` **before** writing, `--new` mints a
+  UUID, no hardcoded host), `rooms`, `read --limit`, `send [message] | --code-file --lang
+  [--title] [--lab] [--reply-to]`. Every success prints JSON; errors exit 1, usage errors
+  exit 2, a bare `hitchat` prints help and exits 2. The bin runs itself only when its own
+  path is the entry point, so tests import `runCli` without side effects.
+- **Root files** — `tsconfig.json` excludes `agent`; `eslint.config.mjs` ignores
+  `agent/**`; `vitest.config.ts` uses `[...configDefaults.exclude, 'agent/**']` (spreading
+  the defaults back in, or `node_modules` stops being ignored); `.gitignore` gains
+  `/agent/node_modules` and `/agent/dist`; `package.json` gains `agent:build` and
+  `agent:test`.
+
+**Verified:** `agent:test` 29/29 (35 after phase 4), `tsc -p agent/tsconfig.json` clean,
+app suite 290/290 unchanged, ESLint clean, `next build` clean, and root `tsc
+--listFilesOnly` contains no `agent/` file. The built binary was driven against `next dev`:
+`init` printed `{"ok":true}` with a UUID token, `rooms` listed both rooms, `send` returned
+`{ id, expires_at, room, url }`, `read` showed the message, the room page rendered it as
+`ZenGoblin795` with zero SUDO marks, and the row was deleted.
+
+**Exit codes proven by mutation:** changing the `UsageError` branch's `return 2` to `0`
+failed exactly the three usage-exit tests; reverted.
+
+**Deviation from the plan, as built (do NOT re-litigate):**
+- **`dist/cli.js`, not `dist/cli.mjs`.** tsdown emits `.mjs` for an ESM-only package;
+  `outExtensions` pins `.js` so the `bin` paths in `package.json` stay as written. The
+  package is `type: module`, so `.js` is ESM already.
+- **The entry carries a shebang.** tsdown preserves it and marks the output executable, so
+  a POSIX `node_modules/.bin` symlink runs. Without it, `npm i -g` would break on macOS and
+  Linux while `node dist/cli.js` kept working — the exact kind of green-suite blindness
+  `AGENTS.md` warns about.
+- **`resolveConfig` is a fourth export** beyond the plan's three, so the CLI and the stdio
+  MCP server share one copy of the env-over-file rule.
+- **`agent/tsdown.config.ts` started with only `src/cli.ts`** in its entry list; a tsdown
+  entry naming a file that does not exist fails the build, so `src/mcp.ts` was added in
+  phase 4, and phase 3's build check asserted `cli.js` only.
+
+## Shipped — agent access phase 2: the HTTP API ✅
+
+- **`lib/rooms-server.ts`** — `findRoomByPath()`, the room page's lookup extracted so the
+  page and the agent paths cannot drift. It lowercases the slug and uppercases the label,
+  so `/c/IT/3/2/A` now resolves instead of 404ing.
+- **`lib/agent/token.ts`** — `isToken`, `tokenFromHeader` (Bearer or `x-hitchat-token`),
+  `tokenFromPath`, `resolveToken`. 16–128 chars of `[A-Za-z0-9_-]`.
+- **`lib/agent/rooms.ts`** — `parseRoomPath`, `listRooms` (includes `locked`), `resolveRoom`,
+  `roomPath`, `roomWebPath`.
+- **`lib/agent/read.ts`** — newest-n snapshot, oldest first; excludes deleted and expired;
+  default 20, max 50, code truncated at 8,000 chars with `truncated: true`.
+- **`lib/agent/post.ts`** — the only agent write path. Ban → lock → validate → reply →
+  rate → insert, with `admin_id: null` and no cookie read anywhere. Returns `expires_at`.
+- **`lib/agent/http.ts`** — `jsonResult`, `errorJson`, `readJsonObject`; status map
+  400/401/403/403/404/429/500 and `Retry-After`.
+- **`lib/result.ts`** — added the `not_found` code.
+- **`app/api/agent/{rooms,messages,code}/route.ts`** — GET rooms, GET+POST messages,
+  POST code. Token from the header only; the MCP route (phase 5) also accepts it in the path.
+- **Tests** — `agent-token` (17), `rooms-server` (4), `agent-rooms` (10), `agent-read` (7),
+  `agent-http` (7), `agent-result` (1), `agent-post` (12), `agent-api` (19).
+
+**Verified:** full suite 290/290; `tsc --noEmit` clean; ESLint clean; `next build` lists
+`/api/agent/{code,messages,rooms}` as dynamic routes. Curl against the dev server:
+`GET /api/agent/rooms` listed `it/3/2/A` and `it/3/2/B`; `POST /api/agent/messages`
+returned `{ id, expires_at, room: "it/3/2/A", url }`; the message rendered in
+`/c/it/3/2/a` as `PrimeShift705` with `admin_id: null`; the row was deleted after the check.
+
+**Guards proven by breaking them:** writing a real admin id instead of `null` failed the
+`admin_id` assertion; removing `assertRoomOpen` failed the locked-room test. Both reverted.
+
+**Decided during the build:** `readMessages(id, 0)` clamps to 1 rather than falling back to
+the default 20 — an explicit limit means it, even a bad one. A bulk `messages` insert must
+set `expires_at` on every row, because PostgREST builds the statement from the union of
+keys and sends null for the rows that omit it.
+
+## Shipped — agent access phase 1: the MCP pipe gate ✅
+
+- **`package.json`, `bun.lock`** — added `@modelcontextprotocol/server@2.4.0` and `zod@4.6.7`.
+- **`app/api/mcp/[token]/route.ts`** — `GET`/`POST`/`DELETE` forwarded to
+  `createMcpHandler`, server built per request, one placeholder `ping` tool. Phase 5
+  replaces the tool set and keeps the route shape, `runtime = 'nodejs'` and the dynamic flag.
+- **`scripts/mcp-probe.ts`** — dependency-free JSON-RPC probe (handles JSON and SSE
+  reply bodies). Exits 0 on a non-empty tool list; reused in phase 5.
+
+**Verified:** `next build` compiles and type-checks; `next start` + probe prints
+`TOOLS: ping`; `tools/call` returns `pong`; ESLint clean. `scripts/mcp-probe.ts` needs
+`export {}` because the app's `tsconfig` includes `scripts/`, so top-level await only
+compiles if the file is a module — `next build` type-checks it.
 
 ## Shipped — consolidate /sudo and delete /sudo/structure route ✅
 

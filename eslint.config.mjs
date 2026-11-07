@@ -12,6 +12,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // The published CLI/MCP package has its own tsconfig and Vitest config.
+    "agent/**",
   ]),
 ]);
 
