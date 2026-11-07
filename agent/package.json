@@ -8,7 +8,8 @@
   },
   "bin": {
     "hitchat": "./dist/cli.js",
-    "hitchat-mcp": "./dist/mcp.js"
+    "hitchat-mcp": "./dist/mcp.js",
+    "hitchat-agent": "./dist/cli.js"
   },
   "files": [
     "dist"

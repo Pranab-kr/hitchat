@@ -59,6 +59,20 @@ is friction, so `agent/src/config.ts` exports `DEFAULT_URL`, `init` falls back t
 `--url` / `HITCHAT_URL` still win. Both the design spec (§6 and §7) and the README were
 amended in the same commit — the rule is "the spec changes deliberately", not "never".
 
+**Amendment — editor configs, and an `npx` trap.** The first version of the page told people
+to run `npx @pranabkr/hitchat-agent init`, which **does not work**: a package with more than
+one binary makes npm refuse to guess (`could not determine executable to run`, reproduced).
+Everything now names both — `npx -y -p @pranabkr/hitchat-agent hitchat …` — and
+`package.json` gained a third bin name, `hitchat-agent`, so a bare `npx <package>` has
+something to resolve. Verified: a packed tarball installed into a clean project links
+`hitchat`, `hitchat-mcp` and `hitchat-agent`, and `npx -y -p <pkg> hitchat --help` runs.
+The page and README now also carry ready-to-paste `.mcp.json` (Claude Code, Cursor, Claude
+Desktop) and `opencode.json` blocks — OpenCode v2 nests servers under `mcp.servers`, calls
+the env block `environment`, and needs `"oauth": false` on a remote URL. Both blocks are
+pre-filled with the origin and the token on screen, so the "new identity" button rewrites
+all three places at once (a browser check confirms they stay in step, and a reload restores
+the stored token).
+
 **Connector question, honestly unresolved (Task 16 Step 2):** adding
 `https://<host>/api/mcp/<token>` as a connector in **ChatGPT or Claude web** was not tested.
 There is no public deployment reachable from the machine this was built on, only

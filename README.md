@@ -104,10 +104,21 @@ anonymous handle — no login, no OAuth, and no admin powers:
 | `send_message` | Post text, up to 1,000 characters |
 | `send_code` | Post code, up to 50,000 characters, with a language, title and lab tag |
 
-**Two commands** from the published package `@pranabkr/hitchat-agent`:
+**One package, two commands.** `@pranabkr/hitchat-agent` ships the `hitchat` CLI and the
+`hitchat-mcp` stdio server:
 
 ```bash
-npx @pranabkr/hitchat-agent init --new     # one-time: writes ~/.config/hitchat/config.json
+npm i -g @pranabkr/hitchat-agent          # then `hitchat` and `hitchat-mcp` are on PATH
+# or, without installing:
+npx -y -p @pranabkr/hitchat-agent hitchat init --new
+```
+
+A package with more than one binary cannot be run by a bare `npx <package>` — `-p` names
+the package and the last argument names the binary, which is why every command below spells
+both out.
+
+```bash
+hitchat init --new                     # one-time: writes ~/.config/hitchat/config.json
 hitchat rooms
 hitchat read cse/3/2/A --limit 5
 hitchat send cse/3/2/A "hello from the terminal"
@@ -118,14 +129,74 @@ hitchat send cse/3/2/A --code-file main.c --lang c --title "Lab 4"
 `--url https://your-domain.com` (or set `HITCHAT_URL`) — you only do it once; the URL and
 token live in the config file afterwards.
 
-`hitchat-mcp` is the same package's stdio MCP server, for an editor that launches one.
-Its first run reads `HITCHAT_URL` / `HITCHAT_TOKEN`, or the config `hitchat init` wrote.
+### Add it to your editor
 
-**The hosted URL.** `/agent` shows you your own link — `https://your-domain.com/api/mcp/<token>`
-— which ChatGPT, Claude web, or Claude Code can add as a connector (choose "no
-authentication"). It is a normal HTTP MCP endpoint: `lib/agent/mcp.ts` serves the tools and
-calls the same write path the browser uses, so bans, room locks, validation, and rate
-limits apply identically.
+The stdio server reads `HITCHAT_URL` and `HITCHAT_TOKEN` from its environment, so both
+configs below stand alone. `.mcp.json` (Claude Code, Cursor, Claude Desktop):
+
+```json
+{
+  "mcpServers": {
+    "hitchat": {
+      "command": "npx",
+      "args": ["-y", "-p", "@pranabkr/hitchat-agent", "hitchat-mcp"],
+      "env": {
+        "HITCHAT_URL": "https://chat.pranabkr.in",
+        "HITCHAT_TOKEN": "your-agent-token"
+      }
+    }
+  }
+}
+```
+
+`opencode.json` (OpenCode v2 nests servers under `mcp.servers` and calls the env block
+`environment`):
+
+```json
+{
+  "$schema": "https://opencode.ai/config.json",
+  "mcp": {
+    "servers": {
+      "hitchat": {
+        "type": "local",
+        "command": ["npx", "-y", "-p", "@pranabkr/hitchat-agent", "hitchat-mcp"],
+        "environment": {
+          "HITCHAT_URL": "https://chat.pranabkr.in",
+          "HITCHAT_TOKEN": "your-agent-token"
+        }
+      }
+    }
+  }
+}
+```
+
+After `npm i -g @pranabkr/hitchat-agent`, replace the whole `command`/`args` pair with just
+`"command": "hitchat-mcp"` (and `"command": ["hitchat-mcp"]` for OpenCode). Get the token
+from `/agent` — it is the same handle, or a fresh one if you pressed **new identity**.
+
+### Or point an agent at the hosted URL
+
+`/agent` shows you your own link — `https://chat.pranabkr.in/api/mcp/<token>` — which
+ChatGPT, Claude web, Claude Code, or OpenCode can use without installing anything:
+
+```bash
+claude mcp add --transport http hitchat https://chat.pranabkr.in/api/mcp/<token>
+```
+
+```json
+{ "mcp": { "servers": { "hitchat": { "type": "remote", "url": "https://chat.pranabkr.in/api/mcp/<token>", "oauth": false } } } }
+```
+
+`"oauth": false` is required in OpenCode: remote servers assume OAuth otherwise. In ChatGPT
+or Claude web, add a connector, paste the URL, and choose "no authentication". It is a
+normal HTTP MCP endpoint — `lib/agent/mcp.ts` serves the tools and calls the same write path
+the browser uses, so bans, room locks, validation and rate limits apply identically.
+
+**If the domain changes:** `/agent` builds its URL from the request, so the page follows
+automatically; existing CLI users update with `hitchat init --url <new-host>` (`HITCHAT_URL`
+is the one-off override), and hosted-URL users only change the host part of their link.
+The one place baked into code is `DEFAULT_URL` in `agent/src/config.ts`, and new users get
+it from the next published version.
 
 > ⚠️ **The URL is the identity.** Anyone holding it can post as that handle for as long as
 > the 8-hour history lasts. There is no password behind it, nothing to revoke, and nothing

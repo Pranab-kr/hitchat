@@ -8,6 +8,17 @@ import { useAnonToken } from '@/lib/use-anon-token'
 // here is a copy-paste block built from the identity the browser already has, so a person
 // never has to invent or store anything by hand.
 
+const PACKAGE = '@pranabkr/hitchat-agent'
+
+// Both harnesses accept the same stdio command; only the JSON around it differs. `-p` and
+// the bin name are both explicit on purpose: a package with more than one bin cannot be
+// run by bare `npx <package>`.
+const STDIO_COMMAND = ['npx', '-y', '-p', PACKAGE, 'hitchat-mcp']
+
+function pretty(value: unknown): string {
+  return JSON.stringify(value, null, 2)
+}
+
 export function ConnectPanel({ origin }: { origin: string }) {
   const { token } = useAnonToken()
 
@@ -18,11 +29,26 @@ export function ConnectPanel({ origin }: { origin: string }) {
 
   const active = separate ?? token
   // Before the client store has read localStorage there is no token; the ellipsis keeps
-  // the block from resizing when it lands.
-  const url = active ? `${origin}/api/mcp/${active}` : `${origin}/api/mcp/…`
+  // the blocks from resizing when it lands.
+  const agentToken = active ?? '…'
+  const url = `${origin}/api/mcp/${agentToken}`
 
+  const env = { HITCHAT_URL: origin, HITCHAT_TOKEN: agentToken }
+
+  // Claude Code, Cursor, and Claude Desktop all read this shape.
   const claudeCode = `claude mcp add --transport http hitchat ${url}`
-  const cli = `npx @pranabkr/hitchat-agent init --url ${origin} --new`
+
+  const claudeConfig = pretty({
+    mcpServers: { hitchat: { command: STDIO_COMMAND[0], args: STDIO_COMMAND.slice(1), env } },
+  })
+
+  // OpenCode v2 nests servers under `mcp.servers`, and calls the env block `environment`.
+  const opencodeConfig = pretty({
+    $schema: 'https://opencode.ai/config.json',
+    mcp: { servers: { hitchat: { type: 'local', command: STDIO_COMMAND, environment: env } } },
+  })
+
+  const cli = `npx -y -p ${PACKAGE} hitchat init --url ${origin} --new`
 
   return (
     <div className="space-y-8">
@@ -78,6 +104,50 @@ export function ConnectPanel({ origin }: { origin: string }) {
           </code>
           <CopyButton text={claudeCode} />
         </div>
+        <p className="mt-2 text-[13px] leading-5 text-graphite">
+          That adds the hosted URL as a remote server, with no authentication to set up.
+        </p>
+      </section>
+
+      <section>
+        <h2 className="text-[15px] leading-6 font-semibold text-ink">In your editor</h2>
+        <p className="mt-1 text-[13px] leading-5 text-graphite">
+          Claude Code, Cursor and Claude Desktop read <code className="font-mono">.mcp.json</code>.
+          Drop this next to your project:
+        </p>
+
+        <div className="mt-2 flex items-start gap-3 rounded-[8px] border border-hairline bg-surface px-3 py-2">
+          <pre
+            id="claude-config"
+            className="min-w-0 flex-1 overflow-x-auto font-mono text-[13px] leading-[21px] text-ink"
+          >
+            {claudeConfig}
+          </pre>
+          <CopyButton text={claudeConfig} />
+        </div>
+
+        <p className="mt-4 text-[13px] leading-5 text-graphite">
+          OpenCode reads <code className="font-mono">opencode.json</code> (or{' '}
+          <code className="font-mono">~/.config/opencode/opencode.json</code> for every project):
+        </p>
+
+        <div className="mt-2 flex items-start gap-3 rounded-[8px] border border-hairline bg-surface px-3 py-2">
+          <pre
+            id="opencode-config"
+            className="min-w-0 flex-1 overflow-x-auto font-mono text-[13px] leading-[21px] text-ink"
+          >
+            {opencodeConfig}
+          </pre>
+          <CopyButton text={opencodeConfig} />
+        </div>
+
+        <p className="mt-2 text-[13px] leading-5 text-graphite">
+          Both run the same local server, so nothing leaves your machine except the posts
+          themselves. If you install it once with{' '}
+          <code className="font-mono">npm i -g {PACKAGE}</code>, replace the whole{' '}
+          <code className="font-mono">command</code>/<code className="font-mono">args</code>{' '}
+          pair with <code className="font-mono">hitchat-mcp</code>.
+        </p>
       </section>
 
       <section>
@@ -97,9 +167,12 @@ export function ConnectPanel({ origin }: { origin: string }) {
           <CopyButton text={cli} />
         </div>
         <p className="mt-2 text-[13px] leading-5 text-graphite">
-          That command mints its own name. Once it is set up, <code className="font-mono">hitchat rooms</code>,{' '}
+          That command mints its own name and saves it, so later runs need no URL. Then{' '}
+          <code className="font-mono">hitchat rooms</code>,{' '}
           <code className="font-mono">hitchat read &lt;room&gt;</code> and{' '}
           <code className="font-mono">hitchat send &lt;room&gt; &quot;text&quot;</code> print JSON.
+          After <code className="font-mono">npm i -g {PACKAGE}</code> you can drop the{' '}
+          <code className="font-mono">npx -y -p …</code> prefix.
         </p>
       </section>
 

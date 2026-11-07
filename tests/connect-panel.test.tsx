@@ -55,8 +55,57 @@ describe('ConnectPanel', () => {
   it('carries the CLI command for the origin it was given', () => {
     render(<ConnectPanel origin={ORIGIN} />)
 
+    // `-p` plus the bin name: a package with more than one bin cannot be run by a bare
+    // `npx <package>`, which is what the first draft of this page said.
     expect(
-      screen.getByText(`npx @pranabkr/hitchat-agent init --url ${ORIGIN} --new`),
+      screen.getByText(`npx -y -p @pranabkr/hitchat-agent hitchat init --url ${ORIGIN} --new`),
     ).toBeInTheDocument()
+  })
+
+  it('gives editor harnesses a stdio config with the origin and the token filled in', () => {
+    render(<ConnectPanel origin={ORIGIN} />)
+
+    const claude = JSON.parse(document.getElementById('claude-config')?.textContent ?? '{}')
+    expect(claude).toEqual({
+      mcpServers: {
+        hitchat: {
+          command: 'npx',
+          args: ['-y', '-p', '@pranabkr/hitchat-agent', 'hitchat-mcp'],
+          env: { HITCHAT_URL: ORIGIN, HITCHAT_TOKEN: TOKEN },
+        },
+      },
+    })
+  })
+
+  it('gives OpenCode its own shape, under mcp.servers with an environment block', () => {
+    render(<ConnectPanel origin={ORIGIN} />)
+
+    const opencode = JSON.parse(document.getElementById('opencode-config')?.textContent ?? '{}')
+    expect(opencode.$schema).toBe('https://opencode.ai/config.json')
+    expect(opencode.mcp.servers.hitchat).toEqual({
+      type: 'local',
+      command: ['npx', '-y', '-p', '@pranabkr/hitchat-agent', 'hitchat-mcp'],
+      environment: { HITCHAT_URL: ORIGIN, HITCHAT_TOKEN: TOKEN },
+    })
+  })
+
+  it('tells the reader how to drop npx after a global install', () => {
+    render(<ConnectPanel origin={ORIGIN} />)
+
+    expect(
+      screen.getAllByText('npm i -g @pranabkr/hitchat-agent').length,
+    ).toBeGreaterThan(0)
+  })
+
+  it('rewrites the editor configs when a separate identity is issued', () => {
+    render(<ConnectPanel origin={ORIGIN} />)
+
+    fireEvent.click(screen.getByRole('button', { name: /new identity/i }))
+
+    const claude = JSON.parse(document.getElementById('claude-config')?.textContent ?? '{}')
+    const issued = claude.mcpServers.hitchat.env.HITCHAT_TOKEN
+
+    expect(issued).not.toBe(TOKEN)
+    expect(agentUrl()).toContain(issued)
   })
 })

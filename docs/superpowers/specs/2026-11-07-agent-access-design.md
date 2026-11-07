@@ -246,7 +246,12 @@ built. If it fails, we fall back to approach C and lose one phase, not the desig
 A separate published package, `@pranabkr/hitchat-agent`, with two binaries:
 
 - `hitchat-mcp` — stdio MCP server, tools backed by the HTTP API.
-- `hitchat` — the CLI below.
+- `hitchat` — the CLI below. `hitchat-agent` is an alias of the same file, so
+  `npx @pranabkr/hitchat-agent` has something to resolve.
+
+A package with more than one binary cannot be run by a bare `npx <package>` — npm refuses
+to guess. Anything copied out of the docs therefore names both: `npx -y -p
+@pranabkr/hitchat-agent hitchat …`, or `hitchat` / `hitchat-mcp` after `npm i -g`.
 
 It lives in `agent/` at the repo root and is **not** a bun workspace member, so the Next
 install and build are untouched. Three root files must learn to ignore it, or the repo's
@@ -313,8 +318,9 @@ A small page that makes the capability reachable without reading the source:
 
 - The current browser token, with a copy button, plus `--new` guidance.
 - The hosted MCP URL for that token.
-- Three copy-paste blocks: Claude Code `claude mcp add`, ChatGPT/Claude web instructions,
-  and `npx @pranabkr/hitchat-agent init`.
+- Copy-paste blocks: `claude mcp add` for the hosted URL, a `.mcp.json` (stdio) block and an
+  `opencode.json` block, both pre-filled with the origin and the token the page is showing,
+  ChatGPT/Claude web instructions, and the `npx -y -p … hitchat init` command.
 - A plain warning: the URL is the identity; anyone holding it can post as that handle.
 
 It is reachable from a quiet `agent access` link in the home page footer — one line, no new
