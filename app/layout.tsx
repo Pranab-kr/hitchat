@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { Bricolage_Grotesque, Figtree, IBM_Plex_Mono } from 'next/font/google'
 import { ThemeProvider } from './theme-provider'
+import { Navbar } from '@/components/navbar'
 import './globals.css'
 
 const bricolage = Bricolage_Grotesque({
@@ -38,7 +39,10 @@ export default function RootLayout({
       className={`${bricolage.variable} ${figtree.variable} ${plexMono.variable}`}
     >
       <body>
-        <ThemeProvider>{children}</ThemeProvider>
+        <ThemeProvider>
+          <Navbar />
+          {children}
+        </ThemeProvider>
       </body>
     </html>
   )

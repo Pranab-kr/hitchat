@@ -104,9 +104,25 @@ export function RoomTree({
       </nav>
 
       <div className="flex items-center justify-between gap-2 border-t border-hairline px-3 py-2">
-        <span className="font-mono text-[11px] leading-4 tracking-[0.02em] text-graphite">
-          vanishes in 8h
-        </span>
+        <div className="flex items-center gap-2 font-mono text-[11px] leading-4 text-graphite">
+          <Link
+            href="/agent"
+            prefetch
+            onClick={onNavigate}
+            className="transition-colors hover:text-pen"
+          >
+            docs
+          </Link>
+          <span className="text-hairline">·</span>
+          <Link
+            href="/sudo"
+            prefetch
+            onClick={onNavigate}
+            className="transition-colors hover:text-pen"
+          >
+            sudo
+          </Link>
+        </div>
         <ThemeToggle />
       </div>
     </div>

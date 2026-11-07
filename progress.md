@@ -13,12 +13,30 @@ section for the step you're on. Full protocol in `AGENTS.md`.
 
 | | |
 |---|---|
-| **Phase** | **Navigation bar: SUDO and Agent Docs buttons (In progress)** |
-| **Current step** | In progress on `feat/navbar-sudo-agent`: build a navigation bar with access to SUDO (`/sudo`) and Agent docs (`/agent`) buttons conforming to `design.md`. |
-| **Branch** | `feat/navbar-sudo-agent` |
-| **Next action** | Design and implement `Navbar` component, incorporate into header navigation, verify styling and contrast against `design.md`, and write component tests. |
+| **Phase** | **Navigation bar shipped on `feat/navbar-sudo-agent`. Verified in production build and test suite.** |
+| **Current step** | Shipped navigation bar with SUDO (`/sudo`) and Agent docs (`/agent`) buttons. Unit tests (323/323), agent tests (37/37), tsc, eslint, and next build all passing cleanly. |
+| **Branch** | `feat/navbar-sudo-agent` (ready for review / merge to `main`) |
+| **Next action** | Review branch `feat/navbar-sudo-agent`, merge into `main` when ready. |
 | **Blocked?** | No. |
 | **Last updated** | 2026-11-07 |
+
+## Shipped — site navigation bar with SUDO and Agent Docs buttons ✅
+
+Built on `feat/navbar-sudo-agent` per user request.
+
+- **`components/navbar.tsx`** — dedicated navigation header mounted in `app/layout.tsx`. Contains `hitchat` brand on left, and `Agent docs` secondary button (`/agent`), `SUDO` badge button (`/sudo`), and `ThemeToggle` on right. Supports `aria-current="page"` for active page indication. Intentionally returns `null` on `/c/...` paths to preserve the exact two-column 100dvh lab-sheet frame defined in `design.md`.
+- **`components/room/room-tree.tsx`** — added subtle `docs` (`/agent`) and `sudo` (`/sudo`) navigation links in the in-room notebook index footer alongside `ThemeToggle`, allowing in-room navigation on both desktop rail and mobile drawer.
+- **`app/layout.tsx`** — includes `<Navbar />` inside `<ThemeProvider>`, providing site-wide navigation across all main pages.
+- **`app/page.tsx`, `app/agent/page.tsx`, `components/admin/owner-shell.tsx`** — removed redundant duplicate `ThemeToggle` and breadcrumb links from hero sections now that the top navbar provides them cleanly.
+- **`tests/navbar.test.tsx`** — added 4 tests covering brand link, Agent docs button, SUDO button, ThemeToggle presence, `aria-current="page"` states on `/agent` and `/sudo`, and in-room route suppression (`/c/...`). Guard proven by mutation.
+
+**Verified:**
+- Full suite **323/323** tests pass across 40 files (`bun run test`).
+- Agent suite **37/37** tests pass (`bun run agent:test`).
+- `tsc --noEmit` and `eslint` clean with 0 errors.
+- `next build` passes with Turbopack.
+- Verified live against production server (`next start` on port 3005): `/`, `/agent`, `/sudo`, and `/c/it/3/2/a` all verified with probe script.
+
 
 > **Deviation from the loop, recorded 2026-11-07.** Agent access is a six-phase feature
 > built on one long-lived branch, `feat/agent-access`, merged to `main` once after phase 6,

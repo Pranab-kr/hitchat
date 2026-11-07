@@ -2,7 +2,6 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { getRoomTree } from '@/lib/room-tree'
 import { ordinal } from '@/lib/rooms'
-import { ThemeToggle } from '@/components/theme-toggle'
 import { RoomLink } from '@/components/room/room-link'
 
 // The room tree changes whenever the owner edits it, and the list is tiny. Rendering
@@ -21,16 +20,13 @@ export default async function HomePage() {
 
   return (
     <main className="mx-auto max-w-2xl px-6 py-12">
-      <div className="mb-8 flex items-start justify-between gap-4">
-        <div>
-          <h1 className="font-display text-[32px] leading-[36px] font-semibold tracking-[-0.02em] text-ink">
-            hitchat
-          </h1>
-          <p className="mt-1 text-[15px] leading-6 text-graphite">
-            Pick your room. Everything posted here vanishes in 8 hours.
-          </p>
-        </div>
-        <ThemeToggle />
+      <div className="mb-8">
+        <h1 className="font-display text-[32px] leading-[36px] font-semibold tracking-[-0.02em] text-ink">
+          hitchat
+        </h1>
+        <p className="mt-1 text-[15px] leading-6 text-graphite">
+          Pick your room. Everything posted here vanishes in 8 hours.
+        </p>
       </div>
 
       {departments.length === 0 ? (

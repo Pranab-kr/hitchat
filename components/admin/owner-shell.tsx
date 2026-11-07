@@ -1,5 +1,4 @@
 import Link from 'next/link'
-import { ThemeToggle } from '@/components/theme-toggle'
 
 // Shared chrome for the two owner pages. Neither is linked from anywhere a student
 // can see; the nav here exists so the owner can move between them.
@@ -16,21 +15,18 @@ export function OwnerShell({
 }) {
   return (
     <main className="mx-auto max-w-2xl px-6 py-12">
-      <div className="mb-8 flex items-start justify-between gap-4">
-        <div>
-          <div className="mb-2 flex items-center gap-2">
-            {/* design.md § Component notes: marigold as a 2px left border plus its 12%
-                wash, label in ink. The all-marigold form measures 1.57:1 on paper. */}
-            <span className="rounded-[4px] border-l-2 border-l-marigold bg-marigold/12 px-1.5 py-0.5 font-mono text-[11px] leading-4 tracking-[0.08em] text-ink">
-              SUDO
-            </span>
-          </div>
-          <h1 className="font-display text-[32px] leading-[36px] font-semibold tracking-[-0.02em] text-ink">
-            {title}
-          </h1>
-          <p className="mt-1 text-[15px] leading-6 text-graphite">{sub}</p>
+      <div className="mb-8">
+        <div className="mb-2 flex items-center gap-2">
+          {/* design.md § Component notes: marigold as a 2px left border plus its 12%
+              wash, label in ink. The all-marigold form measures 1.57:1 on paper. */}
+          <span className="rounded-[4px] border-l-2 border-l-marigold bg-marigold/12 px-1.5 py-0.5 font-mono text-[11px] leading-4 tracking-[0.08em] text-ink">
+            SUDO
+          </span>
         </div>
-        <ThemeToggle />
+        <h1 className="font-display text-[32px] leading-[36px] font-semibold tracking-[-0.02em] text-ink">
+          {title}
+        </h1>
+        <p className="mt-1 text-[15px] leading-6 text-graphite">{sub}</p>
       </div>
 
       <nav className="mb-8 flex flex-wrap gap-x-4 gap-y-1 border-b border-hairline pb-3 font-mono text-[12px] leading-4 tracking-[0.02em]">
