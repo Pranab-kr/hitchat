@@ -5,10 +5,9 @@ import { ConnectPanel } from '@/components/agent/connect-panel'
 import { ThemeToggle } from '@/components/theme-toggle'
 import { resolveOrigin } from '@/lib/site-origin'
 
-// The URL a person copies has to be the one other machines can reach. Resolving it from
-// the request alone hands out `http://localhost:3000` to anyone browsing a local build,
-// which is useless once it is pasted into an editor somewhere else — so SITE_URL (or the
-// platform's production domain) wins when set, and the request is only the fallback.
+// The URL a person copies has to be the one other machines can reach. One variable covers
+// both sides of the wire: HITCHAT_URL is what this server advertises, and what the CLI and
+// MCP server read on a user's machine. Unset, the request's own host is the truth.
 export const dynamic = 'force-dynamic'
 
 export const metadata: Metadata = {
@@ -20,8 +19,7 @@ export default async function AgentPage() {
   // Next 16: headers() is async.
   const h = await headers()
   const origin = resolveOrigin({
-    siteUrl: process.env.SITE_URL,
-    platformHost: process.env.VERCEL_PROJECT_PRODUCTION_URL,
+    hitchatUrl: process.env.HITCHAT_URL,
     forwardedHost: h.get('x-forwarded-host'),
     host: h.get('host'),
     forwardedProto: h.get('x-forwarded-proto'),

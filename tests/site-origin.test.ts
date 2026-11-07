@@ -7,22 +7,18 @@ import { resolveOrigin } from '../lib/site-origin'
 // pasted config.
 
 describe('resolveOrigin', () => {
-  it('uses an explicit SITE_URL first and drops a trailing slash', () => {
+  it('uses an explicit HITCHAT_URL first and drops a trailing slash', () => {
     expect(
       resolveOrigin({
-        siteUrl: 'https://chat.pranabkr.in/',
+        hitchatUrl: 'https://chat.pranabkr.in/',
         forwardedHost: 'localhost:3000',
         forwardedProto: 'http',
       }),
     ).toBe('https://chat.pranabkr.in')
   })
 
-  it('accepts an explicit SITE_URL that has no scheme', () => {
-    expect(resolveOrigin({ siteUrl: 'chat.pranabkr.in' })).toBe('https://chat.pranabkr.in')
-  })
-
-  it("falls back to the platform's production host over https", () => {
-    expect(resolveOrigin({ platformHost: 'hitchat.vercel.app' })).toBe('https://hitchat.vercel.app')
+  it('accepts an explicit HITCHAT_URL that has no scheme', () => {
+    expect(resolveOrigin({ hitchatUrl: 'chat.pranabkr.in' })).toBe('https://chat.pranabkr.in')
   })
 
   it('prefers the forwarded host and proto when they are present', () => {
@@ -50,7 +46,7 @@ describe('resolveOrigin', () => {
     expect(resolveOrigin({})).toBe('http://localhost:3000')
   })
 
-  it('ignores an empty SITE_URL rather than printing a bare scheme', () => {
-    expect(resolveOrigin({ siteUrl: '   ', host: 'chat.pranabkr.in' })).toBe('https://chat.pranabkr.in')
+  it('ignores an empty HITCHAT_URL rather than printing a bare scheme', () => {
+    expect(resolveOrigin({ hitchatUrl: '   ', host: 'chat.pranabkr.in' })).toBe('https://chat.pranabkr.in')
   })
 })

@@ -1,14 +1,11 @@
-// The origin that goes into a config a person pastes somewhere else. A request-derived
-// origin alone is not good enough: browse a local build and the page hands out
-// `http://localhost:3000`, which is useless in anyone else's editor. So explicit config
-// wins, then the hosting platform's production domain, then the request, and localhost
-// only as the last resort for `next dev`.
+// The origin printed on /agent. One variable names this address on both sides of the wire:
+// HITCHAT_URL is what the server advertises here, and what the CLI and MCP server read on a
+// user's machine to know where to send. Set it only when the site's public address differs
+// from what requests report; otherwise the request's own host is the truth.
 
 type OriginInputs = {
-  /** SITE_URL — the canonical public origin for this deployment. */
-  siteUrl?: string | null
-  /** Vercel's production domain, a bare host with no scheme. */
-  platformHost?: string | null
+  /** HITCHAT_URL — the site's public address, when it is not what requests report. */
+  hitchatUrl?: string | null
   forwardedHost?: string | null
   host?: string | null
   forwardedProto?: string | null
@@ -23,23 +20,18 @@ function first(value: string | null | undefined): string | null {
 }
 
 function isLocal(host: string): boolean {
-  const name = host.split(':')[0].toLowerCase()
-  return LOCAL_HOSTS.includes(name)
+  return LOCAL_HOSTS.includes(host.split(':')[0].toLowerCase())
 }
 
-// Strips trailing slashes and gives a bare host an https:// scheme, because everything
-// downstream builds URLs by string concatenation.
+// Trailing slashes off, missing scheme on. Everything downstream concatenates strings.
 function normalize(origin: string): string {
   const trimmed = origin.trim().replace(/\/+$/, '')
   return /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`
 }
 
 export function resolveOrigin(inputs: OriginInputs): string {
-  const explicit = first(inputs.siteUrl)
+  const explicit = first(inputs.hitchatUrl)
   if (explicit) return normalize(explicit)
-
-  const platform = first(inputs.platformHost)
-  if (platform) return normalize(platform)
 
   const host = first(inputs.forwardedHost) ?? first(inputs.host)
   if (!host) return 'http://localhost:3000'
