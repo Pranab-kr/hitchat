@@ -9,11 +9,14 @@ import { registerTools } from './tools'
 //
 // stdout belongs to the protocol, so every diagnostic goes to stderr. A server with no
 // config would advertise four tools that all fail, which is worse than refusing to start.
+//
+// There is deliberately no fallback host here: a URL can be defaulted, a token cannot, and
+// a server that silently posts under no identity is worse than one that says why it stopped.
 const config = resolveConfig()
 
 if (!config) {
   process.stderr.write(
-    'hitchat-mcp: no config. Run `hitchat init --url <url> --new`, or set HITCHAT_URL and HITCHAT_TOKEN.\n',
+    'hitchat-mcp: no config. Run `hitchat init --new`, or set HITCHAT_URL and HITCHAT_TOKEN.\n',
   )
   process.exit(1)
 }
