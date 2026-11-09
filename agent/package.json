@@ -1,6 +1,6 @@
 {
   "name": "@pranabkr/hitchat-agent",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "CLI and local MCP server for hitchat, the anonymous self-destructing lab chat.",
   "license": "MIT",
   "homepage": "https://chat.pranabkr.in/agent",
