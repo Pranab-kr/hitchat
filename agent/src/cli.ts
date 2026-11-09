@@ -1,9 +1,8 @@
 #!/usr/bin/env node
 import { Command, CommanderError } from 'commander'
 import { randomUUID } from 'node:crypto'
-import { readFileSync } from 'node:fs'
-import path from 'node:path'
-import { pathToFileURL } from 'node:url'
+import { readFileSync, realpathSync } from 'node:fs'
+import { fileURLToPath } from 'node:url'
 import { HitchatError, listRooms, readMessages, sendCode, sendMessage } from './client'
 import { type Config, DEFAULT_URL, resolveConfig, writeConfig } from './config'
 
@@ -182,7 +181,10 @@ function isDirectInvocation(): boolean {
   if (!entry) return false
 
   try {
-    return import.meta.url === pathToFileURL(path.resolve(entry)).href
+    // npm installs the global bin as a symlink on Linux/macOS, so argv[1] is the shim
+    // path while import.meta.url is the real module. Resolve both before comparing, or
+    // the guard is false and the CLI exits 0 having done nothing.
+    return realpathSync(entry) === realpathSync(fileURLToPath(import.meta.url))
   } catch {
     return false
   }
