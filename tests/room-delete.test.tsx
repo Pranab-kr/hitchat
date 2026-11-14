@@ -8,8 +8,7 @@ import { RoomDelete } from '../components/room/room-delete'
 const mocks = vi.hoisted(() => ({
   canDeleteRoom: vi.fn(),
   deleteRoom: vi.fn(),
-  push: vi.fn(),
-  refresh: vi.fn(),
+  replace: vi.fn(),
 }))
 
 vi.mock('@/app/actions/rooms', () => ({
@@ -18,7 +17,7 @@ vi.mock('@/app/actions/rooms', () => ({
 }))
 
 vi.mock('next/navigation', () => ({
-  useRouter: () => ({ push: mocks.push, refresh: mocks.refresh }),
+  useRouter: () => ({ replace: mocks.replace }),
 }))
 
 beforeEach(() => {
@@ -70,7 +69,7 @@ describe('RoomDelete', () => {
     expect(screen.queryByRole('button', { name: 'delete room' })).not.toBeInTheDocument()
   })
 
-  it('confirms before deleting, then goes back to the picker', async () => {
+  it('confirms before deleting, then replaces the room with the picker', async () => {
     mocks.deleteRoom.mockResolvedValue({ ok: true, data: null })
     renderRoom({ canDelete: true, creatorIsAnon: false })
 
@@ -80,11 +79,10 @@ describe('RoomDelete', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'delete' }))
 
-    await waitFor(() => expect(mocks.push).toHaveBeenCalledWith('/'))
+    await waitFor(() => expect(mocks.replace).toHaveBeenCalledWith('/'))
     expect(mocks.deleteRoom).toHaveBeenCalledWith(
       expect.objectContaining({ groupId: 'g-1' }),
     )
-    expect(mocks.refresh).toHaveBeenCalled()
   })
 
   it('reports a refusal and keeps the room on screen', async () => {
@@ -101,6 +99,6 @@ describe('RoomDelete', () => {
     expect(await screen.findByRole('status')).toHaveTextContent(
       'You can only delete a room you created.',
     )
-    expect(mocks.push).not.toHaveBeenCalled()
+    expect(mocks.replace).not.toHaveBeenCalled()
   })
 })

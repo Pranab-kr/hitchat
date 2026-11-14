@@ -50,10 +50,10 @@ export function RoomDelete({
         setNotice(result.message)
         return
       }
-      // The room is gone, so this page is gone with it. Back to the picker, which is
-      // force-dynamic and therefore re-reads the tree on arrival.
-      router.push('/')
-      router.refresh()
+      // Replace the deleted room in the history rather than refreshing this route while
+      // its Server Component still has the now-deleted room id. The picker is dynamic and
+      // re-reads the tree when the navigation completes.
+      router.replace('/')
     })
   }
 
