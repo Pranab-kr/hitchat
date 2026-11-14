@@ -30,11 +30,17 @@ delegate moderation to co-admins.
 
 ## Users
 
-- **Student** — anonymous, no account. Joins a room, reads, chats, posts code, reacts.
+- **Student** — anonymous, no account. Joins a room, reads, chats, posts code.
+  Can also create structure (department → year → batch → room) and delete a room it
+  created.
 - **Co-admin** — holds a secret. Moderates student and co-admin messages in any room,
-  but cannot alter an owner SUDO message. Cannot alter structure or admins.
-- **Owner** — holds the root secret. Everything a co-admin can do, plus managing
-  departments/years/batches/groups and creating/revoking co-admins.
+  but cannot alter an owner SUDO message. Cannot alter admins. May create structure, and
+  may delete only the rooms it created.
+- **Owner** — holds the root secret. Everything a co-admin can do, plus deleting any
+  room, deleting departments, and creating/revoking co-admins.
+
+*(Amended 2026-11-14 — creation of departments, years, batches and rooms was opened to
+students, and room deletion became creator-owned. Previously structure was owner-only.)*
 
 ---
 
@@ -78,8 +84,9 @@ granted** (WALRUS returns 401 with no payload otherwise), and `select *` is reje
 for column-restricted roles, so **every client query must name its columns
 explicitly**.
 
-Reaction ownership ("did I react?") is resolved by the Server Action echoing back the
-viewer's own reactions, never by exposing hashes.
+Reaction ownership ("did I react?") was resolved by the Server Action echoing back the
+viewer's own reactions, never by exposing hashes. *(Removed 2026-11-14 — reactions are no
+longer part of the product; see Features → Reactions.)*
 
 ### Deletion is soft
 
@@ -162,7 +169,14 @@ an empty year up front and so every level of the tree has the same CRUD shape.
 | `batch_id` | uuid fk → batches, on delete cascade | |
 | `label` | text | "A", "B" |
 | `is_locked` | bool default false | read-only when true |
+| `created_by_admin_id` | uuid nullable fk → admins, on delete set null | set when an admin made the room |
+| `created_by_hash` | text nullable | set when an anonymous student made it; sha256(token + pepper) |
 | unique | (`batch_id`, `label`) | |
+
+Exactly one of the two creator columns is set. Both null means the room predates
+ownership, which only the owner may delete. The room's creator is the only non-owner who
+may delete it, and `created_by_hash` is excluded from the publishable key's column grant
+the same way `messages.author_token_hash` is.
 
 ### `messages`
 | column | type | notes |
@@ -190,7 +204,7 @@ Deleted messages keep their row (so the UPDATE broadcasts) but the Server Action
 blanks `body`, `code_lang`, `code_title` and `lab_tag` on delete — the content is gone
 from the database immediately, not merely hidden.
 
-### `reactions`
+### `reactions` — retained, unused
 | column | type | notes |
 |---|---|---|
 | `message_id` | uuid fk → messages, on delete cascade | |
@@ -200,6 +214,11 @@ from the database immediately, not merely hidden.
 | pk | (`message_id`, `author_token_hash`, `emoji`) | one vote each |
 
 Reactions are deleted by cascade when their message expires.
+
+The table, the `messages.reaction_bump` column and the trigger that bumps it
+(`0006_reaction_counts.sql`) all still exist, but nothing writes or reads them since
+reactions were removed from the UI. Dropping them would need a migration and would not
+change anything a user can see, so they stay as they are.
 
 ### `admins`
 | column | type | notes |
@@ -231,11 +250,12 @@ Reactions are deleted by cascade when their message expires.
 | column | type | notes |
 |---|---|---|
 | `author_token_hash` | text | |
-| `action` | text | `text`, `code`, `reaction` |
+| `action` | text | `text`, `code`, `reaction`, `admin_login`, `room` |
 | `created_at` | timestamptz | |
 
-Index `(author_token_hash, action, created_at desc)`. Rows older than 5 minutes are
-purged by the same cron job.
+Index `(author_token_hash, action, created_at desc)`. Rows older than 1 hour are
+purged by the same cron job — it was 5 minutes until `0012_room_owners.sql`, which was
+shorter than the hourly `room` window and would have reset that count on every purge.
 
 ---
 
@@ -273,7 +293,7 @@ every 10 minutes:
 ```sql
 select cron.schedule('purge-expired', '*/10 * * * *', $$
   delete from messages where expires_at < now();
-  delete from rate_events where created_at < now() - interval '5 minutes';
+  delete from rate_events where created_at < now() - interval '1 hour';
   delete from admin_sessions where expires_at < now();
   delete from bans where until < now();
 $$);
@@ -304,6 +324,25 @@ deletion is never visible.
 `localStorage` and offered as a one-click resume. Room URL is
 `/c/[dept-slug]/[year-number]/[batch-number]/[group-label]` — e.g. `/c/cse/3/2/a`.
 
+### Room creation and deletion
+`/` also carries a collapsed **New room** panel holding four forms — department, year,
+batch, room — for everyone, signed in or not. Each level has to exist before the next
+form renders, so the panel doubles as the first-run setup: nobody needs an admin account
+to start a room. Anonymous writers are identified by the same token the composer uses and
+share one hourly quota.
+
+Deleting a room is a hard delete of the `groups` row; the messages under it cascade. The
+hierarchy is strict:
+
+| Who | May delete |
+|---|---|
+| Owner | any room |
+| Co-admin | only a room they created |
+| Student | only a room they created |
+
+Deleting a **department** is owner-only, because it cascades every room beneath it and
+would otherwise be a way around the rule above.
+
 ### Loading a room
 The room page server-renders the **most recent 100 non-expired messages** for instant
 first paint, then the client subscribes to Realtime for anything newer. Scrolling to
@@ -322,13 +361,15 @@ Any message can be replied to. The reply shows a single-line quoted preview; cli
 it scrolls to and highlights the original. If the original has expired, the preview
 reads "original message expired".
 
-### Reactions
-Fixed set of four: `works`, `buggy`, `fire`, `eyes`. One per person per mark, toggleable,
-counts shown inline. Fixed set avoids an emoji picker and keeps signal high. The marks
-are native emoji (`✅`, `⚠️`, `🔥`, `👀`) with accessible names; the room-facing controls
-show the emoji and optional count, while the reaction meaning is not repeated as visible
-text. *(Amended 2026-08-30 — the owner requested familiar emoji marks rather than
-drawn/text glyphs and visible word labels.)*
+### Reactions — removed
+*(Amended 2026-11-14 — the owner asked for the emoji reactions to be taken out of the
+chat. The controls, the `toggleReaction` / `getReactions` Server Actions and
+`lib/use-reactions.ts` are gone; a message now carries text, code, a reply and the admin
+controls, and nothing else. The fixed set was `works`, `buggy`, `fire`, `eyes`.)*
+
+The paragraph below is the superseded rule, kept so the history is readable: fixed set of
+four, one per person per mark, toggleable, counts inline, native emoji with accessible
+names.
 
 ### Lab tag filter
 The room header shows chips built from `lab_tag` values currently present in the room:
@@ -337,8 +378,8 @@ Purely client-side over loaded messages.
 
 ### Live updates
 Clients subscribe to two `postgres_changes` events on `messages`, both filtered to the
-current room: **INSERT** (new message) and **UPDATE** (soft delete, pin/unpin,
-reaction count change). Never DELETE, for the reason given above.
+current room: **INSERT** (new message) and **UPDATE** (soft delete, pin/unpin). Never
+DELETE, for the reason given above.
 
 Supabase Realtime auto-rejoins channels but events during a disconnect are lost, so on
 every `SUBSCRIBED` status the client refetches the recent window and reconciles by id.
@@ -373,9 +414,9 @@ Admin capabilities in any room:
 - Post with a **SUDO** badge
 
 Admin pages:
-- `/sudo` (owner and co-admin) — sign in when unauthenticated; once authenticated,
-  create, rename, delete departments, years, batches, groups. Deleting cascades and is
-  confirmed with a typed room name.
+- `/sudo` (owner and co-admin) — sign in when unauthenticated; once authenticated, the
+  same creation forms the picker carries, plus department deletion for the owner. Deleting
+  a department cascades and is confirmed with a typed department name.
 
 Owner-only pages:
 - `/sudo/admins` — create a co-admin (customizable or server-generated secret, shown
@@ -400,8 +441,9 @@ Enforced in a Postgres function called by the Server Action, counting rows in
 |---|---|
 | Text message | 5 per 10 seconds |
 | Code post | 10 per 60 seconds |
-| Reaction | 30 per 60 seconds |
+| Reaction | 30 per 60 seconds — still defined in `check_rate_limit`, no longer issued |
 | Admin login attempt | 5 per 60 seconds per IP |
+| Structure write (department, year, batch, room) | 20 per hour per anonymous token; admins are not limited |
 
 Input caps: text ≤1000 chars, code ≤20000 chars, title ≤80, lab tag ≤24. Enforced by
 both a check constraint and a server-side validation returning a friendly message.
@@ -481,8 +523,8 @@ in the material instead of needing a countdown widget. Age-fade never drops cont
 below WCAG AA against `paper` — the floor is enforced, so the oldest message is still
 fully readable.
 
-**Motion** — restrained: message arrival (8px rise + fade, 180ms), copy confirm,
-reaction pop, theme cross-fade. All disabled under `prefers-reduced-motion`.
+**Motion** — restrained: message arrival (8px rise + fade, 180ms), copy confirm, theme
+cross-fade. All disabled under `prefers-reduced-motion`.
 
 **Theme** — light/dark via `next-themes`, defaulting to system, no flash on load.
 

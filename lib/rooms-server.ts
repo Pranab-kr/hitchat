@@ -10,6 +10,10 @@ export type RoomHit = {
   label: string
   isLocked: boolean
   deptName: string
+  // Creator ownership, read here so the room page can decide who may delete it without
+  // a second query. The hash itself never leaves the server — only whether one exists.
+  createdByAdminId: string | null
+  creatorIsAnon: boolean
 }
 
 // PostgREST hands a to-one embed back as either an object or a single-element array
@@ -35,7 +39,7 @@ export async function findRoomByPath(
   const { data } = await db
     .from('groups')
     .select(
-      'id, label, is_locked, batches!inner(number, years!inner(number, departments!inner(slug, name)))',
+      'id, label, is_locked, created_by_admin_id, created_by_hash, batches!inner(number, years!inner(number, departments!inner(slug, name)))',
     )
     .eq('label', group.toUpperCase())
     .eq('batches.number', batch)
@@ -48,5 +52,12 @@ export async function findRoomByPath(
   const foundBatch = one((data as unknown as { batches: RoomBatch | RoomBatch[] }).batches)
   const deptName = one(one(foundBatch.years).departments).name
 
-  return { id: data.id, label: data.label, isLocked: data.is_locked, deptName }
+  return {
+    id: data.id,
+    label: data.label,
+    isLocked: data.is_locked,
+    deptName,
+    createdByAdminId: data.created_by_admin_id,
+    creatorIsAnon: data.created_by_hash !== null,
+  }
 }

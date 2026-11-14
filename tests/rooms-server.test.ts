@@ -22,6 +22,8 @@ describe('findRoomByPath', () => {
       label: 'A',
       isLocked: false,
       deptName: 'Test Dept',
+      createdByAdminId: null,
+      creatorIsAnon: false,
     })
   })
 

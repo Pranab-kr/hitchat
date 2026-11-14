@@ -38,6 +38,8 @@ const room = {
   label: 'A',
   isLocked: false,
   deptName: 'Test Dept',
+  createdByAdminId: null,
+  creatorIsAnon: true,
   dept: 'cse',
   year: 3,
   batch: 2,

@@ -28,6 +28,7 @@ vi.mock('next/headers', () => ({
 
 const structure = await import('@/app/actions/structure')
 const admins = await import('@/app/actions/admins')
+const rooms = await import('@/app/actions/rooms')
 
 const db = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -100,7 +101,7 @@ afterAll(async () => {
 })
 
 describe('structure actions admit a co-admin session', () => {
-  it('allows a co-admin to manage structure', async () => {
+  it('lets a co-admin build structure and delete their own room, but not the department', async () => {
     await signInAs(coAdminId)
 
     const dept = await structure.createDepartment({ name: `Co Dept ${RUN}`, slug: `co-${RUN}` })
@@ -116,11 +117,18 @@ describe('structure actions admit a co-admin session', () => {
     expect(batch.ok).toBe(true)
     if (!batch.ok) return
 
-    const group = await structure.createGroup({ batchId: batch.data.id, label: 'A' })
-    expect(group.ok).toBe(true)
+    const room = await rooms.createGroup({ batchId: batch.data.id, label: 'A' })
+    expect(room.ok).toBe(true)
+    if (!room.ok) return
 
+    // Their own room: allowed.
+    expect((await rooms.deleteRoom({ groupId: room.data.id })).ok).toBe(true)
+
+    // A department delete cascades every room under it, so it would be a way around the
+    // "own rooms only" rule. Owner-only.
     const del = await structure.deleteDepartment({ id: dept.data.id, confirmName: `Co Dept ${RUN}` })
-    expect(del.ok).toBe(true)
+    expect(del.ok).toBe(false)
+    if (!del.ok) expect(del.code).toBe('unauthorized')
   })
 })
 
@@ -153,7 +161,7 @@ describe('owner-only admin actions reject a co-admin session', () => {
     expect(owner!.revoked_at).toBeNull()
   })
 
-  it('rejects everything when no session exists', async () => {
+  it('refuses a structure write with no session and no token', async () => {
     await signInAs(null)
 
     const result = await structure.createDepartment({ name: 'X', slug: `nn-${RUN}` })
@@ -258,7 +266,7 @@ describe('the structure tree', () => {
 
     // Lowercase in, uppercase stored: the room page looks groups up by the uppercased
     // URL segment, so a lowercase row would be a room nobody could open.
-    const group = await structure.createGroup({ batchId: batch.data.id, label: 'a' })
+    const group = await rooms.createGroup({ batchId: batch.data.id, label: 'a' })
     expect(group.ok).toBe(true)
     if (!group.ok) return
 

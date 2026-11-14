@@ -11,6 +11,7 @@ import { MessageList } from '@/components/chat/message-list'
 import { RoomTree, type CurrentRoom } from '@/components/room/room-tree'
 import { MobileRoomNav } from '@/components/room/mobile-room-nav'
 import { AdminBar } from '@/components/room/admin-bar'
+import { RoomDelete } from '@/components/room/room-delete'
 import { OnlineCount } from '@/components/room/online-count'
 import { IdentityReroll } from '@/components/room/identity-reroll'
 import type { Message } from '@/lib/types'
@@ -73,6 +74,13 @@ export default async function RoomPage({ params }: { params: Promise<RoomParams>
   // re-verifies its own session server-side; this flag is never authorization.
   const session = await verifySession()
   const isAdmin = session !== null
+  // Same presentation-only rule as the moderation controls: this decides whether the
+  // room page offers a delete button, and deleteRoom re-derives ownership server-side
+  // before it removes anything. An anonymous creator cannot be recognised here at all —
+  // its token lives in localStorage — so RoomDelete asks once after mount for those.
+  const canDeleteRoom =
+    session !== null &&
+    (session.role === 'owner' || room.createdByAdminId === session.adminId)
   const ownerAdminIds = isAdmin
     ? (
         await db
@@ -116,6 +124,13 @@ export default async function RoomPage({ params }: { params: Promise<RoomParams>
             <OnlineCount groupId={room.id} />
           </div>
         </header>
+
+        <RoomDelete
+          groupId={room.id}
+          label={room.label}
+          canDelete={canDeleteRoom}
+          creatorIsAnon={room.creatorIsAnon}
+        />
 
         {isAdmin && (
           <AdminBar groupId={room.id} locked={room.isLocked} role={session.role} />

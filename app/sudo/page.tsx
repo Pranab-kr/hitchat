@@ -3,9 +3,23 @@ import { verifySession } from '@/lib/auth/session'
 import { getServiceClient } from '@/lib/supabase/admin'
 import { SudoForm } from '@/components/admin/sudo-form'
 import { OwnerShell } from '@/components/admin/owner-shell'
-import { StructureForms, type DeptNode } from '@/components/admin/structure-forms'
+import { StructureForms } from '@/components/admin/structure-forms'
 
 export const dynamic = 'force-dynamic'
+
+// The admin console wants the whole tree including empty branches and the room labels,
+// so it keeps its own read rather than the picker's pruned one. The shape is a superset
+// of StructureDept, which is what StructureForms renders from.
+type DeptNode = {
+  id: string
+  name: string
+  slug: string
+  years: {
+    id: string
+    number: number
+    batches: { id: string; number: number; groups: { id: string; label: string }[] }[]
+  }[]
+}
 
 export async function generateMetadata(): Promise<Metadata> {
   const session = await verifySession()
@@ -62,7 +76,7 @@ export default async function SudoPage() {
       sub="Departments, years, batches and groups."
       role={session.role}
     >
-      <StructureForms departments={sorted} />
+      <StructureForms departments={sorted} canDelete={session.role === 'owner'} />
 
       <section className="mt-10">
         <h2 className="mb-3 text-[17px] leading-6 font-semibold text-ink">

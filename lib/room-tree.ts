@@ -1,6 +1,6 @@
 import 'server-only'
 import { getServiceClient } from './supabase/admin'
-import type { DeptNode, GroupNode } from './rooms'
+import type { DeptNode, GroupNode, StructureDept } from './rooms'
 
 // One definition of the room hierarchy fetch, shared by the `/` picker and the in-room
 // sidebar so the two views can never drift. Both render this already-sorted, already-
@@ -49,4 +49,37 @@ export async function getRoomTree(): Promise<DeptNode[]> {
         .sort((a, b) => a.number - b.number),
     }))
     .filter((dept) => dept.years.length > 0)
+}
+
+// The same hierarchy with nothing pruned and ids kept at every level, for the creation
+// forms. Deliberately a second query rather than a richer getRoomTree: the picker must
+// never render an empty branch, and a form must be able to target one.
+type RawStructureDept = {
+  id: string
+  name: string
+  slug: string
+  years: { id: string; number: number; batches: { id: string; number: number }[] | null }[] | null
+}
+
+export async function getStructure(): Promise<StructureDept[]> {
+  const db = getServiceClient()
+  const { data } = await db
+    .from('departments')
+    .select('id, name, slug, years(id, number, batches(id, number))')
+    .order('sort_order')
+
+  const departments = (data ?? []) as unknown as RawStructureDept[]
+
+  return departments.map((dept) => ({
+    id: dept.id,
+    name: dept.name,
+    slug: dept.slug,
+    years: [...(dept.years ?? [])]
+      .sort((a, b) => a.number - b.number)
+      .map((year) => ({
+        id: year.id,
+        number: year.number,
+        batches: [...(year.batches ?? [])].sort((a, b) => a.number - b.number),
+      })),
+  }))
 }

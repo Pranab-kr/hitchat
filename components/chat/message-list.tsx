@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useRef, useState, useTransition } from 'react'
 import { useReducedMotion } from 'motion/react'
 import { useRealtimeMessages } from '@/lib/use-realtime-messages'
-import { useReactions } from '@/lib/use-reactions'
 import { useOwnMessages } from '@/lib/use-own-messages'
 import { useNow } from '@/lib/use-now'
 import { isNearBottom } from '@/lib/scroll'
@@ -34,7 +33,6 @@ export function MessageList({
   ownerAdminIds?: string[]
 }) {
   const { messages, connected } = useRealtimeMessages(groupId, initial)
-  const { reactionsFor, errorFor, isPendingFor, toggle } = useReactions(messages)
   const { isOwn } = useOwnMessages(messages)
   const bottomRef = useRef<HTMLDivElement>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
@@ -235,10 +233,6 @@ export function MessageList({
                   replyTo={
                     message.reply_to_id ? (byId.get(message.reply_to_id) ?? null) : null
                   }
-                  reactions={reactionsFor(message.id)}
-                  reactionError={errorFor(message.id)}
-                  reactionPending={isPendingFor(message.id)}
-                  onToggleReaction={toggle}
                   onReply={locked && !isAdmin ? undefined : setReplyTo}
                   onJumpTo={jumpTo}
                   isAdmin={isAdmin}

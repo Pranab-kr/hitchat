@@ -7,9 +7,19 @@
 // Type-only exports are erased at compile time and would be fine; these are runtime
 // values and are not.
 
+import type { ActionResult } from '@/lib/result'
+
 export type StructureState = { error: string | null; notice: string | null }
 
 export const emptyStructureState: StructureState = { error: null, notice: null }
+
+// One definition of how a result becomes form state. Both app/actions/structure.ts and
+// app/actions/rooms.ts drive useActionState forms with StructureState, and a notice is
+// the signal every one of those forms refreshes the server component on.
+export function toStructureState(result: ActionResult<unknown>, notice: string): StructureState {
+  if (!result.ok) return { error: result.message, notice: null }
+  return { error: null, notice }
+}
 
 // `secret` is rendered exactly once and never persisted. It rides in form state rather
 // than the database, which is what makes "you won't see it again" literally true.

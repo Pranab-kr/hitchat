@@ -22,7 +22,6 @@ function pinnedMessage(id: string, name: string): Message {
     deleted_at: null,
     created_at: new Date().toISOString(),
     expires_at: new Date(Date.now() + 60_000 * 60).toISOString(),
-    reaction_bump: '0',
   }
 }
 

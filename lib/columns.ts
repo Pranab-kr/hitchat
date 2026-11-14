@@ -17,7 +17,6 @@ export const MESSAGE_COLUMNS = [
   'deleted_at',
   'created_at',
   'expires_at',
-  'reaction_bump',
 ].join(', ')
 
 export const ROOM_COLUMNS = 'id, batch_id, label, is_locked'

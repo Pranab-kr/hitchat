@@ -12,20 +12,14 @@ import { renderCode } from '@/app/actions/highlight'
 import { deleteOwnMessage } from '@/app/actions/messages'
 import { AuthorMark } from './author-mark'
 import { CodeCard } from './code-card'
-import { Reactions } from './reactions'
 import { AdminControls } from './admin-controls'
 import type { Message } from '@/lib/types'
-import type { ReactionState } from '@/app/actions/reactions'
 
 export const MessageRow = memo(function MessageRow({
   message,
   now,
   codeHtml: initialCodeHtml = null,
   replyTo = null,
-  reactions,
-  reactionError = null,
-  reactionPending = false,
-  onToggleReaction,
   onReply,
   onJumpTo,
   isAdmin = false,
@@ -39,10 +33,6 @@ export const MessageRow = memo(function MessageRow({
   now: number
   codeHtml?: string | null
   replyTo?: Message | null
-  reactions?: ReactionState
-  reactionError?: string | null
-  reactionPending?: boolean
-  onToggleReaction?: (messageId: string, emoji: string) => void
   onReply?: (message: Message) => void
   onJumpTo?: (messageId: string) => void
   isAdmin?: boolean
@@ -217,16 +207,6 @@ export const MessageRow = memo(function MessageRow({
         >
           {children ?? message.body}
         </div>
-      )}
-
-      {reactions && onToggleReaction && (
-        <Reactions
-          messageId={message.id}
-          state={reactions}
-          error={reactionError}
-          pending={reactionPending}
-          onToggle={onToggleReaction}
-        />
       )}
     </motion.div>
   )

@@ -1,12 +1,18 @@
 'use server'
 
 import { getServiceClient } from '@/lib/supabase/admin'
-import { requireAdmin } from '@/lib/auth/require'
+import { requireOwner } from '@/lib/auth/require'
+import { creatorIdentity } from '@/lib/guards'
 import { type ActionResult, ok, err } from '@/lib/result'
-import type { StructureState } from '@/lib/owner-forms'
+import { type StructureState, toStructureState } from '@/lib/owner-forms'
 
 // Guards come from @/lib/auth/require, never from @/app/actions/admin: every export of
 // a 'use server' file is a callable HTTP endpoint.
+//
+// Creation is open: an anonymous student can build the whole department → year → batch
+// → room chain from the picker, and pays for each write out of a shared hourly bucket
+// (creatorIdentity in lib/guards.ts). Deletion is not — removing a department cascades
+// every room under it, so it stays with the owner and nobody else.
 
 const SLUG = /^[a-z0-9-]{2,20}$/
 
@@ -18,10 +24,8 @@ const RESERVED_SLUGS = new Set(['c', 'sudo', 'api', 'about', 'new', 'admin'])
 export async function createDepartment(input: {
   name: string
   slug: string
+  token?: string
 }): Promise<ActionResult<{ id: string }>> {
-  const auth = await requireAdmin()
-  if (!auth.ok) return auth
-
   const name = input.name.trim()
   if (!name) return err('invalid', 'Give the department a name.')
   if (name.length > 60) return err('invalid', 'That name is too long. Keep it under 60 characters.')
@@ -31,6 +35,9 @@ export async function createDepartment(input: {
     return err('invalid', 'The short name can use lowercase letters, numbers and dashes only.')
   }
   if (RESERVED_SLUGS.has(slug)) return err('invalid', 'That short name is reserved.')
+
+  const creator = await creatorIdentity(input.token)
+  if (!creator.ok) return creator
 
   const db = getServiceClient()
   const { data, error } = await db
@@ -47,14 +54,15 @@ export async function createDepartment(input: {
 export async function createYear(input: {
   departmentId: string
   number: number
+  token?: string
 }): Promise<ActionResult<{ id: string }>> {
-  const auth = await requireAdmin()
-  if (!auth.ok) return auth
-
   // 5 is allowed for five-year integrated courses; the DB check constraint matches.
   if (!Number.isInteger(input.number) || input.number < 1 || input.number > 5) {
     return err('invalid', 'Year must be between 1 and 5.')
   }
+
+  const creator = await creatorIdentity(input.token)
+  if (!creator.ok) return creator
 
   const db = getServiceClient()
   const { data, error } = await db
@@ -74,13 +82,14 @@ export async function createYear(input: {
 export async function createBatch(input: {
   yearId: string
   number: number
+  token?: string
 }): Promise<ActionResult<{ id: string }>> {
-  const auth = await requireAdmin()
-  if (!auth.ok) return auth
-
   if (!Number.isInteger(input.number) || input.number < 1 || input.number > 8) {
     return err('invalid', 'Batch number must be between 1 and 8.')
   }
+
+  const creator = await creatorIdentity(input.token)
+  if (!creator.ok) return creator
 
   const db = getServiceClient()
   const { data, error } = await db
@@ -95,38 +104,14 @@ export async function createBatch(input: {
   return ok({ id: data.id })
 }
 
-export async function createGroup(input: {
-  batchId: string
-  label: string
-}): Promise<ActionResult<{ id: string }>> {
-  const auth = await requireAdmin()
-  if (!auth.ok) return auth
-
-  // Stored uppercase, and the room URL lowercases it. The room page looks the group up
-  // with .eq('label', group.toUpperCase()), so a lowercase row would be unreachable.
-  const label = input.label.trim().toUpperCase()
-  if (!/^[A-Z]{1,3}$/.test(label)) {
-    return err('invalid', 'Group label is 1 to 3 letters, like A or B.')
-  }
-
-  const db = getServiceClient()
-  const { data, error } = await db
-    .from('groups')
-    .insert({ batch_id: input.batchId, label })
-    .select('id')
-    .single()
-
-  if (error?.code === '23505') return err('invalid', 'That group already exists.')
-  if (error?.code === '23503') return err('invalid', 'That batch no longer exists.')
-  if (error || !data) return err('server', "Couldn't create that. Try again.")
-  return ok({ id: data.id })
-}
-
 export async function deleteDepartment(input: {
   id: string
   confirmName: string
 }): Promise<ActionResult<null>> {
-  const auth = await requireAdmin()
+  // Owner-only. A department delete cascades every room beneath it, so letting a
+  // co-admin through here would hand them a way around the rule that they may only
+  // remove rooms they created.
+  const auth = await requireOwner()
   if (!auth.ok) return auth
 
   const db = getServiceClient()
@@ -164,8 +149,7 @@ const text = (form: FormData, key: string): string => {
 }
 
 function toState(result: ActionResult<unknown>, notice: string): StructureState {
-  if (!result.ok) return { error: result.message, notice: null }
-  return { error: null, notice }
+  return toStructureState(result, notice)
 }
 
 export async function createDepartmentForm(
@@ -173,7 +157,11 @@ export async function createDepartmentForm(
   form: FormData,
 ): Promise<StructureState> {
   const name = text(form, 'name')
-  const result = await createDepartment({ name, slug: text(form, 'slug') })
+  const result = await createDepartment({
+    name,
+    slug: text(form, 'slug'),
+    token: text(form, 'token'),
+  })
   return toState(result, `Created ${name.trim()}.`)
 }
 
@@ -185,6 +173,7 @@ export async function createYearForm(
   const result = await createYear({
     departmentId: text(form, 'departmentId'),
     number,
+    token: text(form, 'token'),
   })
   return toState(result, `Added year ${number}.`)
 }
@@ -194,17 +183,12 @@ export async function createBatchForm(
   form: FormData,
 ): Promise<StructureState> {
   const number = Number(text(form, 'number'))
-  const result = await createBatch({ yearId: text(form, 'yearId'), number })
+  const result = await createBatch({
+    yearId: text(form, 'yearId'),
+    number,
+    token: text(form, 'token'),
+  })
   return toState(result, `Added batch ${number}.`)
-}
-
-export async function createGroupForm(
-  _prev: StructureState,
-  form: FormData,
-): Promise<StructureState> {
-  const label = text(form, 'label').trim().toUpperCase()
-  const result = await createGroup({ batchId: text(form, 'batchId'), label })
-  return toState(result, `Added group ${label}.`)
 }
 
 export async function deleteDepartmentForm(

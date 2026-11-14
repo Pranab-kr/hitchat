@@ -38,7 +38,7 @@ bun install
 
 1. Create a project at [supabase.com](https://supabase.com).
 2. Open the **SQL Editor** and run **every file in `supabase/migrations/`, in filename
-   order** (`0001` … `0011`). The folder is the source of truth — the highest number moves
+   order** (`0001` … `0013`). The folder is the source of truth — the highest number moves
    as migrations are added, so read the folder rather than this line.
    > *Note:* enable the `pg_cron` and `pgcrypto` extensions first.
 
@@ -91,8 +91,9 @@ environment variables above.
 
 ### 6. After it is live
 
-1. Sign in at `/sudo` with your `OWNER_SECRET` and create the first department → year → batch
-   → group (details in the next section). Students then open the site and pick their room.
+1. Sign in at `/sudo` with your `OWNER_SECRET` and create the first department → year →
+   batch → group (details in the next section) — or skip this, since anyone can create it
+   from the home page. Students then open the site and pick their room.
 2. Open `/agent` for your own agent link. It prints the URL, a `claude mcp add` line, and
    `.mcp.json` / `opencode.json` blocks with the token already filled in — because the page
    takes the host it is served on, there is nothing to configure for agents on the server.
@@ -103,10 +104,18 @@ environment variables above.
 
 ## Admin Panel & Room Setup
 
-1. Navigate to `/sudo` to sign in with your `OWNER_SECRET` and manage department structure
-   (e.g. `CSE` → Year `3` → Batch `2` → Group `A`).
+Rooms are open to everyone. Anyone who opens the site can build
+`department → year → batch → room` from the **New room** panel on the home page — no
+admin account needed, which also means the very first room can be created without you.
+
+1. Navigate to `/sudo` to sign in with your `OWNER_SECRET` for the parts students cannot
+   do: deleting a department (owner only; it cascades every room beneath it and is
+   confirmed with the typed department name) and managing admins.
 2. Add co-admins at `/sudo/admins` if needed.
 3. Students can now open `https://your-domain.com` and join their lab group.
+
+**Who can delete a room:** the owner can delete any room. A co-admin and a student can
+delete only a room they created. Deleting removes every message in it.
 
 ---
 

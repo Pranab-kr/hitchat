@@ -125,6 +125,12 @@ Assume no shared context. That means:
   the Next.js docs say so explicitly. Check the session inside the action itself.
 - **Never trust a client-supplied role, admin flag, or token hash.** Derive them
   server-side.
+- **Room creation is public; room deletion is creator-owned.** Anyone may create
+  department → year → batch → room from `/`, and those writes are rate limited per
+  anonymous token (`check_rate_limit` action `room`, 20/hour). Deleting a room is the
+  owner for any room, and otherwise only its creator — `groups.created_by_admin_id` or
+  `groups.created_by_hash`. `deleteDepartment` is owner-only on purpose: it cascades every
+  room beneath it and would otherwise be a way around that hierarchy.
 - **A `'use server'` file may export ONLY async functions.** Exporting a plain object or
   constant from one makes the module throw at import time and every form on the page
   returns HTTP 500 — while the test suite, `tsc --noEmit` *and* `bun run build` all

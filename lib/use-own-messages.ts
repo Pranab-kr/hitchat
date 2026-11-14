@@ -4,9 +4,9 @@ import { useEffect, useState } from 'react'
 import { getOwnMessageIds } from '@/app/actions/me'
 import { useAnonToken } from '@/lib/use-anon-token'
 
-// Mirrors useReactions: the client cannot compute its own hash, so a batch of ids goes
-// to the server and comes back tagged "yours". Refetches when the identity rerolls,
-// so a new identity stops owning the old messages.
+// The client cannot compute its own hash, so a batch of ids goes to the server and comes
+// back tagged "yours". Refetches when the identity rerolls, so a new identity stops
+// owning the old messages.
 export function useOwnMessages(messages: { id: string }[]) {
   const { token } = useAnonToken()
   const [mine, setMine] = useState<ReadonlySet<string>>(() => new Set())

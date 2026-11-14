@@ -13,14 +13,6 @@ vi.mock('motion/react', () => ({
 vi.mock('@/lib/use-realtime-messages', () => ({
   useRealtimeMessages: () => ({ messages: [], connected: true }),
 }))
-vi.mock('@/lib/use-reactions', () => ({
-  useReactions: () => ({
-    reactionsFor: () => undefined,
-    errorFor: () => null,
-    isPendingFor: () => false,
-    toggle: vi.fn(),
-  }),
-}))
 vi.mock('@/lib/use-own-messages', () => ({
   useOwnMessages: () => ({ isOwn: () => false }),
 }))

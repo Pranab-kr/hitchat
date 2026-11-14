@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import { getRoomTree } from '@/lib/room-tree'
 import { ordinal } from '@/lib/rooms'
 import { RoomLink } from '@/components/room/room-link'
+import { CreateForms } from '@/components/room/create-forms'
 
 // The room tree changes whenever the owner edits it, and the list is tiny. Rendering
 // per request keeps a newly created room from being invisible behind a cached page.
@@ -13,8 +14,8 @@ export const metadata: Metadata = {
 }
 
 export default async function HomePage() {
-  // Shared with the in-room sidebar (lib/room-tree.ts): already pruned to populated
-  // rooms and fully sorted, so this page just renders it.
+  // The picker renders the pruned tree from lib/room-tree.ts. Room creation accepts the
+  // hierarchy as typed values, so it does not need a second structure read or dropdowns.
   const departments = await getRoomTree()
 
   return (
@@ -28,9 +29,22 @@ export default async function HomePage() {
         </p>
       </div>
 
+      {/* Collapsed by default: most visitors come here to open a room, not to build one. */}
+      <details className="mb-8 rounded-card border border-hairline bg-surface">
+        <summary className="cursor-pointer list-none px-5 py-4 text-[15px] leading-6 font-medium text-ink">
+          New room{' '}
+          <span className="font-mono text-[12px] leading-4 font-normal text-graphite">
+            department → year → batch → room
+          </span>
+        </summary>
+        <div className="border-t border-hairline px-5 py-5">
+          <CreateForms />
+        </div>
+      </details>
+
       {departments.length === 0 ? (
         <p className="text-[15px] leading-6 text-graphite">
-          No rooms yet. An admin needs to create one first.
+          No rooms yet. Open New room to create the first one.
         </p>
       ) : (
         <div className="space-y-8">
