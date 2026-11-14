@@ -239,13 +239,17 @@ export async function createRoomForm(
   return toStructureState(result, `Created room ${label.trim().toUpperCase()}.`)
 }
 
-type RoomOwnership = { created_by_admin_id: string | null; created_by_hash: string | null }
+type RoomOwnership = {
+  batch_id: string
+  created_by_admin_id: string | null
+  created_by_hash: string | null
+}
 
 async function loadOwnership(groupId: string): Promise<RoomOwnership | null> {
   const db = getServiceClient()
   const { data } = await db
     .from('groups')
-    .select('created_by_admin_id, created_by_hash')
+    .select('batch_id, created_by_admin_id, created_by_hash')
     .eq('id', groupId)
     .maybeSingle()
 
@@ -293,6 +297,43 @@ export async function deleteRoom(input: {
   const db = getServiceClient()
   const { error } = await db.from('groups').delete().eq('id', input.groupId)
   if (error) return err('server', "Couldn't delete that room. Try again.")
+
+  // A room is the only useful leaf in this hierarchy. Once the last room is gone,
+  // remove empty parents too so the admin tree never accumulates dead structure.
+  const { count: roomsLeft } = await db
+    .from('groups')
+    .select('id', { count: 'exact', head: true })
+    .eq('batch_id', room.batch_id)
+  if (roomsLeft !== 0) return ok(null)
+
+  const { data: batch } = await db
+    .from('batches')
+    .select('id, year_id')
+    .eq('id', room.batch_id)
+    .maybeSingle()
+  if (!batch) return ok(null)
+  await db.from('batches').delete().eq('id', batch.id)
+
+  const { count: batchesLeft } = await db
+    .from('batches')
+    .select('id', { count: 'exact', head: true })
+    .eq('year_id', batch.year_id)
+  if (batchesLeft !== 0) return ok(null)
+
+  const { data: year } = await db
+    .from('years')
+    .select('id, department_id')
+    .eq('id', batch.year_id)
+    .maybeSingle()
+  if (!year) return ok(null)
+  await db.from('years').delete().eq('id', year.id)
+
+  const { count: yearsLeft } = await db
+    .from('years')
+    .select('id', { count: 'exact', head: true })
+    .eq('department_id', year.department_id)
+  if (yearsLeft !== 0) return ok(null)
+  await db.from('departments').delete().eq('id', year.department_id)
   return ok(null)
 }
 

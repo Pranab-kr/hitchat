@@ -372,6 +372,42 @@ describe('deleting a room follows creator ownership', () => {
     expect(await roomExists(other.id)).toBe(true)
   })
 
+  it('removes empty batch, year and department after deleting the last room', async () => {
+    const { token } = mintToken()
+    const { data: department } = await db
+      .from('departments')
+      .insert({ name: `Cleanup ${RUN}`, slug: `cleanup-${RUN}` })
+      .select('id')
+      .single()
+    const { data: year } = await db
+      .from('years')
+      .insert({ department_id: department!.id, number: 1 })
+      .select('id')
+      .single()
+    const { data: batch } = await db
+      .from('batches')
+      .insert({ year_id: year!.id, number: 1 })
+      .select('id')
+      .single()
+    const made = await rooms.createGroup({ batchId: batch!.id, label: 'K', token })
+    expect(made.ok).toBe(true)
+    if (!made.ok) return
+
+    const deleted = await rooms.deleteRoom({ groupId: made.data.id, token })
+    expect(deleted.ok).toBe(true)
+
+    const { count: departments } = await db
+      .from('departments')
+      .select('id', { count: 'exact', head: true })
+      .eq('id', department!.id)
+    const { count: years } = await db
+      .from('years')
+      .select('id', { count: 'exact', head: true })
+      .eq('department_id', department!.id)
+    expect(departments).toBe(0)
+    expect(years).toBe(0)
+  })
+
   it('leaves a room with no recorded creator to the owner alone', async () => {
     const legacy = await seedRoom('I', 'none')
     const { token } = mintToken()
