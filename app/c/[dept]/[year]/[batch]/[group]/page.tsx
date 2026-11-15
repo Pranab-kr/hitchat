@@ -99,7 +99,7 @@ export default async function RoomPage({ params }: { params: Promise<RoomParams>
       </aside>
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="flex items-center justify-between gap-3 border-b border-hairline px-4 py-3">
+        <header className="flex items-center justify-between gap-3 border-b border-hairline px-5 py-4">
           <div className="flex min-w-0 items-center gap-2">
             <MobileRoomNav tree={tree} current={current} />
             <div className="min-w-0">
@@ -112,7 +112,7 @@ export default async function RoomPage({ params }: { params: Promise<RoomParams>
                   href="/"
                   prefetch
                   title="Back to the room picker"
-                  className="block truncate rounded-[4px] transition-colors hover:text-pen"
+                  className="press block truncate rounded-[4px] hover:text-pen"
                 >
                   {room.label}
                 </Link>

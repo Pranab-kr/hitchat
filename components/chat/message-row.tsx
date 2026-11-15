@@ -99,7 +99,7 @@ export const MessageRow = memo(function MessageRow({
       initial={mounted ? (reduce ? { opacity: 0 } : { opacity: 0, y: 8 }) : false}
       animate={{ opacity: 1, y: 0 }}
       transition={reduce ? { duration: 0 } : { duration: 0.18, ease: 'easeOut' }}
-      className={`group min-w-0 max-w-full px-4 py-1 transition-colors ${highlighted ? 'bg-pen/8' : ''}`}
+      className={`group min-w-0 max-w-full px-4 py-1.5 transition-colors duration-300 hover:bg-wash/60 ${highlighted ? 'bg-pen/10' : ''}`}
     >
       {message.reply_to_id && (
         <button

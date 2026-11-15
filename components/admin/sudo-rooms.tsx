@@ -25,7 +25,19 @@ export function SudoRooms({
   departments: Department[]
   session: { adminId: string; role: AdminRole }
 }) {
-  const [items, setItems] = useState(departments)
+  const [items, setItems] = useState(() =>
+    departments
+      .map((department) => ({
+        ...department,
+        years: department.years
+          .map((year) => ({
+            ...year,
+            batches: year.batches.filter((batch) => batch.groups.length > 0),
+          }))
+          .filter((year) => year.batches.length > 0),
+      }))
+      .filter((department) => department.years.length > 0),
+  )
 
   function removeRoom(groupId: string) {
     setItems((current) =>
@@ -77,12 +89,12 @@ function DepartmentCard({
         {department.name}{' '}
         <span className="font-mono text-[12px] font-normal text-graphite">/{department.slug}</span>
       </h3>
-      <ul className="mt-2 space-y-1">
+      <ul className="mt-3 divide-y divide-hairline">
         {department.years.map((year) =>
           year.batches.map((batch) => (
-            <li key={batch.id} className="font-mono text-[12px] leading-5 text-graphite">
+            <li key={batch.id} className="flex flex-wrap items-center gap-x-2 gap-y-1 py-2 font-mono text-[12px] leading-5 text-graphite first:pt-0 last:pb-0">
               year {year.number} — batch {batch.number}
-              <span className="ml-1 inline-flex flex-wrap gap-1">
+              <span className="inline-flex flex-wrap gap-1">
                 {batch.groups.map((group) => (
                   <RoomDeleteButton
                     key={group.id}
@@ -130,16 +142,16 @@ function RoomDeleteButton({
 
   if (confirming) {
     return (
-      <span className="ml-1 inline-flex items-center gap-1">
+      <span className="drop inline-flex items-center gap-1">
         <button
           type="button"
           disabled={pending}
           onClick={remove}
-          className="rounded-input border border-rule px-1.5 py-0.5 text-rule hover:bg-rule/10 disabled:opacity-40"
+          className="press rounded-input border border-rule px-1.5 py-0.5 text-rule hover:bg-rule/10 disabled:opacity-40"
         >
           {pending ? 'deleting…' : `delete ${group.label}`}
         </button>
-        <button type="button" disabled={pending} onClick={() => setConfirming(false)} className="text-graphite">
+        <button type="button" disabled={pending} onClick={() => setConfirming(false)} className="press rounded-input px-1.5 py-0.5 text-graphite hover:text-ink">
           keep
         </button>
       </span>
@@ -147,7 +159,7 @@ function RoomDeleteButton({
   }
 
   return (
-    <span className="ml-1 inline-flex items-center">
+    <span className="inline-flex items-center">
       <button
         type="button"
         aria-label={`delete room ${group.label}`}
@@ -155,9 +167,9 @@ function RoomDeleteButton({
           setNotice(null)
           setConfirming(true)
         }}
-        className="rounded-input px-1.5 py-0.5 text-graphite hover:text-rule"
+        className="press rounded-input border border-hairline px-1.5 py-0.5 text-graphite hover:border-rule hover:text-rule"
       >
-        ×
+        <span aria-hidden>{group.label} ×</span>
       </button>
       {notice && <span role="status" className="ml-1 text-rule">{notice}</span>}
     </span>

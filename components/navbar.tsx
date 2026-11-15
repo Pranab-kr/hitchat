@@ -41,7 +41,7 @@ export function Navbar() {
           href="/"
           prefetch
           aria-label="hitchat home"
-          className={`group touch-target inline-flex size-8 items-center justify-center rounded-full text-ink transition-all hover:bg-wash ${
+          className={`group press touch-target inline-flex size-8 items-center justify-center rounded-full text-ink hover:bg-wash ${
             scrolled ? 'ml-0' : '-ml-1.5'
           }`}
         >

@@ -13,12 +13,24 @@ section for the step you're on. Full protocol in `AGENTS.md`.
 
 | | |
 |---|---|
-| **Phase** | **Shipped to `main` and pushed to `origin/main`: navigation bar, simple typed room creation, room deletion ownership, and reaction removal.** |
-| **Current step** | None in flight. `main` is at `10d176b`, equal to `origin/main`. |
-| **Branch** | `main` — `feat/open-room-creation` was merged into `main` and deleted on 2026-11-15 |
-| **Next action** | Run `bun run test`, `bunx tsc --noEmit`, `bunx eslint`, `bun run build` on `main`, then browser-drive three flows: `/` New room create → appears in the picker → creator deletes it; `/sudo` delete a room and confirm navigation away; a co-admin sees only their own rooms deletable and no `/sudo/admins` link. |
-| **Blocked?** | Not blocked. Migrations `0012`/`0013` are applied live. |
-| **Last updated** | 2026-11-15 |
+| **Phase** | **IN PROGRESS — full UI/UX redesign (owner request 2026-11-15). First pass built and committed on the branch; not merged.** |
+| **Current step** | `feat/full-ui-redesign`: pass 1 plus SUDO polish and empty-hierarchy pruning. `/sudo` now hides departments, years and batches that contain no groups; a regression test covers an empty ECE department. No action, schema or test-contract changes. |
+| **Branch** | `feat/full-ui-redesign` (from `main` at `b919aa6`). Not merged, not pushed. |
+| **Next action** | Drive the remaining browser flows: `/` room create → picker → creator delete; mobile drawer focus trap + Esc; composer press/focus; long code disclosure; signed-in SUDO room deletion and co-admin view. Then restyle untouched `components/room/admin-bar.tsx`, `pinned-strip.tsx`, `code-composer.tsx`, `room-delete.tsx`, amend `design.md`, and wait for owner approval before merging. |
+| **Blocked?** | Not blocked. |
+| **Last updated** | 2026-11-16 |
+
+**SUDO empty-hierarchy fix (2026-11-16):** `components/admin/sudo-rooms.tsx` prunes batches with no groups, years with no batches, and departments with no years in its initial state. `app/sudo/page.tsx` uses a `hasRooms` check so an all-empty database shows “No rooms yet” instead of a blank list. `tests/sudo-rooms.test.tsx` proved the regression red before the fix and green after it. Focused test: 3/3. `tsc`, `eslint app components`, `git diff --check`, and `bun run build` pass. The full suite was attempted after the fix but had 3 unrelated live-DB 5-second timeouts in `tests/rooms-actions.test.ts` (2) and `tests/owner-actions.test.ts` (1), 331/334 passed. Do not claim the full suite is green until those timeouts are resolved or a clean run is recorded.
+
+**Verified on this branch so far:** `tsc --noEmit` clean, `eslint app components` clean, `bun run build` passes. Tests **332/333 on the full run**; the one failure was `tests/rooms-actions.test.ts > refuses the 21st write in an hour` timing out at 5000ms against the live database under full-suite load. It passes alone (14/14) and also passes with the redesign stashed, so it is a load flake, not a regression — but it was not reproduced as a pass in a full run after the last edit. Seen in Edge at 1280 and 390 wide, light and dark: `/`, `/agent`, `/sudo`, and a populated room — all HTTP 200, `scrollWidth - innerWidth = 0`, no console errors. **Not driven yet:** hover/press animation, the reduced-motion path, the mobile drawer, the code-card disclosure, room create/delete, any admin page after sign-in.
+
+**Known gaps in pass 1 (be honest with the owner):** the changed screens are only seen as stills — no motion was filmed. The stageshow `film.mjs` gate was not run because stageshow films its own illustrations, not this app. The `rise` entrance replays on every client navigation to `/` and `/agent` (it is a CSS animation on mount); say so if it feels busy. Light-mode `pen` focus ring on the new pill composer input uses a 14% `pen` halo, which is a derived shade from an existing token, not a new colour.
+
+**Decisions for this redesign (do not re-litigate):**
+- **Keep the identity, change the execution.** The six colour tokens, the three fonts, the lab-record margin rule and the author palette stay. The redesign is spacing, hierarchy, copy cuts and motion — not a new palette. Reason: `design.md` is the source of truth and the owner asked for "nice feel", not a rebrand.
+- **`design.md`'s "four motion moments only" is being deliberately amended** (owner asked for micro-motion). Every new motion stays behind `prefers-reduced-motion` and is feedback or arrival only: no ambient, no scroll-reveal, no page-load orchestration.
+- **Copy gets cut, not rewritten.** Remove helper lines and repeated explanations; the 8-hour promise is said once per page.
+- **The stageshow skill builds illustrations, not app chrome.** Its kit is used only for craft rules here, plus (if it earns its place) one scripted product demo on `/`. No stageshow code ships in app screens.
 
 ## Shipped — simple typed room creation and audit fixes ✅
 

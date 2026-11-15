@@ -88,7 +88,85 @@
     font-family: var(--font-body);
     font-size: 15px;
     line-height: 24px;
+    -webkit-font-smoothing: antialiased;
+    /* The theme switch cross-fades (design.md: 250ms). */
+    transition:
+      background-color 250ms ease,
+      color 250ms ease;
   }
+
+  ::selection {
+    background-color: color-mix(in oklab, var(--pen) 24%, transparent);
+  }
+}
+
+/* Motion. Two curves and nothing else: arrivals decelerate, travel is symmetric. Every
+   animation below is feedback or an arrival; none is ambient, none waits on scroll. The
+   reduced-motion reset at the foot of this file collapses all of them. */
+:root {
+  --ease-out: cubic-bezier(0.25, 0.8, 0.25, 1);
+  --ease-travel: cubic-bezier(0.45, 0, 0.1, 1);
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes drop {
+  from {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* A group arrives as one staggered set: give each child `style={{ '--i': index }}`. */
+.rise {
+  animation: rise 460ms var(--ease-out) both;
+  animation-delay: calc(var(--i, 0) * 55ms);
+}
+
+.drop {
+  animation: drop 220ms var(--ease-out) both;
+}
+
+/* Buttons answer the press on the input, not after the round trip. */
+.press {
+  transition:
+    transform 140ms var(--ease-out),
+    background-color 160ms ease,
+    border-color 160ms ease,
+    color 160ms ease,
+    opacity 160ms ease;
+}
+.press:active:not(:disabled) {
+  transform: scale(0.97);
+}
+
+/* <details class="smooth"> opens by easing its height instead of snapping. Browsers
+   without ::details-content simply snap, which is the old behaviour. */
+details.smooth {
+  interpolate-size: allow-keywords;
+}
+details.smooth::details-content {
+  block-size: 0;
+  overflow: clip;
+  transition:
+    block-size 280ms var(--ease-out),
+    content-visibility 280ms allow-discrete;
+}
+details.smooth[open]::details-content {
+  block-size: auto;
 }
 
 /* Deliberately OUTSIDE @layer base: unlayered rules beat every layered utility, so a

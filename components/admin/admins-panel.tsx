@@ -28,7 +28,7 @@ function SecretPanel({ secret, name }: { secret: string; name: string }) {
   }
 
   return (
-    <div className="mt-4 rounded-card border-l-2 border-l-marigold bg-marigold/12 px-4 py-3">
+    <div className="drop mt-4 rounded-card border-l-2 border-l-marigold bg-marigold/12 px-4 py-3">
       <p className="font-mono text-[12px] leading-4 tracking-[0.02em] text-ink">
         Secret for {name}. Copy this now. You won&apos;t be able to see it again.
       </p>
@@ -40,7 +40,7 @@ function SecretPanel({ secret, name }: { secret: string; name: string }) {
         <button
           type="button"
           onClick={copy}
-          className="rounded-input border border-hairline px-2 py-1 font-mono text-[12px] leading-4 text-graphite transition-colors hover:border-pen hover:text-pen"
+          className="press rounded-input border border-hairline px-2 py-1 font-mono text-[12px] leading-4 text-graphite hover:border-pen hover:text-pen"
         >
           {copied ? '✓ copied' : 'copy'}
         </button>
@@ -66,8 +66,7 @@ function CreateCoAdmin() {
   return (
     <Card title="New co-admin">
       <p className="mt-1 text-[15px] leading-6 text-graphite">
-        A custom secret can be set or auto-generated, and is shown once. There is no way
-        to look it up later — if it is lost, revoke the admin and make a new one.
+        The secret is shown once. If it is lost, revoke the admin and make a new one.
       </p>
 
       <form action={action} className="mt-4 space-y-3">
@@ -82,7 +81,7 @@ function CreateCoAdmin() {
         <Field
           id="admin-custom-secret"
           name="customSecret"
-          label="custom secret (leave blank to auto-generate)"
+          label="custom secret (blank to auto-generate)"
           placeholder="optional (min. 8 characters)"
           autoComplete="off"
         />
@@ -130,7 +129,7 @@ function AdminRow({ admin }: { admin: AdminSummary }) {
           <button
             type="submit"
             disabled={pending}
-            className="rounded-input border border-hairline px-2 py-1 font-mono text-[12px] leading-4 text-graphite transition-colors hover:border-rule hover:text-rule disabled:opacity-40"
+            className="press rounded-input border border-hairline px-2 py-1 font-mono text-[12px] leading-4 text-graphite hover:border-rule hover:text-rule disabled:opacity-40"
           >
             {pending ? 'revoking…' : 'revoke'}
           </button>
@@ -157,7 +156,7 @@ export function AdminsPanel({ admins }: { admins: AdminSummary[] }) {
 
         {revoked.length > 0 && (
           <>
-            <h3 className="mt-5 font-mono text-[12px] leading-4 tracking-[0.08em] text-graphite uppercase">
+            <h3 className="mt-6 font-mono text-[12px] leading-4 tracking-[0.02em] text-graphite">
               revoked
             </h3>
             <ul className="mt-1">

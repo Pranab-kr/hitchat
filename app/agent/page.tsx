@@ -24,12 +24,13 @@ export default async function AgentPage() {
   })
 
   return (
-    <main className="mx-auto max-w-2xl px-6 py-12">
-      <div className="mb-8">
-        <h1 className="text-[20px] leading-7 font-semibold text-ink">Agent access</h1>
-        <p className="mt-1 text-[15px] leading-6 text-graphite">
-          Post into a room from your terminal or an AI assistant. It posts as an
-          anonymous name, exactly like everyone else.
+    <main className="mx-auto max-w-2xl px-6 pt-10 pb-24">
+      <div className="rise mb-10">
+        <h1 className="font-display text-[44px] leading-[48px] font-semibold tracking-[-0.03em] text-ink">
+          Agent access
+        </h1>
+        <p className="mt-2 text-[17px] leading-7 text-graphite">
+          Let a terminal or an assistant post as an anonymous name.
         </p>
       </div>
 

@@ -62,13 +62,28 @@ export function IdentityReroll() {
           ? statusMessage ?? 'Identity changes are unavailable while banned'
           : 'Generate a new anonymous identity on this device'
       }
-      className="group touch-target flex flex-col items-end rounded-[4px] px-1.5 py-0.5 text-right transition-colors hover:bg-wash disabled:cursor-not-allowed disabled:opacity-60"
+      className="group press touch-target inline-flex items-center gap-1.5 rounded-[4px] px-1.5 py-0.5 hover:bg-wash disabled:cursor-not-allowed disabled:opacity-60"
     >
+      <svg
+        viewBox="0 0 16 16"
+        width="14"
+        height="14"
+        aria-hidden
+        className={`text-graphite transition-[transform,color] duration-500 [transition-timing-function:var(--ease-travel)] group-hover:text-pen ${
+          checking ? 'animate-spin' : 'group-hover:rotate-180'
+        }`}
+      >
+        <path
+          d="M13 8a5 5 0 1 1-1.6-3.7M13 2.5v3h-3"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </svg>
       <span className="font-mono text-[12px] leading-4 tracking-[0.02em] text-graphite transition-colors group-hover:text-pen">
         {checking ? 'checking identity…' : locked ? 'identity locked' : 'new identity'}
-      </span>
-      <span className="font-mono text-[11px] leading-4 text-graphite">
-        {locked ? 'while banned' : 'fresh anonymous name'}
       </span>
     </button>
   )

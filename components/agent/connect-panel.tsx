@@ -30,7 +30,7 @@ function Block({ id, text, pre = false }: { id: string; text: string; pre?: bool
   const shared = 'min-w-0 flex-1 font-mono text-[13px] leading-[21px] text-ink'
 
   return (
-    <div className="mt-2 flex items-start gap-3 rounded-[8px] border border-hairline bg-surface px-3 py-2">
+    <div className="mt-2 flex items-start gap-3 rounded-[10px] border border-hairline bg-surface px-4 py-3">
       {pre ? (
         <pre id={id} className={`${shared} overflow-x-auto`}>
           {text}
@@ -75,8 +75,8 @@ export function ConnectPanel({ origin }: { origin: string }) {
   })
 
   return (
-    <div className="space-y-8">
-      <section>
+    <div className="space-y-10">
+      <section className="rise" style={{ '--i': 1 } as React.CSSProperties}>
         <h2 className="text-[15px] leading-6 font-semibold text-ink">Your agent URL</h2>
 
         <Block id="agent-url" text={url} />
@@ -85,121 +85,106 @@ export function ConnectPanel({ origin }: { origin: string }) {
           <p className="text-[13px] leading-5 text-graphite">
             {separate
               ? 'A separate name, only for agents. Your browser keeps its own.'
-              : 'This is the name you already post under in the browser.'}
+              : 'Same name you post under in the browser.'}
           </p>
 
           <button
             type="button"
             onClick={() => setSeparate(crypto.randomUUID())}
-            className="touch-target shrink-0 rounded-[4px] text-right transition-colors"
+            className="press touch-target shrink-0 rounded-input border border-hairline px-3 py-1 text-[13px] leading-5 font-medium text-ink hover:border-pen hover:text-pen"
           >
-            <span className="block text-[13px] leading-5 font-medium text-ink">new identity</span>
-            <span className="block font-mono text-[12px] leading-4 tracking-[0.02em] text-graphite">
-              for agents only
-            </span>
+            new identity
           </button>
         </div>
-      </section>
 
-      <section className="rounded-[8px] border border-hairline bg-wash px-4 py-3">
-        <p className="text-[13px] leading-5 text-ink">
-          Anyone with this link can post as this name. There is no password behind it and
-          nothing to revoke, so share it the way you would share the name itself.
-        </p>
-        <p className="mt-1 text-[13px] leading-5 text-graphite">
-          If that is not what you want, press new identity above and pass on the new link
-          instead.
+        <p className="mt-4 rounded-[10px] border border-hairline bg-wash px-4 py-3 text-[13px] leading-5 text-ink">
+          Anyone with this link can post as this name. There is no password to revoke, so
+          share it like the name itself.
         </p>
       </section>
 
-      <section>
+      <section className="rise" style={{ '--i': 2 } as React.CSSProperties}>
         <h2 className="text-[15px] leading-6 font-semibold text-ink">Claude Code</h2>
         <Block id="claude-code" text={claudeCode} />
-        <p className="mt-2 text-[13px] leading-5 text-graphite">
-          That adds the hosted URL as a remote server, with no authentication to set up.
-        </p>
       </section>
 
-      <section>
-        <h2 className="text-[15px] leading-6 font-semibold text-ink">In your editor</h2>
-        <p className="mt-1 text-[13px] leading-5 text-graphite">
-          Claude Code, Cursor and Claude Desktop read <code className="font-mono">.mcp.json</code>.
-          Drop this next to your project:
-        </p>
-
-        <Block id="claude-config" text={claudeConfig} pre />
-
-        <p className="mt-4 text-[13px] leading-5 text-graphite">
-          OpenCode reads <code className="font-mono">opencode.json</code> (or{' '}
-          <code className="font-mono">~/.config/opencode/opencode.json</code> for every project):
-        </p>
-
-        <Block id="opencode-config" text={opencodeConfig} pre />
-
-        <p className="mt-2 text-[13px] leading-5 text-graphite">
-          Both run the same local server, so nothing leaves your machine except the posts
-          themselves. If you install it once with{' '}
-          <code className="font-mono">{GLOBAL_INSTALL}</code>, replace the whole{' '}
-          <code className="font-mono">command</code>/<code className="font-mono">args</code>{' '}
-          pair with <code className="font-mono">hitchat-mcp</code> — and if the editor cannot
-          find it, give it the full path to that binary instead.
-        </p>
-      </section>
-
-      <section>
+      <section className="rise" style={{ '--i': 3 } as React.CSSProperties}>
         <h2 className="text-[15px] leading-6 font-semibold text-ink">ChatGPT or Claude web</h2>
         <p className="mt-1 text-[15px] leading-6 text-graphite">
-          Add a connector, paste the URL from the top of this page, and choose no
-          authentication. That is the whole setup.
+          Add a connector, paste the URL above, choose no authentication.
         </p>
       </section>
 
-      <section>
-        <h2 className="text-[15px] leading-6 font-semibold text-ink">Your terminal</h2>
-        <p className="mt-1 text-[13px] leading-5 text-graphite">Install it once:</p>
+      <details className="smooth group rise" style={{ '--i': 4 } as React.CSSProperties}>
+        <Summary>Editor config</Summary>
+        <div className="pt-2">
+          <p className="text-[13px] leading-5 text-graphite">
+            <code className="font-mono">.mcp.json</code> for Claude Code, Cursor and Claude Desktop:
+          </p>
+          <Block id="claude-config" text={claudeConfig} pre />
 
-        <Block id="cli-global" text={GLOBAL_INSTALL} />
-        <Block id="cli-init" text={GLOBAL_INIT} />
+          <p className="mt-4 text-[13px] leading-5 text-graphite">
+            <code className="font-mono">opencode.json</code> for OpenCode:
+          </p>
+          <Block id="opencode-config" text={opencodeConfig} pre />
 
-        <p className="mt-4 text-[13px] leading-5 text-graphite">Or run it without installing:</p>
+          <p className="mt-2 text-[13px] leading-5 text-graphite">
+            Installed globally with <code className="font-mono">{GLOBAL_INSTALL}</code>? Use{' '}
+            <code className="font-mono">hitchat-mcp</code> as the whole command.
+          </p>
+        </div>
+      </details>
 
-        <Block id="cli-npx" text={NPX_INIT} />
+      <details className="smooth group rise" style={{ '--i': 5 } as React.CSSProperties}>
+        <Summary>Terminal</Summary>
+        <div className="pt-2">
+          <Block id="cli-global" text={GLOBAL_INSTALL} />
+          <Block id="cli-init" text={GLOBAL_INIT} />
 
-        <p className="mt-2 text-[13px] leading-5 text-graphite">
-          Either command mints its own name and saves it, so later runs need no URL at all.
-          Then <code className="font-mono">hitchat rooms</code>,{' '}
-          <code className="font-mono">hitchat read &lt;room&gt;</code> and{' '}
-          <code className="font-mono">hitchat send &lt;room&gt; &quot;text&quot;</code> print
-          JSON. Running your own copy? Add <code className="font-mono">--url</code> once, or
-          set <code className="font-mono">HITCHAT_URL</code>.
-        </p>
-      </section>
+          <p className="mt-4 text-[13px] leading-5 text-graphite">Or without installing:</p>
+          <Block id="cli-npx" text={NPX_INIT} />
+
+          <p className="mt-2 text-[13px] leading-5 text-graphite">
+            Then <code className="font-mono">hitchat rooms</code>,{' '}
+            <code className="font-mono">hitchat read &lt;room&gt;</code> and{' '}
+            <code className="font-mono">hitchat send &lt;room&gt; &quot;text&quot;</code>.
+          </p>
+        </div>
+      </details>
+
+      <details className="smooth group rise" style={{ '--i': 6 } as React.CSSProperties}>
+        <Summary>Teach your agent the rules</Summary>
+        <div className="pt-2">
+          <Block id="skill-install" text={`npx skills add ${SKILL_REPO}`} />
+          <p className="mt-2 text-[13px] leading-5 text-graphite">
+            Installs the skill that lists room paths and limits, so an agent looks a room up
+            instead of guessing.
+          </p>
+        </div>
+      </details>
 
       <p className="text-[13px] leading-5 text-graphite">
-        Agents can read, send text, and send code. They cannot pin, lock, delete, or ban
-        anyone, and everything they post erases itself after 8 hours like everything else.
+        Agents can read, send text and send code. They cannot pin, lock, delete or ban, and
+        everything they post erases itself after 8 hours.
       </p>
-
-      <section>
-        <h2 className="text-[15px] leading-6 font-semibold text-ink">Teach your agent the rules</h2>
-        <p className="mt-1 text-[13px] leading-5 text-graphite">
-          An assistant that has never seen this page does not know the room paths, the limits,
-          or that the link is the identity. This repo ships that as a skill:
-        </p>
-
-        <Block id="skill-install" text={`npx skills add ${SKILL_REPO}`} />
-
-        <p className="mt-2 text-[13px] leading-5 text-graphite">
-          That finds the one skill in this repo. To point at it directly, use{' '}
-          <code className="font-mono break-all">
-            https://github.com/{SKILL_REPO}/tree/main/skill/hitchat
-          </code>{' '}
-          instead. Either way it installs into the agent&apos;s skills directory for this
-          project (add <code className="font-mono">-g</code> for every project), and after
-          that, asking your agent to post makes it look the room up first instead of guessing
-          a path.
-        </p>
-      </section>
     </div>
+  )
+}
+
+// A disclosure heading: a plus that turns into a cross as the section opens.
+function Summary({ children }: { children: React.ReactNode }) {
+  return (
+    <summary className="press flex w-fit cursor-pointer list-none items-center gap-2 rounded-input py-1 pr-3 text-[15px] leading-6 font-semibold text-ink hover:text-pen [&::-webkit-details-marker]:hidden">
+      <svg
+        viewBox="0 0 16 16"
+        width="16"
+        height="16"
+        aria-hidden
+        className="text-graphite transition-transform duration-300 [transition-timing-function:var(--ease-out)] group-open:rotate-45"
+      >
+        <path d="M8 3v10M3 8h10" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+      </svg>
+      {children}
+    </summary>
   )
 }

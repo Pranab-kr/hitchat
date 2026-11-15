@@ -37,7 +37,7 @@ function DeleteDepartment({ departments }: { departments: DeptNode[] }) {
   return (
     <Card title="Delete a department">
       <p className="mt-1 text-[15px] leading-6 text-graphite">
-        This removes every year, batch, group and message beneath it. There is no undo.
+        Removes every room and message beneath it. No undo.
       </p>
       <form action={action} className="mt-4 space-y-3">
         <div>

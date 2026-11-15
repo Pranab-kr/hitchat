@@ -217,9 +217,13 @@ export function MessageList({
                   </button>
                 </div>
               ) : (
-                <p className="px-4 py-8 text-[15px] text-graphite">
-                  Nothing here yet. Paste your lab code and someone will thank you.
-                </p>
+                <div className="rise px-4 py-16">
+                  <div aria-hidden className="mb-4 h-10 w-[2px] rounded-full bg-rule" />
+                  <p className="text-[20px] leading-7 font-semibold text-ink">Nothing here yet.</p>
+                  <p className="mt-1 text-[15px] leading-6 text-graphite">
+                    Paste your lab code and someone will thank you.
+                  </p>
+                </div>
               )
             ) : (
               visible.map((message) => (

@@ -31,7 +31,7 @@ export function CodeCard({
   )
 
   return (
-    <div className="my-2 flex min-w-0 max-w-full overflow-hidden rounded-card border border-hairline bg-code-bg">
+    <div className="my-2 flex min-w-0 max-w-full overflow-hidden rounded-[10px] border border-hairline bg-code-bg">
       {/* Nothing else in the app uses a vertical rule. That exclusivity is the point. */}
       <div className="w-[2px] shrink-0 bg-rule" aria-hidden />
 
@@ -52,7 +52,7 @@ export function CodeCard({
         </div>
 
         {isLong ? (
-          <details ref={detailsRef} className="group">
+          <details ref={detailsRef} className="smooth group">
             <summary className="cursor-pointer list-none px-4 py-2 font-mono text-[12px] text-graphite transition-colors hover:text-pen [&::-webkit-details-marker]:hidden">
               <span className="group-open:hidden">⌄ show {lineCount} lines</span>
               <span className="hidden group-open:inline">⌃ collapse</span>
