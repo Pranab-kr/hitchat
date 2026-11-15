@@ -13,12 +13,18 @@ section for the step you're on. Full protocol in `AGENTS.md`.
 
 | | |
 |---|---|
-| **Phase** | **Shipped to `main` and pushed to `origin/main`: navigation bar, simple typed room creation, room deletion ownership, and reaction removal.** |
-| **Current step** | None in flight. `main` is at `10d176b`, equal to `origin/main`. |
-| **Branch** | `main` — `feat/open-room-creation` was merged into `main` and deleted on 2026-11-15 |
-| **Next action** | Run `bun run test`, `bunx tsc --noEmit`, `bunx eslint`, `bun run build` on `main`, then browser-drive three flows: `/` New room create → appears in the picker → creator deletes it; `/sudo` delete a room and confirm navigation away; a co-admin sees only their own rooms deletable and no `/sudo/admins` link. |
-| **Blocked?** | Not blocked. Migrations `0012`/`0013` are applied live. |
+| **Phase** | **IN PROGRESS — full UI/UX redesign (owner request 2026-11-15), using the `stageshow` skill's craft and motion rules.** |
+| **Current step** | `feat/full-ui-redesign`: restyle every surface (home picker, navbar, room frame, composer, code card, `/agent`, `/sudo`) for calm, uncluttered, professional UI with purposeful micro-motion. No behaviour, action, schema or test-contract changes. |
+| **Branch** | `feat/full-ui-redesign` (from `main` at `b919aa6`) |
+| **Next action** | Work surface by surface in this order, committing after each: (1) `app/globals.css` tokens + motion utilities, (2) `components/navbar.tsx` + `app/page.tsx` + `components/room/room-link.tsx` + `create-forms.tsx`, (3) room frame (`room-tree`, header in `app/c/.../page.tsx`, `message-row`, `composer`, `code-card`), (4) `/agent` and `/sudo`. After each, run `bun run test`, `bunx tsc --noEmit`, `bunx eslint`, then look at it in a real browser. |
+| **Blocked?** | Not blocked. `main` is clean and equal to `origin/main`. The old "browser-drive room create/delete" check from the previous phase is still open and is folded into this branch's final browser pass. |
 | **Last updated** | 2026-11-15 |
+
+**Decisions for this redesign (do not re-litigate):**
+- **Keep the identity, change the execution.** The six colour tokens, the three fonts, the lab-record margin rule and the author palette stay. The redesign is spacing, hierarchy, copy cuts and motion — not a new palette. Reason: `design.md` is the source of truth and the owner asked for "nice feel", not a rebrand.
+- **`design.md`'s "four motion moments only" is being deliberately amended** (owner asked for micro-motion). Every new motion stays behind `prefers-reduced-motion` and is feedback or arrival only: no ambient, no scroll-reveal, no page-load orchestration.
+- **Copy gets cut, not rewritten.** Remove helper lines and repeated explanations; the 8-hour promise is said once per page.
+- **The stageshow skill builds illustrations, not app chrome.** Its kit is used only for craft rules here, plus (if it earns its place) one scripted product demo on `/`. No stageshow code ships in app screens.
 
 ## Shipped — simple typed room creation and audit fixes ✅
 
