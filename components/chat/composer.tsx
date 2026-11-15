@@ -99,7 +99,7 @@ export function Composer({
   return (
     <div className="border-t border-hairline px-4 py-3">
       {replyTo && (
-        <div className="mb-2 flex items-center gap-2 border-l-2 border-pen pl-2 font-mono text-[12px] text-graphite">
+        <div className="drop mb-2 flex items-center gap-2 border-l-2 border-pen pl-2 font-mono text-[12px] text-graphite">
           <span>replying to</span>
           <span style={{ color: authorColorVar(replyTo.author_color) }}>
             {replyTo.author_name}
@@ -119,7 +119,7 @@ export function Composer({
       )}
 
       {error && (
-        <p className="mb-2 font-mono text-[12px] text-rule" role="alert">
+        <p className="drop mb-2 font-mono text-[12px] text-rule" role="alert">
           {error}
         </p>
       )}
@@ -146,14 +146,14 @@ export function Composer({
           aria-label="Message"
           placeholder={replyTo ? 'Reply' : 'Message'}
           disabled={pending}
-          className="touch-target flex-1 rounded-input border border-hairline bg-surface px-3 py-2 text-[15px] text-ink placeholder:text-graphite"
+          className="touch-target min-w-0 flex-1 rounded-full border border-hairline bg-surface px-4 py-2 text-[15px] text-ink transition-[border-color,box-shadow] duration-200 placeholder:text-graphite hover:border-graphite/50 focus:border-pen focus:shadow-[0_0_0_3px_color-mix(in_oklab,var(--pen)_14%,transparent)]"
         />
 
         <button
           type="button"
           disabled={pending || !token || !body.trim() || remaining > 0}
           onClick={submit}
-          className="touch-target rounded-input bg-pen px-3 py-2 text-[13px] font-medium text-paper transition-opacity hover:opacity-90 disabled:opacity-60"
+          className="press touch-target rounded-full bg-pen px-5 py-2 text-[13px] font-medium text-paper hover:brightness-110 disabled:opacity-50"
         >
           {pending ? 'Sending…' : 'Send'}
         </button>
@@ -162,7 +162,7 @@ export function Composer({
           type="button"
           disabled={pending}
           onClick={() => setCodeMode(true)}
-          className="touch-target rounded-input border border-hairline px-3 py-2 font-mono text-[13px] text-graphite transition-colors hover:border-pen hover:text-pen disabled:opacity-60"
+          className="press touch-target rounded-full border border-hairline px-4 py-2 font-mono text-[13px] text-graphite hover:border-pen hover:text-pen disabled:opacity-60"
         >
           {'</> code'}
         </button>

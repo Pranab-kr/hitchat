@@ -11,14 +11,15 @@ function TokenField({ token }: { token: string | null }) {
   return <input type="hidden" name="token" value={token ?? ''} />
 }
 
-export function CreateForms() {
+// `bare` drops the titled card for a host that already supplies its own heading (the
+// collapsed "Add a room" disclosure on `/`). The default keeps the card the /sudo page uses.
+export function CreateForms({ bare = false }: { bare?: boolean }) {
   const { token } = useAnonToken()
   const [state, action, pending] = useActionState(createRoomForm, emptyStructureState)
   useRefreshOnNotice(state.notice)
 
-  return (
-    <Card title="New room">
-      <form action={action} className="mt-4 space-y-4">
+  const form = (
+      <form action={action} className={bare ? 'space-y-4' : 'mt-4 space-y-4'}>
         <TokenField token={token} />
         <div className="grid gap-4 sm:grid-cols-2">
           <Field
@@ -58,13 +59,11 @@ export function CreateForms() {
             required
           />
         </div>
-        <p className="font-mono text-[12px] leading-4 text-graphite">
-          Type the department, year, batch and group. Existing structure is reused automatically.
-        </p>
         {state.error && <FormError>{state.error}</FormError>}
         {state.notice && <FormNotice>{state.notice}</FormNotice>}
         <SubmitButton pending={pending}>Create room</SubmitButton>
       </form>
-    </Card>
   )
+
+  return bare ? form : <Card title="New room">{form}</Card>
 }

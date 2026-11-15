@@ -43,7 +43,7 @@ export function RoomTree({
 
             {dept.years.map((year) => (
               <div key={year.number} className="mt-1">
-                <p className="px-2 py-0.5 font-mono text-[11px] leading-4 tracking-[0.08em] text-graphite uppercase">
+                <p className="px-2 py-0.5 font-mono text-[12px] leading-4 tracking-[0.02em] text-graphite">
                   {ordinal(year.number)} year
                 </p>
 
@@ -77,15 +77,15 @@ export function RoomTree({
                                   prefetch
                                   onClick={onNavigate}
                                   aria-current={isCurrent ? 'page' : undefined}
-                                  className={`touch-target flex items-center gap-2 rounded-input py-1 pr-2 pl-[26px] text-[13px] leading-5 transition-colors ${
+                                  className={`touch-target flex items-center gap-2 rounded-full py-1 pr-3 pl-[26px] text-[13px] leading-5 transition-colors duration-200 ${
                                     isCurrent
-                                      ? 'bg-wash font-medium text-pen'
+                                      ? 'bg-pen/10 font-medium text-pen'
                                       : 'text-ink hover:bg-wash'
                                   }`}
                                 >
                                   <span
                                     aria-hidden
-                                    className={`size-1.5 shrink-0 rounded-full ${isCurrent ? 'bg-pen' : 'bg-transparent'}`}
+                                    className={`size-1.5 shrink-0 rounded-full transition-transform duration-300 [transition-timing-function:var(--ease-out)] ${isCurrent ? 'scale-100 bg-pen' : 'scale-0 bg-pen'}`}
                                   />
                                   <span className="truncate">{group.label}</span>
                                 </Link>
@@ -137,7 +137,7 @@ function Chevron({ open }: { open: boolean }) {
       width="12"
       height="12"
       aria-hidden
-      className={`shrink-0 text-graphite transition-transform ${open ? 'rotate-90' : ''}`}
+      className={`shrink-0 text-graphite transition-transform duration-300 [transition-timing-function:var(--ease-out)] ${open ? 'rotate-90' : ''}`}
     >
       <path
         d="M4.5 3 L8 6 L4.5 9"

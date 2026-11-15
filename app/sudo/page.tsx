@@ -39,12 +39,11 @@ export default async function SudoPage() {
   if (!session) {
     return (
       <main className="mx-auto flex min-h-dvh max-w-[380px] flex-col justify-center px-6">
-        <div className="rounded-card border border-hairline bg-surface px-6 py-6">
-          <h1 className="text-[20px] leading-7 font-semibold text-ink">Sign in</h1>
-          <p className="mt-1 text-[15px] leading-6 text-graphite">Admin access. Students never need this page.</p>
+        <div className="rise rounded-[12px] border border-hairline bg-surface px-6 py-7">
+          <h1 className="font-display text-[32px] leading-[36px] font-semibold tracking-[-0.02em] text-ink">Sign in</h1>
+          <p className="mt-1 text-[15px] leading-6 text-graphite">Admins only.</p>
           <SudoForm />
         </div>
-        <p className="mt-4 px-1 font-mono text-[12px] leading-4 tracking-[0.02em] text-graphite">Sessions last 3 hours.</p>
       </main>
     )
   }

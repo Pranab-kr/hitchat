@@ -15,9 +15,18 @@ export function RoomLink({ href, children }: { href: string; children: React.Rea
       prefetch
       onClick={() => setOpening(true)}
       aria-busy={opening}
-      className="rounded-input border border-hairline px-3 py-2 font-mono text-[13px] leading-5 text-ink transition-colors hover:border-pen hover:text-pen"
+      className={`press group inline-flex items-center gap-2 rounded-full border px-4 py-2 font-mono text-[13px] leading-5 hover:-translate-y-px hover:border-pen hover:text-pen ${
+        opening ? 'border-pen text-pen' : 'border-hairline bg-surface text-ink'
+      }`}
     >
-      {opening ? 'Opening room…' : children}
+      {opening ? (
+        <>
+          <span aria-hidden className="size-1.5 animate-pulse rounded-full bg-pen" />
+          Opening room…
+        </>
+      ) : (
+        children
+      )}
     </Link>
   )
 }

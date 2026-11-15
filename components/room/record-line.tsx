@@ -58,10 +58,10 @@ export function RecordLine() {
 
   return (
     <div className="flex items-center gap-2 border-b border-hairline px-4 py-1">
-      <span className="shrink-0 font-mono text-[12px] leading-4 tracking-[0.02em] text-graphite">
+      <span className="hidden shrink-0 font-mono text-[12px] leading-4 tracking-[0.02em] text-graphite sm:inline">
         {date}
       </span>
-      <span aria-hidden className="shrink-0 font-mono text-[12px] leading-4 text-graphite/50">
+      <span aria-hidden className="hidden shrink-0 font-mono text-[12px] leading-4 text-graphite/50 sm:inline">
         ·
       </span>
       <p className="min-w-0 flex-1 font-mono text-[12px] leading-4 tracking-[0.02em] text-graphite">
