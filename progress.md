@@ -13,14 +13,14 @@ section for the step you're on. Full protocol in `AGENTS.md`.
 
 | | |
 |---|---|
-| **Phase** | **IN PROGRESS — full UI/UX redesign (owner request 2026-11-15). First pass built and committed on the branch; not merged.** |
-| **Current step** | `feat/full-ui-redesign`: pass 1 plus SUDO polish and empty-hierarchy pruning. `/sudo` now hides departments, years and batches that contain no groups; a regression test covers an empty ECE department. No action, schema or test-contract changes. |
-| **Branch** | `feat/full-ui-redesign` (from `main` at `b919aa6`). Not merged, not pushed. |
-| **Next action** | Drive the remaining browser flows: `/` room create → picker → creator delete; mobile drawer focus trap + Esc; composer press/focus; long code disclosure; signed-in SUDO room deletion and co-admin view. Then restyle untouched `components/room/admin-bar.tsx`, `pinned-strip.tsx`, `code-composer.tsx`, `room-delete.tsx`, amend `design.md`, and wait for owner approval before merging. |
+| **Phase** | **Merged and pushed to `main`: full UI/UX redesign pass 1, SUDO polish, and empty-hierarchy pruning.** |
+| **Current step** | None in flight. `main` is at `e9c5923`, equal to `origin/main`. |
+| **Branch** | `main` — `feat/full-ui-redesign` was merged and deleted on 2026-11-16. |
+| **Next action** | Drive the remaining browser flows: `/` room create → picker → creator delete; mobile drawer focus trap + Esc; composer press/focus; long code disclosure; signed-in SUDO room deletion and co-admin view. Then decide whether to restyle untouched `components/room/admin-bar.tsx`, `pinned-strip.tsx`, `code-composer.tsx`, and `room-delete.tsx`. |
 | **Blocked?** | Not blocked. |
 | **Last updated** | 2026-11-16 |
 
-**SUDO empty-hierarchy fix (2026-11-16):** `components/admin/sudo-rooms.tsx` prunes batches with no groups, years with no batches, and departments with no years in its initial state. `app/sudo/page.tsx` uses a `hasRooms` check so an all-empty database shows “No rooms yet” instead of a blank list. `tests/sudo-rooms.test.tsx` proved the regression red before the fix and green after it. Focused test: 3/3. `tsc`, `eslint app components`, `git diff --check`, and `bun run build` pass. The full suite was attempted after the fix but had 3 unrelated live-DB 5-second timeouts in `tests/rooms-actions.test.ts` (2) and `tests/owner-actions.test.ts` (1), 331/334 passed. Do not claim the full suite is green until those timeouts are resolved or a clean run is recorded.
+**SUDO empty-hierarchy fix (2026-11-16):** `components/admin/sudo-rooms.tsx` prunes batches with no groups, years with no batches, and departments with no years in its initial state. `app/sudo/page.tsx` uses a `hasRooms` check so an all-empty database shows “No rooms yet” instead of a blank list. `tests/sudo-rooms.test.tsx` proved the regression red before the fix and green after it. Focused test: 3/3. After merging, the full suite passed **334/334**; `tsc`, `eslint app components`, `git diff --check`, and `bun run build` all passed.
 
 **Verified on this branch so far:** `tsc --noEmit` clean, `eslint app components` clean, `bun run build` passes. Tests **332/333 on the full run**; the one failure was `tests/rooms-actions.test.ts > refuses the 21st write in an hour` timing out at 5000ms against the live database under full-suite load. It passes alone (14/14) and also passes with the redesign stashed, so it is a load flake, not a regression — but it was not reproduced as a pass in a full run after the last edit. Seen in Edge at 1280 and 390 wide, light and dark: `/`, `/agent`, `/sudo`, and a populated room — all HTTP 200, `scrollWidth - innerWidth = 0`, no console errors. **Not driven yet:** hover/press animation, the reduced-motion path, the mobile drawer, the code-card disclosure, room create/delete, any admin page after sign-in.
 
