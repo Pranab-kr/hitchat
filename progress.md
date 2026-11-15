@@ -13,16 +13,16 @@ section for the step you're on. Full protocol in `AGENTS.md`.
 
 | | |
 |---|---|
-| **Phase** | **Navigation bar shipped and merged to `main`. Open room creation and room deletion ownership are implemented; simple typed room creation and audit fixes are now verified on this branch.** |
-| **Current step** | In progress on `feat/open-room-creation`: final browser verification and branch review remain before merging. |
-| **Branch** | `feat/open-room-creation`, branched from `main` at `3894338` |
-| **Next action** | Run the browser flow against `next dev`: type department/year/batch/group in the single New room form, create and delete the room, then perform the final branch review. |
-| **Blocked?** | Not blocked; the migration must be applied before any test can run. |
-| **Last updated** | 2026-11-14 |
+| **Phase** | **Shipped to `main` and pushed to `origin/main`: navigation bar, simple typed room creation, room deletion ownership, and reaction removal.** |
+| **Current step** | None in flight. `main` is at `10d176b`, equal to `origin/main`. |
+| **Branch** | `main` — `feat/open-room-creation` was merged into `main` and deleted on 2026-11-15 |
+| **Next action** | Run `bun run test`, `bunx tsc --noEmit`, `bunx eslint`, `bun run build` on `main`, then browser-drive three flows: `/` New room create → appears in the picker → creator deletes it; `/sudo` delete a room and confirm navigation away; a co-admin sees only their own rooms deletable and no `/sudo/admins` link. |
+| **Blocked?** | Not blocked. Migrations `0012`/`0013` are applied live. |
+| **Last updated** | 2026-11-15 |
 
-## In progress — simple typed room creation and audit fixes
+## Shipped — simple typed room creation and audit fixes ✅
 
-Implemented on this branch:
+Merged to `main` in `7b59c42` (branch `feat/open-room-creation`, deleted 2026-11-15).
 
 - `app/actions/rooms.ts` now exposes `createRoom` and `createRoomForm`. One submission validates the typed department/year/batch/group, reuses or creates the hierarchy, charges one anonymous `room` rate event, and creates the owned room.
 - `components/room/create-forms.tsx` now renders one compact form with text/number inputs and no hierarchy dropdowns or label field. `/` and `/sudo` share it.
@@ -41,7 +41,11 @@ Verification so far:
 
 Ruling: The one-form action reuses hierarchy rows by slug or case-insensitive name and returns a server error for unexpected hierarchy lookup failures — this keeps the form atomic from the user’s perspective without introducing a new database RPC; the cost if wrong is a partially created hierarchy after a later database failure.
 
-## In progress — open room creation + room deletion ownership
+## Shipped — open room creation + room deletion ownership ✅
+
+Merged to `main` as `7b59c42`, then extended by `c870d84` (navigate away after room
+deletion) and `10d176b` (room deletion from the `/sudo` page). Branch deleted 2026-11-15;
+`main` is pushed to `origin/main`.
 
 Requested by the owner, 2026-11-14: a normal (anonymous) user and a co-admin must both be
 able to create a new room, and room **deletion** keeps a strict hierarchy — the owner
@@ -68,31 +72,31 @@ room they created.
 table-level `select` grant to a column-level one, so `created_by_hash` is never readable
 with the publishable key — the same treatment `messages.author_token_hash` already gets.
 
-**Code is written and compiles; migration `room_owners` was applied through Supabase MCP on 2026-11-14 and the schema/rate-limit probe passed.**
+**Shipped; migration `room_owners` was applied through Supabase MCP on 2026-11-14 and the schema/rate-limit probe passed.**
 
 | Area | Where |
 |---|---|
 | Migrations applied | `supabase/migrations/0012_room_owners.sql`, `supabase/migrations/0013_remove_reaction_bump_grant.sql` |
 | Creator identity + rate limit | `creatorIdentity` in `lib/guards.ts`; `room` action in `check_rate_limit` |
-| Public creation | `app/actions/structure.ts` (department/year/batch), `app/actions/rooms.ts` (`createGroup`) |
+| Public creation | `app/actions/structure.ts` (department/year/batch), `app/actions/rooms.ts` (`createRoom` + `createRoomForm`, and `createGroup` for the admin form) |
 | Deletion hierarchy | `deleteRoom` / `canDeleteRoom` in `app/actions/rooms.ts`; `deleteDepartment` is now `requireOwner` |
 | Owned fields read | `RoomHit.createdByAdminId` / `creatorIsAnon` in `lib/rooms-server.ts` |
 | UI | `components/room/create-forms.tsx` (moved out of `components/admin/structure-forms.tsx`), `components/room/room-delete.tsx`, New room disclosure in `app/page.tsx` |
 | Tests | `tests/rooms-actions.test.ts`, `tests/room-delete.test.tsx`; `tests/owner-actions.test.ts` updated (co-admin can no longer delete a department) |
 
-**Remaining before this step is done:**
+**Verification status:**
 
-1. ~~Apply `0012_room_owners.sql`.~~ Applied through Supabase MCP. Confirmed with a probe: `groups` lists
+1. ✅ `0012_room_owners.sql` applied through Supabase MCP. Confirmed with a probe: `groups` lists
    `created_by_admin_id` and `created_by_hash`, and
-   `db.rpc('check_rate_limit', { p_hash: 'probe', p_action: 'room' })` must return `true`
-   (before the migration it returns `false`, because the function's `else` branch refuses
-   unknown actions).
-2. `bun run test` — expect the previous 324 plus the two new files to pass.
-3. `bunx tsc --noEmit`, `bunx eslint`, `bun run build` — all three were clean before the
-   migration, so a failure here is a regression, not an environment issue.
-4. Drive it in a browser against `next dev`: open `/`, expand **New room**, create a room
-   end to end, confirm the new room appears in the picker and that its page shows
-   `delete room`; delete it and confirm it leaves the tree.
+   `db.rpc('check_rate_limit', { p_hash: 'probe', p_action: 'room' })` returns `true`.
+2. ✅ `bun run test` — 330/330 across 41 files at merge time (`7b59c42`). **Not re-run since
+   `c870d84`/`10d176b`**; there are now 42 test files.
+3. ✅ `bunx eslint`, `bun run build` clean at merge time. `bunx tsc --noEmit` was blocked only
+   by two untracked deleted-reaction test files, which no longer exist.
+4. ❌ **No browser pass recorded** for the room create/delete flow. This is the open manual
+   check, and it now also covers `c870d84` and `10d176b`: on `/` create a room end to end and
+   delete it as its creator; on `/sudo` delete a room and confirm the page navigates away; as
+   a co-admin confirm only own rooms are deletable and `/sudo/admins` is hidden.
 
 **Why room creation "did not work" before the migration (diagnosed 2026-11-14).** Every
 creation form answered "You have created enough rooms for now. Wait a bit." with no room
@@ -109,7 +113,9 @@ of which needs the migration:
   `rate_events`. The limit would never have bound. `0012` now re-schedules `purge-expired`
   with one hour of retention; the spec's Ephemerality section was amended to match.
 
-## In progress — emoji reactions removed from chat
+## Shipped — emoji reactions removed from chat ✅
+
+Merged to `main` in `7b59c42` (2026-11-15 branch cleanup: `feat/open-room-creation` deleted).
 
 Requested by the owner, 2026-11-14, on the same branch: "remove msg the emoji reaction from
 chat".
@@ -214,14 +220,14 @@ the stored token).
 Two earlier drafts were cut for being more concept than fact: a separate `SITE_URL` for the
 web app, and a published-origin comparison with a parity test. One address, one name.
 
-**Connector question, honestly unresolved (Task 16 Step 2):** adding
-`https://<host>/api/mcp/<token>` as a connector in **ChatGPT or Claude web** was not tested.
-There is no public deployment reachable from the machine this was built on, only
-`localhost:3000`, and a connector cannot reach that. A local client is proven: the same
-URL, with the token in the path, answers `initialize` → `tools/list` → `tools/call` through
-`scripts/mcp-probe.ts`, and `.mcp.json` carries a `type: "http"` entry for an editor. Do not
-claim the web-connector path works until someone pastes the URL into ChatGPT or Claude web
-against the deployed host.
+**Connector path verified 2026-11-15 (Task 16 Step 2 — closed).** Against the deployed host,
+the owner pasted `https://chat.pranabkr.in/api/mcp/<token>` into web connectors and confirmed
+working tools in **ChatGPT web, Claude web and Gemini web**, along with the local `hitchat`
+CLI and the stdio `hitchat-mcp` server. This was a **manual cross-client check by the owner,
+not an automated harness** — no test in this repo drives a remote connector, so a regression
+in the hosted path (auth, transport, SSE framing) would only be caught by repeating that
+check. The hosted tools still share `lib/agent/mcp.ts` with the local surface, so the
+posting rules are not re-implemented for connectors.
 
 ## Shipped — agent access phase 5: the hosted MCP tools ✅
 
