@@ -1,7 +1,7 @@
-import Link from 'next/link'
+import { OwnerNav } from '@/components/admin/owner-nav'
 
-// Shared chrome for the two owner pages. Neither is linked from anywhere a student
-// can see; the nav here exists so the owner can move between them.
+// Shared chrome for the owner pages. None is linked from anywhere a student can see;
+// the tab row here exists so the owner can move between them.
 export function OwnerShell({
   title,
   sub,
@@ -16,34 +16,22 @@ export function OwnerShell({
   return (
     <main className="mx-auto max-w-2xl px-6 pt-10 pb-24">
       <div className="rise mb-8">
-        <div className="mb-2 flex items-center gap-2">
-          {/* design.md § Component notes: marigold as a 2px left border plus its 12%
-              wash, label in ink. The all-marigold form measures 1.57:1 on paper. */}
-          <span className="rounded-[4px] border-l-2 border-l-marigold bg-marigold/12 px-1.5 py-0.5 font-mono text-[11px] leading-4 tracking-[0.08em] text-ink">
-            SUDO
-          </span>
-        </div>
-        <h1 className="font-display text-[32px] leading-[36px] font-semibold tracking-[-0.02em] text-ink">
+        {/* design.md § Component notes: marigold as a 2px left border plus its 12%
+            wash, label in ink. The all-marigold form measures 1.57:1 on paper. */}
+        <span className="mb-3 inline-block rounded-[4px] border-l-2 border-l-marigold bg-marigold/12 px-1.5 py-0.5 font-mono text-[11px] leading-4 tracking-[0.08em] text-ink">
+          SUDO
+        </span>
+        <h1 className="font-display text-[44px] leading-[48px] font-semibold tracking-[-0.03em] text-ink">
           {title}
         </h1>
-        <p className="mt-1 text-[15px] leading-6 text-graphite">{sub}</p>
+        <p className="mt-2 text-[17px] leading-7 text-graphite">{sub}</p>
       </div>
 
-      <nav className="mb-8 flex flex-wrap gap-x-4 gap-y-1 border-b border-hairline pb-3 font-mono text-[12px] leading-4 tracking-[0.02em]">
-        <Link prefetch href="/sudo" className="py-2 text-graphite hover:text-pen">
-          structure
-        </Link>
-        {role !== 'co_admin' && (
-          <Link prefetch href="/sudo/admins" className="py-2 text-graphite hover:text-pen">
-            admins
-          </Link>
-        )}
-        <Link prefetch href="/" className="py-2 text-graphite hover:text-pen">
-          rooms
-        </Link>
-      </nav>
+      <OwnerNav role={role} />
 
-      {children}
+      <div className="rise" style={{ '--i': 1 } as React.CSSProperties}>
+        {children}
+      </div>
     </main>
   )
 }
@@ -134,8 +122,8 @@ export function Card({
   children: React.ReactNode
 }) {
   return (
-    <section className="rounded-[12px] border border-hairline bg-surface px-6 py-6">
-      <h2 className="text-[17px] leading-6 font-semibold text-ink">{title}</h2>
+    <section className="rounded-card border border-hairline bg-surface px-6 py-6">
+      <h2 className="text-[20px] leading-7 font-semibold text-ink">{title}</h2>
       {children}
     </section>
   )

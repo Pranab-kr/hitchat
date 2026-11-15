@@ -46,8 +46,8 @@ export default async function HomePage() {
 
               <div className="space-y-4">
                 {dept.years.map((year) => (
-                  <div key={year.number} className="flex flex-col gap-2 sm:flex-row sm:gap-6">
-                    <h3 className="w-20 shrink-0 pt-2 font-mono text-[12px] leading-4 tracking-[0.02em] text-graphite">
+                  <div key={year.number}>
+                    <h3 className="mb-2 font-mono text-[12px] leading-4 tracking-[0.02em] text-graphite">
                       {ordinal(year.number)} year
                     </h3>
 

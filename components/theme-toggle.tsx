@@ -15,7 +15,7 @@ export function ThemeToggle() {
     <button
       type="button"
       onClick={() => setTheme(isDark ? 'light' : 'dark')}
-      className="press touch-target flex size-8 items-center justify-center rounded-full text-graphite hover:bg-wash hover:text-ink"
+      className="press touch-target flex size-8 items-center justify-center rounded-input text-graphite hover:bg-wash hover:text-ink"
       aria-label={isDark ? 'Switch to light theme' : 'Switch to dark theme'}
     >
       {/* One drawn disc whose lit half turns over: the same strokes in both themes, so

@@ -34,7 +34,7 @@ export function RoomTree({
 
   return (
     <div className="flex h-full w-full flex-col">
-      <nav aria-label="Rooms" className="flex-1 overflow-y-auto px-2 py-3">
+      <nav aria-label="Rooms" className="flex-1 overflow-y-auto px-2 pt-6 pb-3">
         {tree.map((dept) => (
           <div key={dept.id} className="mb-4 last:mb-0">
             <p className="truncate px-2 pb-0.5 text-[13px] leading-5 font-semibold text-ink" title={dept.name}>
@@ -77,7 +77,7 @@ export function RoomTree({
                                   prefetch
                                   onClick={onNavigate}
                                   aria-current={isCurrent ? 'page' : undefined}
-                                  className={`touch-target flex items-center gap-2 rounded-full py-1 pr-3 pl-[26px] text-[13px] leading-5 transition-colors duration-200 ${
+                                  className={`touch-target flex items-center gap-2 rounded-input py-1 pr-2 pl-[26px] text-[13px] leading-5 transition-colors duration-200 ${
                                     isCurrent
                                       ? 'bg-pen/10 font-medium text-pen'
                                       : 'text-ink hover:bg-wash'

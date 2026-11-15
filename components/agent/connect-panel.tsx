@@ -91,7 +91,7 @@ export function ConnectPanel({ origin }: { origin: string }) {
           <button
             type="button"
             onClick={() => setSeparate(crypto.randomUUID())}
-            className="press touch-target shrink-0 rounded-full border border-hairline px-3 py-1 text-[13px] leading-5 font-medium text-ink hover:border-pen hover:text-pen"
+            className="press touch-target shrink-0 rounded-input border border-hairline px-3 py-1 text-[13px] leading-5 font-medium text-ink hover:border-pen hover:text-pen"
           >
             new identity
           </button>

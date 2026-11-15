@@ -62,7 +62,7 @@ export function IdentityReroll() {
           ? statusMessage ?? 'Identity changes are unavailable while banned'
           : 'Generate a new anonymous identity on this device'
       }
-      className="group press touch-target inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 hover:bg-wash disabled:cursor-not-allowed disabled:opacity-60"
+      className="group press touch-target inline-flex items-center gap-1.5 rounded-[4px] px-1.5 py-0.5 hover:bg-wash disabled:cursor-not-allowed disabled:opacity-60"
     >
       <svg
         viewBox="0 0 16 16"

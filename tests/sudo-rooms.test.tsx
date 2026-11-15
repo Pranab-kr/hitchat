@@ -50,6 +50,33 @@ describe('SudoRooms', () => {
     expect(mocks.deleteRoom).toHaveBeenCalledWith({ groupId: 'g1' })
   })
 
+  it('does not render departments whose hierarchy has no rooms', () => {
+    render(
+      <SudoRooms
+        departments={[
+          ...departments,
+          {
+            id: 'empty-dept',
+            name: 'ECE',
+            slug: 'ece',
+            years: [
+              {
+                id: 'empty-year',
+                number: 1,
+                batches: [{ id: 'empty-batch', number: 1, groups: [] }],
+              },
+            ],
+          },
+        ]}
+        session={{ adminId: 'owner', role: 'owner' }}
+      />,
+    )
+
+    expect(screen.getByText('CSE')).toBeInTheDocument()
+    expect(screen.queryByText('ECE')).not.toBeInTheDocument()
+    expect(screen.queryByText(/year 1 — batch 1/)).not.toBeInTheDocument()
+  })
+
   it('shows only rooms the current co-admin can delete', () => {
     render(<SudoRooms departments={departments} session={{ adminId: 'co', role: 'co_admin' }} />)
 

@@ -39,7 +39,7 @@ export default async function SudoPage() {
   if (!session) {
     return (
       <main className="mx-auto flex min-h-dvh max-w-[380px] flex-col justify-center px-6">
-        <div className="rise rounded-[12px] border border-hairline bg-surface px-6 py-7">
+        <div className="rise rounded-card border border-hairline bg-surface px-6 py-7">
           <h1 className="font-display text-[32px] leading-[36px] font-semibold tracking-[-0.02em] text-ink">Sign in</h1>
           <p className="mt-1 text-[15px] leading-6 text-graphite">Admins only.</p>
           <SudoForm />
@@ -76,14 +76,17 @@ export default async function SudoPage() {
       })),
     })),
   }))
+  const hasRooms = roomDepartments.some((department) =>
+    department.years.some((year) => year.batches.some((batch) => batch.groups.length > 0)),
+  )
 
   return (
-    <OwnerShell title="Structure" sub="Departments, years, batches and groups." role={session.role}>
+    <OwnerShell title="Structure" sub="Add and remove rooms." role={session.role}>
       <StructureForms departments={sorted} canDelete={session.role === 'owner'} />
-      <section className="mt-10">
-        <h2 className="mb-3 text-[17px] leading-6 font-semibold text-ink">Current rooms</h2>
-        {sorted.length === 0 ? (
-          <p className="text-[15px] leading-6 text-graphite">Nothing yet. Create a department to begin.</p>
+      <section className="mt-12">
+        <h2 className="mb-4 text-[20px] leading-7 font-semibold text-ink">Current rooms</h2>
+        {!hasRooms ? (
+          <p className="text-[15px] leading-6 text-graphite">No rooms yet.</p>
         ) : (
           <SudoRooms departments={roomDepartments} session={session} />
         )}
